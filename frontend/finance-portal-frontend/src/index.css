@@ -1,0 +1,4 @@
+/* Tailwind temel katmanları */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
