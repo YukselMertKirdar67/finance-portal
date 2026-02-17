@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="WARN" monitorInterval="30">
+
+    <Properties>
+        <Property name="LOG_PATTERN">%d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n</Property>
+        <Property name="APP_NAME">finance-portal-backend</Property>
+    </Properties>
+
+    <Appenders>
+        <!-- Console Appender -->
+        <Console name="Console" target="SYSTEM_OUT">
+            <PatternLayout pattern="${LOG_PATTERN}"/>
+        </Console>
+
+        <!-- File Appender - JSON Format -->
+        <RollingFile name="JsonFile"
+                     fileName="logs/application.json"
+                     filePattern="logs/application-%d{yyyy-MM-dd}-%i.json.gz">
+            <JsonTemplateLayout eventTemplateUri="classpath:EcsLayout.json"/>
+            <Policies>
+                <TimeBasedTriggeringPolicy interval="1" modulate="true"/>
+                <SizeBasedTriggeringPolicy size="100MB"/>
+            </Policies>
+            <DefaultRolloverStrategy max="30"/>
+        </RollingFile>
+
+        <!-- Kafka Appender -->
+        <Kafka name="KafkaAppender" topic="application-logs">
+            <JsonTemplateLayout eventTemplateUri="classpath:EcsLayout.json"/>
+            <Property name="bootstrap.servers">finance-kafka:9092</Property>
+            <Property name="key.serializer">org.apache.kafka.common.serialization.StringSerializer</Property>
+            <Property name="value.serializer">
+                org.apache.kafka.common.serialization.ByteArraySerializer
+            </Property>
+        </Kafka>
+
+        <!-- Async Appenders for performance -->
+        <Async name="AsyncConsole">
+            <AppenderRef ref="Console"/>
+        </Async>
+
+        <Async name="AsyncJsonFile">
+            <AppenderRef ref="JsonFile"/>
+        </Async>
+
+        <Async name="AsyncKafka">
+            <AppenderRef ref="KafkaAppender"/>
+        </Async>
+    </Appenders>
+
+    <Loggers>
+        <!-- Application loggers -->
+        <Logger name="com.financeportal.backend" level="INFO" additivity="false">
+            <AppenderRef ref="AsyncConsole"/>
+            <AppenderRef ref="AsyncJsonFile"/>
+            <AppenderRef ref="AsyncKafka"/>
+        </Logger>
+
+        <!-- Spring Framework -->
+        <Logger name="org.springframework" level="INFO" additivity="false">
+            <AppenderRef ref="AsyncConsole"/>
+        </Logger>
+
+        <!-- Hibernate SQL -->
+        <Logger name="org.hibernate.SQL" level="DEBUG" additivity="false">
+            <AppenderRef ref="AsyncConsole"/>
+        </Logger>
+
+        <!-- Root logger -->
+        <Root level="INFO">
+            <AppenderRef ref="AsyncConsole"/>
+            <AppenderRef ref="AsyncJsonFile"/>
+        </Root>
+    </Loggers>
+</Configuration>
