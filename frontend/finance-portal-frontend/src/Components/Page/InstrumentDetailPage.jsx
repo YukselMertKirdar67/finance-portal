@@ -32,7 +32,7 @@ const TYPE_LABELS = {
 
 export default function InstrumentDetailPage() {
     const navigate = useNavigate();
-    const { id } = useParams(); // /instruments/detail/123
+    const { id } = useParams();
 
     const [instrument, setInstrument] = useState(null);
     const [history, setHistory] = useState([]);
@@ -40,14 +40,21 @@ export default function InstrumentDetailPage() {
     const [refreshing, setRefreshing] = useState(false);
     const [error, setError] = useState(null);
     const [inWatchlist, setInWatchlist] = useState(false);
-    const [timeframe, setTimeframe] = useState('1A');
+    const [timeframe, setTimeframe] = useState('Bugün');
 
     useEffect(() => {
         fetchInstrument();
     }, [id]);
 
     useEffect(() => {
-        if (instrument) fetchHistory();
+        if (instrument) {
+            if (timeframe === 'Bugün') {
+                // Bugün için tarihsel veri çekme, anlık fiyattan grafik oluştur
+                setHistory([]);
+            } else {
+                fetchHistory();
+            }
+        }
     }, [instrument, timeframe]);
 
     const fetchInstrument = async () => {
@@ -125,16 +132,19 @@ export default function InstrumentDetailPage() {
     const accentColor = TYPE_COLORS[instrument.type] || '#3B82F6';
 
     // Chart data
-    const chartData = history.length > 0
-        ? history.map(h => ({ time: h.date, value: h.close }))
-        : price
-            ? [
-                { time: '09:00', value: price.open },
-                { time: '12:00', value: (price.open + price.current) / 2 },
-                { time: '15:00', value: price.high },
-                { time: '17:00', value: price.low },
-                { time: '18:00', value: price.current },
-            ]
+    const chartData = timeframe === 'Bugün' && price
+        ? [
+            { time: '09:00', value: price.open },
+            { time: '10:00', value: price.open + (price.current - price.open) * 0.2 },
+            { time: '11:00', value: price.open + (price.current - price.open) * 0.4 },
+            { time: '12:00', value: price.high },
+            { time: '13:00', value: price.open + (price.current - price.open) * 0.6 },
+            { time: '14:00', value: price.low },
+            { time: '15:00', value: price.open + (price.current - price.open) * 0.8 },
+            { time: '16:00', value: price.current },
+        ]
+        : history.length > 0
+            ? history.map(h => ({ time: h.date, value: h.close }))
             : [];
 
     // Type-specific fields
@@ -281,7 +291,7 @@ export default function InstrumentDetailPage() {
                                 <div className="flex items-center justify-between">
                                     <CardTitle className="text-lg font-bold text-gray-900">Fiyat Grafiği</CardTitle>
                                     <div className="flex gap-1">
-                                        {['1H', '3A', '1Y'].map(tf => (
+                                        {['Bugün', '1H', '3A', '1Y'].map(tf => (
                                             <button
                                                 key={tf}
                                                 onClick={() => setTimeframe(tf)}
