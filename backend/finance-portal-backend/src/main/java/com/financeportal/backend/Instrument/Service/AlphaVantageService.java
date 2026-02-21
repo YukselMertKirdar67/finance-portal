@@ -6,8 +6,10 @@ import com.financeportal.backend.Instrument.DTO.External.AlphaVantagePriceDTO;
 import com.financeportal.backend.Instrument.Entity.BaseInstrument;
 import com.financeportal.backend.Instrument.Entity.InstrumentPrice;
 import com.financeportal.backend.Instrument.Entity.PreciousInstrument;
+import com.financeportal.backend.Instrument.Entity.PriceHistory;
 import com.financeportal.backend.Instrument.Repository.InstrumentPriceRepository;
 import com.financeportal.backend.Instrument.Repository.InstrumentRepository;
+import com.financeportal.backend.Instrument.Repository.PriceHistoryRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -17,9 +19,11 @@ import org.springframework.web.client.RestTemplate;
 
 import java.math.BigDecimal;
 import java.time.Duration;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -35,6 +39,7 @@ public class AlphaVantageService {
     private final RestTemplate restTemplate;
     private final InstrumentRepository instrumentRepository;
     private final InstrumentPriceRepository priceRepository;
+    private final PriceHistoryRepository historyRepository;
     private final ObjectMapper objectMapper;
     private final RedisTemplate<String, Object> redisTemplate;
 
@@ -125,6 +130,8 @@ public class AlphaVantageService {
 
             priceRepository.save(price);
 
+            savePriceHistory(instrument, openPrice, highPrice, lowPrice, currentPrice);
+
             // ✅ Redis'e kaydet (1 saat TTL - günlük 25 limit koruması)
             AlphaVantagePriceDTO dto = AlphaVantagePriceDTO.builder()
                     .symbol(dbSymbol)
@@ -184,6 +191,39 @@ public class AlphaVantageService {
 
         log.info("✅ Precious metals updated: {}/{}", updated, PRECIOUS_METALS.size());
         return updated;
+    }
+
+    private void savePriceHistory(BaseInstrument instrument,
+                                  BigDecimal open, BigDecimal high,
+                                  BigDecimal low, BigDecimal close) {
+        try {
+            LocalDate today = LocalDate.now();
+
+            Optional<PriceHistory> existing = historyRepository
+                    .findByInstrumentAndDate(instrument, today);
+
+            if (existing.isPresent()) {
+                PriceHistory history = existing.get();
+                history.setClose(close);
+                history.setHigh(high.max(history.getHigh()));
+                history.setLow(low.min(history.getLow()));
+                historyRepository.save(history);
+                log.debug("Updated history for: {} on {}", instrument.getSymbol(), today);
+            } else {
+                PriceHistory history = PriceHistory.builder()
+                        .instrument(instrument)
+                        .date(today)
+                        .open(open)
+                        .high(high)
+                        .low(low)
+                        .close(close)
+                        .build();
+                historyRepository.save(history);
+                log.info("✅ Saved history for: {} on {}", instrument.getSymbol(), today);
+            }
+        } catch (Exception e) {
+            log.error("Error saving price history: {}", e.getMessage());
+        }
     }
 
     // ✅ DTO → Entity

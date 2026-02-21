@@ -5,9 +5,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.financeportal.backend.Instrument.DTO.External.TwelveDataPriceDTO;
 import com.financeportal.backend.Instrument.Entity.BaseInstrument;
 import com.financeportal.backend.Instrument.Entity.InstrumentPrice;
+import com.financeportal.backend.Instrument.Entity.PriceHistory;
 import com.financeportal.backend.Instrument.Entity.StockInstrument;
 import com.financeportal.backend.Instrument.Repository.InstrumentPriceRepository;
 import com.financeportal.backend.Instrument.Repository.InstrumentRepository;
+import com.financeportal.backend.Instrument.Repository.PriceHistoryRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -20,6 +22,7 @@ import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -35,8 +38,9 @@ public class TwelveDataService {
     private final RestTemplate restTemplate;
     private final InstrumentRepository instrumentRepository;
     private final InstrumentPriceRepository priceRepository;
+    private final PriceHistoryRepository historyRepository;
     private final ObjectMapper objectMapper;
-    private final RedisTemplate<String, Object> redisTemplate;  // ✅ Ekle
+    private final RedisTemplate<String, Object> redisTemplate;
 
     private static final List<String> BIST_SYMBOLS = List.of(
             "THYAO:BIST", "GARAN:BIST", "AKBNK:BIST", "ISCTR:BIST",
@@ -103,6 +107,8 @@ public class TwelveDataService {
 
             priceRepository.save(price);
 
+            savePriceHistory(instrument, currentPrice, currentPrice, currentPrice, currentPrice);
+
             // ✅ Redis'e kaydet (8dk TTL)
             TwelveDataPriceDTO dto = TwelveDataPriceDTO.builder()
                     .symbol(dbSymbol)
@@ -124,6 +130,39 @@ public class TwelveDataService {
             return null;
         }
     }
+    private void savePriceHistory(BaseInstrument instrument,
+                                  BigDecimal open, BigDecimal high,
+                                  BigDecimal low, BigDecimal close) {
+        try {
+            LocalDate today = LocalDate.now();
+
+            Optional<PriceHistory> existing = historyRepository
+                    .findByInstrumentAndDate(instrument, today);
+
+            if (existing.isPresent()) {
+                PriceHistory history = existing.get();
+                history.setClose(close);
+                history.setHigh(high.max(history.getHigh()));
+                history.setLow(low.min(history.getLow()));
+                historyRepository.save(history);
+                log.debug("Updated history for: {} on {}", instrument.getSymbol(), today);
+            } else {
+                PriceHistory history = PriceHistory.builder()
+                        .instrument(instrument)
+                        .date(today)
+                        .open(open)
+                        .high(high)
+                        .low(low)
+                        .close(close)
+                        .build();
+                historyRepository.save(history);
+                log.info("✅ Saved history for: {} on {}", instrument.getSymbol(), today);
+            }
+        } catch (Exception e) {
+            log.error("Error saving price history: {}", e.getMessage());
+        }
+    }
+
 
     // ✅ DTO'dan Entity'ye
     private InstrumentPrice convertToEntity(TwelveDataPriceDTO dto) {
