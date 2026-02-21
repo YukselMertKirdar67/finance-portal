@@ -49,7 +49,6 @@ export default function InstrumentDetailPage() {
     useEffect(() => {
         if (instrument) {
             if (timeframe === 'Bugün') {
-                // Bugün için tarihsel veri çekme, anlık fiyattan grafik oluştur
                 setHistory([]);
             } else {
                 fetchHistory();
