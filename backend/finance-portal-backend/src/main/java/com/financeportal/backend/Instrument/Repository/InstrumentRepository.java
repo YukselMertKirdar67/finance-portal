@@ -19,6 +19,9 @@ public interface InstrumentRepository extends JpaRepository<BaseInstrument, Long
 
     Page<BaseInstrument> findByActiveTrue(Pageable pageable);
 
+    @Query("SELECT COUNT(i) FROM BaseInstrument i WHERE TYPE(i) = :type AND i.active = true")
+    long countByType(@Param("type") Class<? extends BaseInstrument> type);
+
     @Query("SELECT i FROM BaseInstrument i WHERE " +
             "LOWER(i.symbol) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
             "LOWER(i.name) LIKE LOWER(CONCAT('%', :search, '%'))")
