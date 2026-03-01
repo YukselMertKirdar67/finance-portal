@@ -8,6 +8,7 @@ import CategoryDetailPage from './Components/Page/CategoryDetailPage';
 import InstrumentDetailPage from './Components/Page/InstrumentDetailPage';
 import ComparisonPage from './Components/Page/ComparisonPage';
 import HomePage from './Components/Page/HomePage';
+import WatchlistPage from './Components/Page/WatchlistPage';
 
 function App() {
     const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -30,7 +31,7 @@ function App() {
                     <Route path="/instruments/detail/:id" element={<InstrumentDetailPage />} />
                     <Route path="/comparison" element={<ComparisonPage />} />
                     <Route path="/portfolio" element={<div className="p-8">Portföyüm</div>} />
-                    <Route path="/watchlist" element={<div className="p-8">Takip Listesi</div>} />
+                    <Route path="/watchlist" element={<WatchlistPage/>} />
                 </Routes>
             </Layout>
         </BrowserRouter>
