@@ -5,6 +5,7 @@ import { Card, CardContent } from '../UI/Card';
 import { Button } from '../UI/Button';
 import Pagination from '../UI/Pagination';
 import { getInstrumentsByType, searchInstruments } from '../../API/instrumentsApi';
+import { addToWatchlist, removeFromWatchlist, isInWatchlist } from '../../API/watchlistApi';
 
 const TYPE_META = {
     FOREX:    { title: 'Döviz Piyasası',       description: 'Majör ve minör döviz çiftlerinin anlık fiyatları' },
@@ -17,7 +18,7 @@ const TYPE_META = {
 
 export default function CategoryDetailPage() {
     const navigate = useNavigate();
-    const { type } = useParams(); // /instruments/FOREX → type = "FOREX"
+    const { type } = useParams();
 
     const [instruments, setInstruments] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -26,18 +27,16 @@ export default function CategoryDetailPage() {
     const [totalPages, setTotalPages] = useState(0);
     const [totalElements, setTotalElements] = useState(0);
     const [searchQuery, setSearchQuery] = useState('');
-    const [searching, setSearching] = useState(false);
+    const [watchlistStatus, setWatchlistStatus] = useState({});
     const pageSize = 20;
 
     const meta = TYPE_META[type] || { title: type, description: '' };
 
-    // ✅ Type değişince sıfırla
     useEffect(() => {
         setCurrentPage(0);
         setSearchQuery('');
     }, [type]);
 
-    // ✅ Haber sayfasındaki gibi useEffect
     useEffect(() => {
         let cancelled = false;
 
@@ -49,9 +48,7 @@ export default function CategoryDetailPage() {
                 let response;
 
                 if (searchQuery.trim().length > 0) {
-                    // ✅ Arama modunda
                     response = await searchInstruments(searchQuery, currentPage, pageSize);
-                    // Sadece bu tipteki sonuçları filtrele
                     if (response && response.content) {
                         response = {
                             ...response,
@@ -61,16 +58,19 @@ export default function CategoryDetailPage() {
                         };
                     }
                 } else {
-                    // ✅ Normal mod
                     response = await getInstrumentsByType(type, currentPage, pageSize);
                 }
 
                 if (cancelled) return;
 
                 if (response && response.content !== undefined) {
-                    setInstruments(response.content.filter(item => item !== null) ?? []);
+                    const validInstruments = response.content.filter(item => item !== null) ?? [];
+                    setInstruments(validInstruments);
                     setTotalPages(response.totalPages ?? 0);
                     setTotalElements(response.totalElements ?? 0);
+
+                    // Watchlist durumunu kontrol et
+                    checkWatchlistStatus(validInstruments);
                 } else {
                     setInstruments([]);
                     setTotalPages(0);
@@ -93,6 +93,39 @@ export default function CategoryDetailPage() {
 
     }, [type, currentPage, searchQuery]);
 
+    const checkWatchlistStatus = async (instrumentsList) => {
+        const status = {};
+        for (const inst of instrumentsList) {
+            try {
+                const inList = await isInWatchlist(inst.id);
+                status[inst.id] = inList;
+            } catch (error) {
+                console.error('Watchlist check error:', error);
+            }
+        }
+        setWatchlistStatus(status);
+    };
+
+    const handleToggleWatchlist = async (e, instrumentId) => {
+        e.stopPropagation();
+
+        try {
+            if (watchlistStatus[instrumentId]) {
+                await removeFromWatchlist(instrumentId);
+            } else {
+                await addToWatchlist(instrumentId);
+            }
+
+            setWatchlistStatus(prev => ({
+                ...prev,
+                [instrumentId]: !prev[instrumentId]
+            }));
+        } catch (error) {
+            console.error('Watchlist toggle error:', error);
+            alert('İşlem başarısız');
+        }
+    };
+
     const handlePageChange = (page) => {
         if (page === currentPage) return;
         if (page < 0 || page >= totalPages) return;
@@ -109,7 +142,6 @@ export default function CategoryDetailPage() {
         navigate(`/instruments/detail/${id}`);
     };
 
-    // ✅ Fiyat formatlama
     const formatPrice = (price) => {
         if (!price && price !== 0) return '-';
         if (price > 1000) return price.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -117,7 +149,6 @@ export default function CategoryDetailPage() {
         return price.toLocaleString('tr-TR', { minimumFractionDigits: 4, maximumFractionDigits: 6 });
     };
 
-    // ✅ Tipe göre alt başlık (sektör, blockchain vs)
     const getSubtitle = (instrument) => {
         if (instrument.sector)       return instrument.sector;
         if (instrument.blockchain)   return instrument.blockchain;
@@ -199,7 +230,7 @@ export default function CategoryDetailPage() {
                                             <th className="text-right py-4 px-6 text-sm font-medium text-gray-600">Değişim %</th>
                                             <th className="text-right py-4 px-6 text-sm font-medium text-gray-600">Yüksek</th>
                                             <th className="text-right py-4 px-6 text-sm font-medium text-gray-600">Düşük</th>
-                                            <th className="text-center py-4 px-6 text-sm font-medium text-gray-600">İşlem</th>
+                                            <th className="text-center py-4 px-6 text-sm font-medium text-gray-600">Takip</th>
                                         </tr>
                                         </thead>
                                         <tbody>
@@ -225,7 +256,6 @@ export default function CategoryDetailPage() {
                                                         }`}
                                                         onClick={() => handleDetailClick(instrument.id)}
                                                     >
-                                                        {/* Enstrüman */}
                                                         <td className="py-4 px-6">
                                                             <p className="font-medium text-gray-900">{instrument.name}</p>
                                                             <p className="text-xs text-gray-400 mt-0.5">
@@ -233,34 +263,30 @@ export default function CategoryDetailPage() {
                                                             </p>
                                                         </td>
 
-                                                        {/* Sembol */}
                                                         <td className="py-4 px-6">
-                                                                <span className="text-sm font-mono bg-gray-100 text-gray-600 px-2 py-1 rounded">
-                                                                    {instrument.symbol}
-                                                                </span>
+                                                            <span className="text-sm font-mono bg-gray-100 text-gray-600 px-2 py-1 rounded">
+                                                                {instrument.symbol}
+                                                            </span>
                                                         </td>
 
-                                                        {/* Fiyat */}
                                                         <td className="py-4 px-6 text-right">
                                                             {price ? (
                                                                 <span className="font-semibold text-gray-900">
-                                                                        {formatPrice(price.current)}
-                                                                    </span>
+                                                                    {formatPrice(price.current)}
+                                                                </span>
                                                             ) : (
                                                                 <span className="text-gray-400 text-sm">-</span>
                                                             )}
                                                         </td>
 
-                                                        {/* Değişim */}
                                                         <td className="py-4 px-6 text-right">
                                                             {price ? (
                                                                 <span className={isPositive ? 'text-green-600' : 'text-red-600'}>
-                                                                        {isPositive ? '+' : ''}{formatPrice(price.changeAmount)}
-                                                                    </span>
+                                                                    {isPositive ? '+' : ''}{formatPrice(price.changeAmount)}
+                                                                </span>
                                                             ) : '-'}
                                                         </td>
 
-                                                        {/* Değişim % */}
                                                         <td className="py-4 px-6 text-right">
                                                             {price ? (
                                                                 <div className={`flex items-center justify-end gap-1 ${
@@ -271,40 +297,40 @@ export default function CategoryDetailPage() {
                                                                         : <TrendingDown className="w-4 h-4" />
                                                                     }
                                                                     <span className="font-medium">
-                                                                            {Math.abs(price.changePercent).toFixed(2)}%
-                                                                        </span>
+                                                                        {Math.abs(price.changePercent).toFixed(2)}%
+                                                                    </span>
                                                                 </div>
                                                             ) : '-'}
                                                         </td>
 
-                                                        {/* Yüksek */}
                                                         <td className="py-4 px-6 text-right">
-                                                                <span className="text-sm text-green-600">
-                                                                    {price ? formatPrice(price.high) : '-'}
-                                                                </span>
+                                                            <span className="text-sm text-green-600">
+                                                                {price ? formatPrice(price.high) : '-'}
+                                                            </span>
                                                         </td>
 
-                                                        {/* Düşük */}
                                                         <td className="py-4 px-6 text-right">
-                                                                <span className="text-sm text-red-500">
-                                                                    {price ? formatPrice(price.low) : '-'}
-                                                                </span>
+                                                            <span className="text-sm text-red-500">
+                                                                {price ? formatPrice(price.low) : '-'}
+                                                            </span>
                                                         </td>
 
-                                                        {/* İşlem */}
-                                                        <td className="py-4 px-6" onClick={e => e.stopPropagation()}>
-                                                            <div className="flex items-center justify-center gap-2">
-                                                                <Button
-                                                                    variant="ghost"
-                                                                    size="sm"
-                                                                    onClick={() => handleDetailClick(instrument.id)}
-                                                                >
-                                                                    Detay
-                                                                </Button>
-                                                                <Button variant="ghost" size="icon" className="h-8 w-8">
-                                                                    <Star className="w-4 h-4" />
-                                                                </Button>
-                                                            </div>
+                                                        <td className="py-4 px-6 text-center">
+                                                            <button
+                                                                onClick={(e) => handleToggleWatchlist(e, instrument.id)}
+                                                                className={`p-2 rounded-lg transition-all ${
+                                                                    watchlistStatus[instrument.id]
+                                                                        ? 'text-yellow-500 hover:bg-yellow-50'
+                                                                        : 'text-gray-400 hover:bg-gray-100'
+                                                                }`}
+                                                                title={watchlistStatus[instrument.id] ? 'Takipten çıkar' : 'Takip listesine ekle'}
+                                                            >
+                                                                <Star
+                                                                    className={`w-5 h-5 ${
+                                                                        watchlistStatus[instrument.id] ? 'fill-yellow-500' : ''
+                                                                    }`}
+                                                                />
+                                                            </button>
                                                         </td>
                                                     </tr>
                                                 );
