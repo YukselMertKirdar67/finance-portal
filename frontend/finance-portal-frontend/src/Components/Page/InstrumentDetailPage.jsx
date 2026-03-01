@@ -11,6 +11,7 @@ import {
     CartesianGrid, ResponsiveContainer
 } from 'recharts';
 import { getInstrumentById, getHistoricalPrices } from '../../API/instrumentsApi';
+import { addToWatchlist, removeFromWatchlist, isInWatchlist } from '../../API/watchlistApi';
 
 const TYPE_COLORS = {
     FOREX: '#3B82F6',
@@ -40,6 +41,7 @@ export default function InstrumentDetailPage() {
     const [refreshing, setRefreshing] = useState(false);
     const [error, setError] = useState(null);
     const [inWatchlist, setInWatchlist] = useState(false);
+    const [watchlistLoading, setWatchlistLoading] = useState(false);
     const [timeframe, setTimeframe] = useState('Bugün');
 
     useEffect(() => {
@@ -48,6 +50,7 @@ export default function InstrumentDetailPage() {
 
     useEffect(() => {
         if (instrument) {
+            checkWatchlistStatus();
             if (timeframe === 'Bugün') {
                 setHistory([]);
             } else {
@@ -67,6 +70,33 @@ export default function InstrumentDetailPage() {
             setError('Enstrüman yüklenirken hata oluştu');
         } finally {
             setLoading(false);
+        }
+    };
+
+    const checkWatchlistStatus = async () => {
+        try {
+            const status = await isInWatchlist(id);
+            setInWatchlist(status);
+        } catch (error) {
+            console.error('Watchlist check error:', error);
+        }
+    };
+
+    const handleToggleWatchlist = async () => {
+        setWatchlistLoading(true);
+        try {
+            if (inWatchlist) {
+                await removeFromWatchlist(id);
+                setInWatchlist(false);
+            } else {
+                await addToWatchlist(id);
+                setInWatchlist(true);
+            }
+        } catch (error) {
+            console.error('Watchlist toggle error:', error);
+            alert('İşlem başarısız');
+        } finally {
+            setWatchlistLoading(false);
         }
     };
 
@@ -130,7 +160,6 @@ export default function InstrumentDetailPage() {
     const isPositive = (price?.changePercent || 0) >= 0;
     const accentColor = TYPE_COLORS[instrument.type] || '#3B82F6';
 
-    // Chart data
     const chartData = timeframe === 'Bugün' && price
         ? [
             { time: '09:00', value: price.open },
@@ -146,7 +175,6 @@ export default function InstrumentDetailPage() {
             ? history.map(h => ({ time: h.date, value: h.close }))
             : [];
 
-    // Type-specific fields
     const getTypeSpecificFields = () => {
         const fields = [];
         if (instrument.sector) fields.push({ label: 'Sektör', value: instrument.sector });
@@ -170,10 +198,8 @@ export default function InstrumentDetailPage() {
 
     return (
         <div className="min-h-screen bg-gray-50">
-            {/* Top accent bar */}
             <div className="h-1 w-full" style={{ backgroundColor: accentColor }} />
 
-            {/* Header */}
             <div className="bg-white border-b border-gray-200 px-8 py-6">
                 <div className="max-w-7xl mx-auto">
                     <div className="flex items-center justify-between mb-6">
@@ -194,10 +220,12 @@ export default function InstrumentDetailPage() {
                             <Button
                                 variant={inWatchlist ? 'default' : 'outline'}
                                 size="sm"
-                                onClick={() => setInWatchlist(!inWatchlist)}
+                                onClick={handleToggleWatchlist}
+                                disabled={watchlistLoading}
+                                className={inWatchlist ? 'bg-yellow-500 hover:bg-yellow-600 text-white' : ''}
                             >
-                                <Star className={`w-4 h-4 mr-2 ${inWatchlist ? 'fill-current' : ''}`} />
-                                {inWatchlist ? 'Takipte' : 'Takip Et'}
+                                <Star className={`w-4 h-4 mr-2 ${inWatchlist ? 'fill-white' : ''}`} />
+                                {watchlistLoading ? 'İşleniyor...' : inWatchlist ? 'Takipte' : 'Takip Et'}
                             </Button>
                         </div>
                     </div>
@@ -248,7 +276,6 @@ export default function InstrumentDetailPage() {
             </div>
 
             <div className="max-w-7xl mx-auto p-8">
-                {/* Stats Row */}
                 {price && (
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
                         {[
@@ -267,7 +294,6 @@ export default function InstrumentDetailPage() {
                     </div>
                 )}
 
-                {/* Yield Rate (for bonds) */}
                 {price?.yieldRate && (
                     <Card className="border-0 shadow-sm mb-6 border-l-4" style={{ borderLeftColor: accentColor }}>
                         <CardContent className="pt-5 pb-5">
@@ -283,7 +309,6 @@ export default function InstrumentDetailPage() {
                 )}
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    {/* Chart */}
                     <div className="lg:col-span-2">
                         <Card className="border-0 shadow-sm">
                             <CardHeader className="pb-4">
@@ -356,9 +381,7 @@ export default function InstrumentDetailPage() {
                         </Card>
                     </div>
 
-                    {/* Info Panel */}
                     <div className="flex flex-col gap-4">
-                        {/* General Info */}
                         <Card className="border-0 shadow-sm">
                             <CardHeader className="pb-3">
                                 <CardTitle className="text-sm font-semibold text-gray-500 uppercase tracking-wide flex items-center gap-2">
@@ -382,7 +405,6 @@ export default function InstrumentDetailPage() {
                             </CardContent>
                         </Card>
 
-                        {/* Type-specific Info */}
                         {typeFields.length > 0 && (
                             <Card className="border-0 shadow-sm">
                                 <CardHeader className="pb-3">
@@ -404,7 +426,6 @@ export default function InstrumentDetailPage() {
                             </Card>
                         )}
 
-                        {/* Description */}
                         {instrument.description && (
                             <Card className="border-0 shadow-sm">
                                 <CardHeader className="pb-3">
