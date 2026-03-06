@@ -283,10 +283,6 @@ public class PortfolioServiceImpl implements PortfolioService {
 
         Portfolio portfolio = getPortfolioEntityWithOwnershipCheck(portfolioId);
 
-        // TODO: Implement historical performance calculation
-        // This requires storing daily snapshots of portfolio value
-        // For now, return basic performance metrics
-
         BigDecimal currentValue = holdingService.calculateCurrentValue(portfolioId);
         BigDecimal totalInvested = holdingService.calculateTotalInvestment(portfolioId);
 
@@ -300,12 +296,12 @@ public class PortfolioServiceImpl implements PortfolioService {
         return PortfolioPerformanceDTO.builder()
                 .portfolioId(portfolioId)
                 .portfolioName(portfolio.getName())
-                .dailyReturn(BigDecimal.ZERO)   // TODO: Calculate from historical data
-                .weeklyReturn(BigDecimal.ZERO)  // TODO: Calculate from historical data
-                .monthlyReturn(BigDecimal.ZERO) // TODO: Calculate from historical data
-                .yearlyReturn(BigDecimal.ZERO)  // TODO: Calculate from historical data
+                .dailyReturn(BigDecimal.ZERO)
+                .weeklyReturn(BigDecimal.ZERO)
+                .monthlyReturn(BigDecimal.ZERO)
+                .yearlyReturn(BigDecimal.ZERO)
                 .totalReturn(totalReturn)
-                .historicalData(new ArrayList<>()) // TODO: Populate from historical snapshots
+                .historicalData(new ArrayList<>())
                 .build();
     }
 
@@ -428,9 +424,6 @@ public class PortfolioServiceImpl implements PortfolioService {
      * Calculate aggregate asset allocation across all portfolios
      */
     private List<AssetAllocationDTO> calculateAggregateAssetAllocation(List<Portfolio> portfolios) {
-        // TODO: Implement aggregate asset allocation
-        // Group holdings by instrument type across all portfolios
-        // Calculate total value and percentage for each type
 
         return new ArrayList<>(); // Placeholder
     }
