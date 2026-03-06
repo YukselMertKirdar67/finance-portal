@@ -36,9 +36,6 @@ public class PortfolioAdminController {
             @RequestParam(required = false) String userId) {
         log.info("API (Admin): Fetching all portfolios. Filter userId: {}", userId);
 
-        // TODO: Implement admin-level portfolio listing
-        // For now, return empty response
-
         Map<String, Object> response = new HashMap<>();
         response.put("message", "Admin portfolio listing - Not implemented yet");
         response.put("userId", userId);
@@ -72,12 +69,6 @@ public class PortfolioAdminController {
     @Operation(summary = "Get portfolio statistics (admin)", description = "Get system-wide portfolio statistics")
     public ResponseEntity<Map<String, Object>> getSystemStatistics() {
         log.info("API (Admin): Fetching system-wide portfolio statistics");
-
-        // TODO: Implement system-wide statistics
-        // - Total portfolios count
-        // - Total value across all users
-        // - Most active users
-        // - Most traded instruments
 
         Map<String, Object> stats = new HashMap<>();
         stats.put("message", "System statistics - Not implemented yet");
