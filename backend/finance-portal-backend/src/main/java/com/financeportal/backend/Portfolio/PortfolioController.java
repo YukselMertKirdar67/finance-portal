@@ -227,32 +227,26 @@ public class PortfolioController {
     }
 
     /**
-     * Get portfolio performance
-     * GET /api/portfolios/{id}/performance
+     * Get portfolio performance history (for chart)
+     * GET /api/portfolios/{id}/performance?days=30
      */
     @GetMapping("/{id}/performance")
-    @Operation(summary = "Get portfolio performance", description = "Get performance metrics for a portfolio")
-    public ResponseEntity<PortfolioPerformanceDTO> getPortfolioPerformance(
+    @Operation(summary = "Get portfolio performance history", description = "Get historical performance data for chart")
+    public ResponseEntity<List<PerformanceDataPointDTO>> getPortfolioPerformanceHistory(
             @Parameter(description = "Portfolio ID")
             @PathVariable Long id,
-            @Parameter(description = "Start date (YYYY-MM-DD)")
-            @RequestParam(required = false) LocalDate startDate,
-            @Parameter(description = "End date (YYYY-MM-DD)")
-            @RequestParam(required = false) LocalDate endDate) {
+            @Parameter(description = "Number of days (default: 30)")
+            @RequestParam(defaultValue = "30") int days) {
 
-        log.info("API: Fetching portfolio performance for ID: {} from {} to {}", id, startDate, endDate);
+        log.info("API: Fetching portfolio performance history for ID: {} (last {} days)", id, days);
 
-        // Default to last 30 days if not provided
-        if (startDate == null) {
-            startDate = LocalDate.now().minusDays(30);
-        }
-        if (endDate == null) {
-            endDate = LocalDate.now();
-        }
+        LocalDate endDate = LocalDate.now();
+        LocalDate startDate = endDate.minusDays(days);
 
         PortfolioPerformanceDTO performance = portfolioService.getPortfolioPerformance(id, startDate, endDate);
 
-        return ResponseEntity.ok(performance);
+        // Return only historical data (array format for chart)
+        return ResponseEntity.ok(performance.getHistoricalData());
     }
 
     /**
