@@ -3,6 +3,7 @@ import { TrendingUp, TrendingDown, Plus, X, Search, RefreshCw } from 'lucide-rea
 import { Card, CardContent, CardHeader, CardTitle } from '../UI/Card';
 import { Button } from '../UI/Button';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip } from 'recharts';
+import { useParams } from 'react-router-dom';
 
 import {
     getPortfolioDetail,
@@ -16,6 +17,7 @@ import {
 } from '../../API/instrumentsApi';
 
 export default function PortfolioPage() {
+    const { id } = useParams();
     const [portfolio, setPortfolio] = useState(null);
     const [holdings, setHoldings] = useState([]);
     const [assetAllocation, setAssetAllocation] = useState([]);
@@ -37,7 +39,7 @@ export default function PortfolioPage() {
     const [notes, setNotes] = useState('');
     const [submitting, setSubmitting] = useState(false);
 
-    const PORTFOLIO_ID = 1;
+    const PORTFOLIO_ID = parseInt(id);
 
     useEffect(() => {
         loadAllData();
