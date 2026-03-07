@@ -2,9 +2,15 @@ package com.financeportal.backend.Portfolio.Service;
 
 import com.financeportal.backend.Exception.ResourceNotFoundException;
 import com.financeportal.backend.Exception.UnauthorizedException;
+import com.financeportal.backend.Instrument.Entity.BaseInstrument;
+import com.financeportal.backend.Instrument.Entity.InstrumentPrice;
+import com.financeportal.backend.Instrument.Repository.InstrumentPriceRepository;
+import com.financeportal.backend.Instrument.Repository.InstrumentRepository;
 import com.financeportal.backend.Portfolio.DTO.*;
 import com.financeportal.backend.Portfolio.Entity.Portfolio;
+import com.financeportal.backend.Portfolio.Entity.PortfolioTransaction;
 import com.financeportal.backend.Portfolio.Enum.PortfolioType;
+import com.financeportal.backend.Portfolio.Enum.TransactionType;
 import com.financeportal.backend.Portfolio.Mapper.PortfolioMapper;
 import com.financeportal.backend.Portfolio.Repository.PortfolioRepository;
 import lombok.RequiredArgsConstructor;
@@ -17,8 +23,8 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.List;
+import java.time.temporal.ChronoUnit;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -29,6 +35,8 @@ public class PortfolioServiceImpl implements PortfolioService {
     private final PortfolioRepository portfolioRepository;
     private final PortfolioHoldingService holdingService;
     private final PortfolioMapper portfolioMapper;
+    private final InstrumentPriceRepository instrumentPriceRepository;
+    private final InstrumentRepository instrumentRepository;
 
     // Mock user ID (will be replaced with SecurityContextHolder.getContext().getAuthentication())
     private static final String MOCK_USER_ID = "mock-user-001";
@@ -146,7 +154,6 @@ public class PortfolioServiceImpl implements PortfolioService {
         log.info("Fetching portfolio detail for ID: {}", portfolioId);
 
         try {
-            // ⭐ BASİT findById kullan (complex method yerine)
             Portfolio portfolio = portfolioRepository.findById(portfolioId)
                     .orElseThrow(() -> new ResourceNotFoundException("Portfolio not found with id: " + portfolioId));
 
@@ -176,11 +183,15 @@ public class PortfolioServiceImpl implements PortfolioService {
                     .map(HoldingDTO::getTotalInvestment)
                     .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-            BigDecimal currentValue = holdings.stream()
+            BigDecimal holdingsValue = holdings.stream()
                     .map(HoldingDTO::getCurrentValue)
                     .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-            BigDecimal unrealizedPnL = currentValue.subtract(totalInvested);
+            // ⭐ Total Value = Cash + Holdings
+            BigDecimal cashBalance = portfolio.getInitialBalance().subtract(totalInvested);
+            BigDecimal totalValue = cashBalance.add(holdingsValue);
+
+            BigDecimal unrealizedPnL = holdingsValue.subtract(totalInvested);
 
             BigDecimal pnlPercent = BigDecimal.ZERO;
             if (totalInvested.compareTo(BigDecimal.ZERO) > 0) {
@@ -190,24 +201,22 @@ public class PortfolioServiceImpl implements PortfolioService {
                         .setScale(2, RoundingMode.HALF_UP);
             }
 
-            BigDecimal cashBalance = portfolio.getInitialBalance().subtract(totalInvested);
-
             // Set calculated fields
             dto.setTotalInvested(totalInvested);
-            dto.setCurrentValue(currentValue);
+            dto.setCurrentValue(totalValue);  // ⭐ Nakit + Varlıklar
             dto.setUnrealizedPnL(unrealizedPnL);
             dto.setPnlPercent(pnlPercent);
             dto.setCashBalance(cashBalance);
             dto.setTotalHoldings(holdings.size());
-            dto.setTotalTransactions(0);  // ⭐ Şimdilik 0 (transactions lazy loading problemi yaratıyor)
+            dto.setTotalTransactions(0);
 
             log.info("Portfolio detail fetched successfully. Holdings: {}, Total Value: {}",
-                    holdings.size(), currentValue);
+                    holdings.size(), totalValue);
 
             return dto;
 
         } catch (Exception e) {
-            log.error("ERROR in getPortfolioDetail: ", e);  // ⭐ FULL STACK TRACE
+            log.error("ERROR in getPortfolioDetail: ", e);
             throw e;
         }
     }
@@ -293,16 +302,223 @@ public class PortfolioServiceImpl implements PortfolioService {
                     .multiply(new BigDecimal("100"));
         }
 
+        // ⭐ Generate historical data points
+        List<PerformanceDataPointDTO> historicalData = generateHistoricalPerformanceData(
+                portfolio, startDate, endDate, totalInvested, currentValue
+        );
+
         return PortfolioPerformanceDTO.builder()
                 .portfolioId(portfolioId)
                 .portfolioName(portfolio.getName())
-                .dailyReturn(BigDecimal.ZERO)
-                .weeklyReturn(BigDecimal.ZERO)
-                .monthlyReturn(BigDecimal.ZERO)
-                .yearlyReturn(BigDecimal.ZERO)
+                .dailyReturn(BigDecimal.ZERO)    // TODO: Calculate from historical data
+                .weeklyReturn(BigDecimal.ZERO)   // TODO: Calculate from historical data
+                .monthlyReturn(BigDecimal.ZERO)  // TODO: Calculate from historical data
+                .yearlyReturn(BigDecimal.ZERO)   // TODO: Calculate from historical data
                 .totalReturn(totalReturn)
-                .historicalData(new ArrayList<>())
+                .historicalData(historicalData)
                 .build();
+    }
+
+    /**
+     * Generate historical performance data points based on actual transaction history
+     *
+     * This calculates portfolio value for each day by:
+     * 1. Starting with initial balance
+     * 2. Processing transactions chronologically
+     * 3. Marking current holdings to market each day
+     */
+    private List<PerformanceDataPointDTO> generateHistoricalPerformanceData(
+            Portfolio portfolio, LocalDate startDate, LocalDate endDate,
+            BigDecimal totalInvested, BigDecimal currentValue) {
+
+        log.info("Generating historical performance data from {} to {}", startDate, endDate);
+
+        List<PerformanceDataPointDTO> dataPoints = new ArrayList<>();
+
+        // Get all transactions for this portfolio
+        List<PortfolioTransaction> transactions = portfolio.getTransactions().stream()
+                .sorted(Comparator.comparing(PortfolioTransaction::getTransactionDate))
+                .collect(Collectors.toList());
+
+        log.info("Found {} transactions for portfolio {}", transactions.size(), portfolio.getId());
+
+        // If no transactions, return flat line at initial balance
+        if (transactions.isEmpty()) {
+            LocalDate currentDate = startDate;
+            while (!currentDate.isAfter(endDate)) {
+                BigDecimal initialBalance = portfolio.getInitialBalance();
+
+                PerformanceDataPointDTO dataPoint = PerformanceDataPointDTO.builder()
+                        .date(currentDate)
+                        .value(initialBalance.setScale(2, RoundingMode.HALF_UP))
+                        .returnPercent(BigDecimal.ZERO)
+                        .build();
+
+                dataPoints.add(dataPoint);
+                currentDate = currentDate.plusDays(1);
+            }
+
+            log.info("No transactions - generated {} data points at initial balance", dataPoints.size());
+            return dataPoints;
+        }
+
+        // Track holdings over time (instrumentId -> quantity)
+        Map<Long, BigDecimal> holdingsMap = new HashMap<>();
+
+        // Track cash balance
+        BigDecimal cashBalance = portfolio.getInitialBalance();
+
+        // Process each day
+        LocalDate currentDate = startDate;
+        int transactionIndex = 0;
+
+        while (!currentDate.isAfter(endDate)) {
+            // Process all transactions for this day
+            while (transactionIndex < transactions.size()) {
+                PortfolioTransaction tx = transactions.get(transactionIndex);
+                LocalDate txDate = tx.getTransactionDate().toLocalDate();
+
+                if (txDate.isAfter(currentDate)) {
+                    break; // Future transaction, stop
+                }
+
+                if (txDate.isBefore(startDate)) {
+                    // Past transaction before our window - still need to process for holdings
+                    processTransaction(tx, holdingsMap, cashBalance);
+                    transactionIndex++;
+                    continue;
+                }
+
+                // Transaction is on or before current date
+                if (!txDate.isAfter(currentDate)) {
+                    BigDecimal txCashImpact = processTransaction(tx, holdingsMap, cashBalance);
+                    cashBalance = cashBalance.add(txCashImpact);
+                    transactionIndex++;
+                } else {
+                    break;
+                }
+            }
+
+            // Calculate total portfolio value for this date
+            BigDecimal holdingsValue = calculateHoldingsValueAtDate(holdingsMap, currentDate);
+            BigDecimal totalValueAtDate = cashBalance.add(holdingsValue);
+
+            // Calculate return percentage
+            BigDecimal returnPercent = BigDecimal.ZERO;
+            BigDecimal initialBalance = portfolio.getInitialBalance();
+            if (initialBalance.compareTo(BigDecimal.ZERO) > 0) {
+                returnPercent = totalValueAtDate.subtract(initialBalance)
+                        .divide(initialBalance, 4, RoundingMode.HALF_UP)
+                        .multiply(new BigDecimal("100"))
+                        .setScale(2, RoundingMode.HALF_UP);
+            }
+
+            PerformanceDataPointDTO dataPoint = PerformanceDataPointDTO.builder()
+                    .date(currentDate)
+                    .value(totalValueAtDate.setScale(2, RoundingMode.HALF_UP))
+                    .returnPercent(returnPercent)
+                    .build();
+
+            dataPoints.add(dataPoint);
+            currentDate = currentDate.plusDays(1);
+        }
+
+        log.info("Generated {} historical data points based on transaction history", dataPoints.size());
+
+        return dataPoints;
+    }
+
+    /**
+     * Process a transaction and update holdings map
+     * Returns cash impact (negative for buy, positive for sell)
+     */
+    private BigDecimal processTransaction(PortfolioTransaction tx,
+                                          Map<Long, BigDecimal> holdingsMap,
+                                          BigDecimal currentCashBalance) {
+        Long instrumentId = tx.getInstrument().getId();
+        BigDecimal quantity = tx.getQuantity();
+
+        if (tx.getTransactionType() == TransactionType.BUY) {
+            // Add to holdings
+            holdingsMap.merge(instrumentId, quantity, BigDecimal::add);
+
+            // Cash out (negative)
+            BigDecimal cashImpact = tx.getTotalAmount().negate();
+            if (tx.getCommission() != null) {
+                cashImpact = cashImpact.subtract(tx.getCommission());
+            }
+            if (tx.getTax() != null) {
+                cashImpact = cashImpact.subtract(tx.getTax());
+            }
+            return cashImpact;
+
+        } else { // SELL
+            // Remove from holdings
+            holdingsMap.merge(instrumentId, quantity.negate(), BigDecimal::add);
+            if (holdingsMap.get(instrumentId).compareTo(BigDecimal.ZERO) == 0) {
+                holdingsMap.remove(instrumentId);
+            }
+
+            // Cash in (positive)
+            BigDecimal cashImpact = tx.getTotalAmount();
+            if (tx.getCommission() != null) {
+                cashImpact = cashImpact.subtract(tx.getCommission());
+            }
+            if (tx.getTax() != null) {
+                cashImpact = cashImpact.subtract(tx.getTax());
+            }
+            return cashImpact;
+        }
+    }
+
+    /**
+     * Calculate total value of holdings at a specific date using current prices
+     *
+     * NOTE: This uses CURRENT prices for simplicity.
+     * For true historical accuracy, you would need historical price data.
+     */
+    private BigDecimal calculateHoldingsValueAtDate(Map<Long, BigDecimal> holdingsMap,
+                                                    LocalDate date) {
+        BigDecimal totalValue = BigDecimal.ZERO;
+
+        for (Map.Entry<Long, BigDecimal> entry : holdingsMap.entrySet()) {
+            Long instrumentId = entry.getKey();
+            BigDecimal quantity = entry.getValue();
+
+            // Get current price (in production, get historical price for 'date')
+            BigDecimal currentPrice = getCurrentPriceForInstrument(instrumentId);
+
+            BigDecimal holdingValue = quantity.multiply(currentPrice);
+            totalValue = totalValue.add(holdingValue);
+        }
+
+        return totalValue;
+    }
+
+    /**
+     * Get current price for an instrument
+     */
+    private BigDecimal getCurrentPriceForInstrument(Long instrumentId) {
+        try {
+            // First get the instrument entity
+            BaseInstrument instrument = instrumentRepository.findById(instrumentId)
+                    .orElse(null);
+
+            if (instrument == null) {
+                log.warn("Instrument not found: {}", instrumentId);
+                return BigDecimal.ZERO;
+            }
+
+            // Then get its latest price
+            return instrumentPriceRepository
+                    .findTopByInstrumentOrderByTimestampDesc(instrument)
+                    .map(InstrumentPrice::getCurrentPrice)
+                    .orElse(BigDecimal.ZERO);
+
+        } catch (Exception e) {
+            log.error("Error getting price for instrument {}: {}", instrumentId, e.getMessage());
+            return BigDecimal.ZERO;
+        }
     }
 
     @Override
@@ -400,8 +616,13 @@ public class PortfolioServiceImpl implements PortfolioService {
      */
     private PortfolioDTO enrichPortfolioDTO(PortfolioDTO dto, Portfolio portfolio) {
         BigDecimal totalInvested = holdingService.calculateTotalInvestment(portfolio.getId());
-        BigDecimal currentValue = holdingService.calculateCurrentValue(portfolio.getId());
-        BigDecimal unrealizedPnL = currentValue.subtract(totalInvested);
+        BigDecimal holdingsValue = holdingService.calculateCurrentValue(portfolio.getId());
+
+        // Total Value = Cash + Holdings
+        BigDecimal cashBalance = portfolio.getInitialBalance().subtract(totalInvested);
+        BigDecimal totalValue = cashBalance.add(holdingsValue);
+
+        BigDecimal unrealizedPnL = holdingsValue.subtract(totalInvested);
 
         BigDecimal pnlPercent = BigDecimal.ZERO;
         if (totalInvested.compareTo(BigDecimal.ZERO) > 0) {
@@ -411,7 +632,7 @@ public class PortfolioServiceImpl implements PortfolioService {
                     .setScale(2, RoundingMode.HALF_UP);
         }
 
-        dto.setTotalValue(currentValue);
+        dto.setTotalValue(totalValue);
         dto.setTotalInvested(totalInvested);
         dto.setUnrealizedPnL(unrealizedPnL);
         dto.setPnlPercent(pnlPercent);
