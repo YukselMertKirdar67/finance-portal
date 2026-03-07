@@ -310,10 +310,10 @@ public class PortfolioServiceImpl implements PortfolioService {
         return PortfolioPerformanceDTO.builder()
                 .portfolioId(portfolioId)
                 .portfolioName(portfolio.getName())
-                .dailyReturn(BigDecimal.ZERO)    // TODO: Calculate from historical data
-                .weeklyReturn(BigDecimal.ZERO)   // TODO: Calculate from historical data
-                .monthlyReturn(BigDecimal.ZERO)  // TODO: Calculate from historical data
-                .yearlyReturn(BigDecimal.ZERO)   // TODO: Calculate from historical data
+                .dailyReturn(BigDecimal.ZERO)
+                .weeklyReturn(BigDecimal.ZERO)
+                .monthlyReturn(BigDecimal.ZERO)
+                .yearlyReturn(BigDecimal.ZERO)
                 .totalReturn(totalReturn)
                 .historicalData(historicalData)
                 .build();
