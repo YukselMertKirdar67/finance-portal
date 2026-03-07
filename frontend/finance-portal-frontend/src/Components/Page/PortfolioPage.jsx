@@ -109,11 +109,26 @@ export default function PortfolioPage() {
         percentage: item.percentage
     }));
 
-    const filteredInstruments = availableInstruments.filter(inst =>
-        inst.symbol?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        inst.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        inst.type?.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    const filteredInstruments = (() => {
+        let instruments = availableInstruments;
+
+        // SELL ise sadece portföydeki enstrümanları göster
+        if (transactionType === 'SELL') {
+            const holdingInstrumentIds = holdings.map(h => h.instrumentId);
+            instruments = instruments.filter(inst => holdingInstrumentIds.includes(inst.id));
+        }
+
+        // Search filtresi
+        if (searchTerm) {
+            instruments = instruments.filter(inst =>
+                inst.symbol?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                inst.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                inst.type?.toLowerCase().includes(searchTerm.toLowerCase())
+            );
+        }
+
+        return instruments;
+    })();
 
     const handleAddTransaction = async () => {
         if (!selectedInstrument || !quantity || !price) {
@@ -556,35 +571,60 @@ export default function PortfolioPage() {
                                     </div>
                                 )}
                                 {selectedInstrument && !searchTerm && (
-                                    <div className="mt-2 p-4 bg-blue-50 border-2 border-blue-200 rounded-lg flex items-center justify-between">
-                                        <div className="flex items-center gap-2">
-                                            <div
-                                                className="w-3 h-3 rounded-full"
-                                                style={{ backgroundColor: typeColors[selectedInstrument.type] || '#6B7280' }}
-                                            />
-                                            <div>
-                                                <span className="font-semibold text-gray-900 block">{selectedInstrument.symbol}</span>
-                                                <span className="text-xs text-gray-600">{selectedInstrument.name}</span>
+                                    <div className="mt-2 p-4 bg-blue-50 border-2 border-blue-200 rounded-lg">
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-2">
+                                                <div
+                                                    className="w-3 h-3 rounded-full"
+                                                    style={{ backgroundColor: typeColors[selectedInstrument.type] || '#6B7280' }}
+                                                />
+                                                <div>
+                                                    <span className="font-semibold text-gray-900 block">{selectedInstrument.symbol}</span>
+                                                    <span className="text-xs text-gray-600">{selectedInstrument.name}</span>
+                                                    {/* ⭐ Satışta mevcut miktar göster */}
+                                                    {transactionType === 'SELL' && (() => {
+                                                        const holding = holdings.find(h => h.instrumentId === selectedInstrument.id);
+                                                        return holding ? (
+                                                            <span className="text-xs text-green-600 block mt-1">
+                                                                Mevcut: {holding.quantity.toFixed(2)}
+                                                            </span>
+                                                        ) : null;
+                                                    })()}
+                                                </div>
                                             </div>
+                                            <button
+                                                type="button"
+                                                onClick={() => setSelectedInstrument(null)}
+                                                className="text-gray-400 hover:text-gray-600 p-1 rounded-full hover:bg-blue-100"
+                                                disabled={submitting}
+                                            >
+                                                <X className="w-4 h-4" />
+                                            </button>
                                         </div>
-                                        <button
-                                            type="button"
-                                            onClick={() => setSelectedInstrument(null)}
-                                            className="text-gray-400 hover:text-gray-600 p-1 rounded-full hover:bg-blue-100"
-                                            disabled={submitting}
-                                        >
-                                            <X className="w-4 h-4" />
-                                        </button>
                                     </div>
                                 )}
                             </div>
 
-                            {/* Quantity */}
+                            {/* Quantity - Modal içinde */}
                             <div>
-                                <label className="block text-sm font-semibold text-gray-700 mb-2">Miktar *</label>
+                                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                    Miktar *
+                                    {transactionType === 'SELL' && selectedInstrument && (
+                                        <span className="text-xs text-gray-500 ml-2">
+                                            (Mevcut: {(() => {
+                                            const holding = holdings.find(h => h.instrumentId === selectedInstrument.id);
+                                            return holding ? holding.quantity.toFixed(2) : '0';
+                                        })()})
+                                        </span>
+                                    )}
+                                </label>
                                 <input
                                     type="number"
                                     step="any"
+                                    max={transactionType === 'SELL' && selectedInstrument ? (() => {
+                                        const holding = holdings.find(h => h.instrumentId === selectedInstrument.id);
+                                        return holding ? holding.quantity : undefined;
+                                    })() : undefined}
                                     className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0066FF] focus:border-transparent"
                                     placeholder="Örn: 100"
                                     value={quantity}
