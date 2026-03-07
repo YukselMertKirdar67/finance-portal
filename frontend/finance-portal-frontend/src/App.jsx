@@ -10,6 +10,7 @@ import ComparisonPage from './Components/Page/ComparisonPage';
 import HomePage from './Components/Page/HomePage';
 import WatchlistPage from './Components/Page/WatchlistPage';
 import PortfolioPage from './Components/Page/PortfolioPage';
+import PortfolioListPage from './Components/Page/PortfolioListPage';
 
 function App() {
     const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -31,7 +32,8 @@ function App() {
                     <Route path="/instruments/:type" element={<CategoryDetailPage />} />
                     <Route path="/instruments/detail/:id" element={<InstrumentDetailPage />} />
                     <Route path="/comparison" element={<ComparisonPage />} />
-                    <Route path="/portfolio" element={< PortfolioPage/>} />
+                    <Route path="/portfolio" element={< PortfolioListPage/>} />
+                    <Route path="/portfolio/:id" element={<PortfolioPage />} />
                     <Route path="/watchlist" element={<WatchlistPage/>} />
                 </Routes>
             </Layout>
