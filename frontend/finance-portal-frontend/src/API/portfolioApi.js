@@ -44,19 +44,10 @@ export const updatePortfolio = async (id, data) => {
     }
 };
 
-// Portfolio sil
-export const deletePortfolio = async (id) => {
-    try {
-        await api.delete(`/portfolios/${id}/hard`);
-    } catch (error) {
-        console.error('Error deleting portfolio:', error);
-        throw error;
-    }
-};
 
 export const hardDeletePortfolio = async (id) => {
     try {
-        await api.delete(`/portfolios/${id}/hard`);  // ⭐ /hard ekle
+        await api.delete(`/portfolios/${id}/hard`);
     } catch (error) {
         console.error('Error hard deleting portfolio:', error);
         throw error;
