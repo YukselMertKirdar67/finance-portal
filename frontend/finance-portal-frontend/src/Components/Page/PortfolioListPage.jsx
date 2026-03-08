@@ -77,7 +77,7 @@ export default function PortfolioListPage() {
             await loadPortfolios();
 
             // Navigate to the new portfolio
-            navigate(`/portfolio/${newPortfolio.id}`);
+            navigate(`/portfolios/${newPortfolio.id}`);
 
         } catch (err) {
             console.error('Error creating portfolio:', err);
@@ -192,7 +192,7 @@ export default function PortfolioListPage() {
                             <Card
                                 key={portfolio.id}
                                 className="hover:shadow-lg transition-shadow cursor-pointer"
-                                onClick={() => navigate(`/portfolio/${portfolio.id}`)}
+                                onClick={() => navigate(`/portfolios/${portfolio.id}`)}
                             >
                                 <CardHeader>
                                     <div className="flex items-start justify-between">
@@ -201,8 +201,20 @@ export default function PortfolioListPage() {
                                                 {getPortfolioTypeIcon(portfolio.portfolioType)}
                                             </div>
                                             <div>
-                                                <CardTitle className="text-xl">{portfolio.name}</CardTitle>
-                                                <p className="text-sm text-gray-500 mt-1">
+                                                {/* ⭐ Başlık + Badge */}
+                                                <div className="flex items-center gap-2 mb-1">
+                                                    <CardTitle className="text-xl">{portfolio.name}</CardTitle>
+                                                    {portfolio.active ? (
+                                                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700 border border-green-200">
+                                                                Aktif
+                                                        </span>
+                                                    ) : (
+                                                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600 border border-gray-200">
+                                                                 Pasif
+                                                        </span>
+                                                    )}
+                                                </div>
+                                                <p className="text-sm text-gray-500">
                                                     {getPortfolioTypeLabel(portfolio.portfolioType)}
                                                 </p>
                                             </div>
