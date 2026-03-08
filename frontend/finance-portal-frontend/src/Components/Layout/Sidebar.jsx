@@ -45,6 +45,15 @@ export default function Sidebar({
                 <ul className="space-y-1">
                     <li>
                         <button
+                            onClick={() => handleProtectedNavigation('/dashboard')}
+                            className={navClass({ isActive: location.pathname === '/dashboard' })}
+                        >
+                            <Star className="w-5 h-5" />
+                            <span>Dashboard</span>
+                        </button>
+                    </li>
+                    <li>
+                        <button
                             onClick={() => handleProtectedNavigation('/portfolio')}
                             className={navClass({ isActive: location.pathname === '/portfolio' })}
                         >
