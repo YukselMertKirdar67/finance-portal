@@ -8,10 +8,12 @@ import com.financeportal.backend.Instrument.Repository.InstrumentPriceRepository
 import com.financeportal.backend.Instrument.Repository.InstrumentRepository;
 import com.financeportal.backend.Portfolio.DTO.*;
 import com.financeportal.backend.Portfolio.Entity.Portfolio;
+import com.financeportal.backend.Portfolio.Entity.PortfolioHolding;
 import com.financeportal.backend.Portfolio.Entity.PortfolioTransaction;
 import com.financeportal.backend.Portfolio.Enum.PortfolioType;
 import com.financeportal.backend.Portfolio.Enum.TransactionType;
 import com.financeportal.backend.Portfolio.Mapper.PortfolioMapper;
+import com.financeportal.backend.Portfolio.Repository.PortfolioHoldingRepository;
 import com.financeportal.backend.Portfolio.Repository.PortfolioRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -37,6 +39,7 @@ public class PortfolioServiceImpl implements PortfolioService {
     private final PortfolioMapper portfolioMapper;
     private final InstrumentPriceRepository instrumentPriceRepository;
     private final InstrumentRepository instrumentRepository;
+    private final PortfolioHoldingRepository holdingRepository;
 
     // Mock user ID (will be replaced with SecurityContextHolder.getContext().getAuthentication())
     private static final String MOCK_USER_ID = "mock-user-001";
@@ -240,6 +243,7 @@ public class PortfolioServiceImpl implements PortfolioService {
 
         BigDecimal totalValue = BigDecimal.ZERO;
         BigDecimal totalInvested = BigDecimal.ZERO;
+        BigDecimal totalUnrealizedPnL = BigDecimal.ZERO;
         List<PortfolioDTO> allPortfolios = new ArrayList<>();
 
         for (Portfolio portfolio : portfolios) {
@@ -248,9 +252,9 @@ public class PortfolioServiceImpl implements PortfolioService {
 
             totalValue = totalValue.add(dto.getTotalValue());
             totalInvested = totalInvested.add(dto.getTotalInvested());
+            totalUnrealizedPnL = totalUnrealizedPnL.add(dto.getUnrealizedPnL());
         }
 
-        BigDecimal totalUnrealizedPnL = totalValue.subtract(totalInvested);
         BigDecimal totalPnLPercent = BigDecimal.ZERO;
 
         if (totalInvested.compareTo(BigDecimal.ZERO) > 0) {
@@ -645,7 +649,58 @@ public class PortfolioServiceImpl implements PortfolioService {
      * Calculate aggregate asset allocation across all portfolios
      */
     private List<AssetAllocationDTO> calculateAggregateAssetAllocation(List<Portfolio> portfolios) {
+        log.debug("Calculating aggregate asset allocation for {} portfolios", portfolios.size());
 
-        return new ArrayList<>(); // Placeholder
+        // Map to store aggregated allocation: instrumentType -> AssetAllocationDTO
+        Map<String, AssetAllocationDTO> allocationMap = new HashMap<>();
+
+        for (Portfolio portfolio : portfolios) {
+            // Get holdings for this portfolio
+            List<PortfolioHolding> holdings = holdingRepository.findByPortfolioId(portfolio.getId());
+
+            for (PortfolioHolding holding : holdings) {
+                String instrumentType = holding.getInstrument().getInstrumentType().name();
+
+                // Calculate current value of this holding
+                BigDecimal currentPrice = getCurrentPriceForInstrument(holding.getInstrument().getId());
+                BigDecimal currentValue = holding.getQuantity().multiply(currentPrice);
+
+                // Add or update in map
+                if (allocationMap.containsKey(instrumentType)) {
+                    AssetAllocationDTO existing = allocationMap.get(instrumentType);
+                    existing.setTotalValue(existing.getTotalValue().add(currentValue));
+                    existing.setCount(existing.getCount() + 1);
+                } else {
+                    AssetAllocationDTO newAllocation = AssetAllocationDTO.builder()
+                            .instrumentType(instrumentType)
+                            .totalValue(currentValue)
+                            .count(1)
+                            .percentage(BigDecimal.ZERO) // Will calculate later
+                            .build();
+                    allocationMap.put(instrumentType, newAllocation);
+                }
+            }
+        }
+
+        // Calculate total value across all types
+        BigDecimal grandTotal = allocationMap.values().stream()
+                .map(AssetAllocationDTO::getTotalValue)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        // Calculate percentages
+        if (grandTotal.compareTo(BigDecimal.ZERO) > 0) {
+            for (AssetAllocationDTO allocation : allocationMap.values()) {
+                BigDecimal percentage = allocation.getTotalValue()
+                        .divide(grandTotal, 4, RoundingMode.HALF_UP)
+                        .multiply(new BigDecimal("100"))
+                        .setScale(2, RoundingMode.HALF_UP);
+                allocation.setPercentage(percentage);
+            }
+        }
+
+        // Convert to list and sort by total value (descending)
+        return allocationMap.values().stream()
+                .sorted((a, b) -> b.getTotalValue().compareTo(a.getTotalValue()))
+                .collect(Collectors.toList());
     }
 }
