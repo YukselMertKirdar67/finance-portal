@@ -11,6 +11,7 @@ import HomePage from './Components/Page/HomePage';
 import WatchlistPage from './Components/Page/WatchlistPage';
 import PortfolioPage from './Components/Page/PortfolioPage';
 import PortfolioListPage from './Components/Page/PortfolioListPage';
+import TransactionPage from './Components/Page/TransactionPage';
 
 function App() {
     const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -34,6 +35,7 @@ function App() {
                     <Route path="/comparison" element={<ComparisonPage />} />
                     <Route path="/portfolios" element={< PortfolioListPage/>} />
                     <Route path="/portfolios/:id" element={<PortfolioPage />} />
+                    <Route path="/portfolios/:id/transactions" element={<TransactionPage />} />
                     <Route path="/watchlist" element={<WatchlistPage/>} />
                 </Routes>
             </Layout>
