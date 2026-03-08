@@ -16,13 +16,13 @@ import {
     CartesianGrid
 } from 'recharts';
 
-import { getAllPortfolios, getTransactions } from '../../API/portfolioApi';
+import { getPortfolioSummary, getAllPortfolios } from '../../API/portfolioApi';
 
 export default function DashboardPage() {
     const navigate = useNavigate();
 
+    const [summary, setSummary] = useState(null);
     const [portfolios, setPortfolios] = useState([]);
-    const [recentTransactions, setRecentTransactions] = useState([]);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [error, setError] = useState(null);
@@ -36,21 +36,13 @@ export default function DashboardPage() {
             setLoading(true);
             setError(null);
 
-            // Get all portfolios
+            // Tek bir API call - Backend summary endpoint
+            const summaryData = await getPortfolioSummary();
+            setSummary(summaryData);
+
+            // Portfolios for bar chart (optional - eğer summary'de portfolios listesi yoksa)
             const portfoliosData = await getAllPortfolios();
             setPortfolios(portfoliosData || []);
-
-            // Get recent transactions from all portfolios (first portfolio only for demo)
-            if (portfoliosData && portfoliosData.length > 0) {
-                try {
-                    const txResponse = await getTransactions(portfoliosData[0].id, 0, 10);
-                    const txList = txResponse.content || txResponse || [];
-                    setRecentTransactions(txList.slice(0, 5)); // Son 5 işlem
-                } catch (err) {
-                    console.warn('Could not load transactions:', err);
-                    setRecentTransactions([]);
-                }
-            }
 
         } catch (err) {
             console.error('Error loading dashboard:', err);
@@ -66,66 +58,14 @@ export default function DashboardPage() {
         setRefreshing(false);
     };
 
-    // Calculate overall stats
-    const calculateOverallStats = () => {
-        const totalValue = portfolios.reduce((sum, p) => sum + (p.totalValue || 0), 0);
-        const totalInvested = portfolios.reduce((sum, p) => sum + (p.totalInvested || 0), 0);
-        const totalPnL = portfolios.reduce((sum, p) => sum + (p.unrealizedPnL || 0), 0);
-        const totalHoldings = portfolios.reduce((sum, p) => sum + (p.holdingCount || 0), 0);
-
-        const pnlPercent = totalInvested > 0 ? ((totalPnL / totalInvested) * 100) : 0;
-
-        return {
-            totalValue,
-            totalInvested,
-            totalPnL,
-            pnlPercent,
-            totalHoldings,
-            portfolioCount: portfolios.length,
-            activePortfolios: portfolios.filter(p => p.active).length
-        };
-    };
-
-    // Get top/bottom performers
-    const getPerformers = () => {
-        const sorted = [...portfolios].sort((a, b) => (b.pnlPercent || 0) - (a.pnlPercent || 0));
-        return {
-            topPerformer: sorted[0] || null,
-            bottomPerformer: sorted[sorted.length - 1] || null
-        };
-    };
-
-    // Asset allocation across all portfolios
-    const getAssetAllocation = () => {
-        const allocation = {};
-
-        portfolios.forEach(portfolio => {
-            const type = portfolio.portfolioType || 'PERSONAL';
-            if (!allocation[type]) {
-                allocation[type] = {
-                    type,
-                    value: 0,
-                    count: 0
-                };
-            }
-            allocation[type].value += portfolio.totalValue || 0;
-            allocation[type].count += 1;
-        });
-
-        return Object.values(allocation);
-    };
-
-    const formatDate = (dateString) => {
-        const date = new Date(dateString);
-        return date.toLocaleDateString('tr-TR', {
-            month: 'short',
-            day: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
-        });
-    };
-
     const typeColors = {
+        'FOREX': '#3B82F6',
+        'STOCK': '#8B5CF6',
+        'FUND': '#10B981',
+        'PRECIOUS': '#F59E0B',
+        'CRYPTO': '#EC4899',
+        'BOND': '#6366F1',
+        'EUROBOND': '#14B8A6',
         'PERSONAL': '#3B82F6',
         'BUSINESS': '#8B5CF6',
         'RETIREMENT': '#10B981',
@@ -136,7 +76,14 @@ export default function DashboardPage() {
         'PERSONAL': 'Bireysel',
         'BUSINESS': 'İş',
         'RETIREMENT': 'Emeklilik',
-        'SAVINGS': 'Tasarruf'
+        'SAVINGS': 'Tasarruf',
+        'FOREX': 'Döviz',
+        'STOCK': 'Hisse',
+        'FUND': 'Fon',
+        'PRECIOUS': 'Kıymetli Maden',
+        'CRYPTO': 'Kripto',
+        'BOND': 'Tahvil',
+        'EUROBOND': 'Eurobond'
     };
 
     if (loading) {
@@ -165,14 +112,43 @@ export default function DashboardPage() {
         );
     }
 
-    const stats = calculateOverallStats();
-    const performers = getPerformers();
-    const assetAllocation = getAssetAllocation();
+    // Empty state
+    if (!summary || summary.totalPortfolios === 0) {
+        return (
+            <div className="p-8">
+                <div className="mb-8 flex items-center justify-between">
+                    <div>
+                        <h1 className="text-3xl font-bold mb-2">Dashboard</h1>
+                        <p className="text-gray-600">Portföylerinizin genel görünümü</p>
+                    </div>
+                </div>
 
-    const pieChartData = assetAllocation.map(item => ({
-        name: typeLabels[item.type] || item.type,
-        value: item.value,
-        color: typeColors[item.type] || '#6B7280'
+                <div className="text-center py-16">
+                    <div className="inline-flex items-center justify-center w-20 h-20 bg-blue-100 rounded-full mb-6">
+                        <Wallet className="w-10 h-10 text-blue-600" />
+                    </div>
+                    <h2 className="text-2xl font-bold text-gray-900 mb-2">Henüz Portföyünüz Yok</h2>
+                    <p className="text-gray-600 mb-6 max-w-md mx-auto">
+                        İlk portföyünüzü oluşturarak yatırımlarınızı takip etmeye başlayın
+                    </p>
+                    <Button
+                        onClick={() => navigate('/portfolios')}
+                        size="lg"
+                        className="bg-[#0066FF] hover:bg-[#0052CC]"
+                    >
+                        <Plus className="w-5 h-5 mr-2" />
+                        İlk Portföyünüzü Oluşturun
+                    </Button>
+                </div>
+            </div>
+        );
+    }
+
+    // Prepare chart data
+    const pieChartData = (summary.assetAllocation || []).map(item => ({
+        name: typeLabels[item.instrumentType] || item.instrumentType,
+        value: item.totalValue || 0,
+        color: typeColors[item.instrumentType] || '#6B7280'
     }));
 
     const barChartData = portfolios.map(p => ({
@@ -180,6 +156,9 @@ export default function DashboardPage() {
         value: p.totalValue || 0,
         pnl: p.unrealizedPnL || 0
     }));
+
+    // Count active portfolios from all portfolios
+    const activePortfolios = portfolios.filter(p => p.active).length;
 
     return (
         <div className="p-8">
@@ -208,279 +187,271 @@ export default function DashboardPage() {
                 </div>
             </div>
 
-            {/* Empty State */}
-            {portfolios.length === 0 ? (
-                <div className="text-center py-16">
-                    <div className="inline-flex items-center justify-center w-20 h-20 bg-blue-100 rounded-full mb-6">
-                        <Wallet className="w-10 h-10 text-blue-600" />
-                    </div>
-                    <h2 className="text-2xl font-bold text-gray-900 mb-2">Henüz Portföyünüz Yok</h2>
-                    <p className="text-gray-600 mb-6 max-w-md mx-auto">
-                        İlk portföyünüzü oluşturarak yatırımlarınızı takip etmeye başlayın
-                    </p>
-                    <Button
-                        onClick={() => navigate('/portfolios')}
-                        size="lg"
-                        className="bg-[#0066FF] hover:bg-[#0052CC]"
-                    >
-                        <Plus className="w-5 h-5 mr-2" />
-                        İlk Portföyünüzü Oluşturun
-                    </Button>
-                </div>
-            ) : (
-                <>
-                    {/* Main Stats */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                        <Card>
-                            <CardHeader className="pb-2">
-                                <CardTitle className="text-sm text-gray-600 flex items-center gap-2">
-                                    <DollarSign className="w-4 h-4" />
-                                    Toplam Net Değer
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <p className="text-3xl font-bold text-gray-900">
-                                    ₺{stats.totalValue.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}
-                                </p>
-                                <p className="text-xs text-gray-500 mt-1">
-                                    {stats.portfolioCount} portföy
-                                </p>
-                            </CardContent>
-                        </Card>
+            {/* Main Stats */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <Card>
+                    <CardHeader className="pb-2">
+                        <CardTitle className="text-sm text-gray-600 flex items-center gap-2">
+                            <DollarSign className="w-4 h-4" />
+                            Toplam Net Değer
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <p className="text-3xl font-bold text-gray-900">
+                            ₺{(summary.totalValue || 0).toLocaleString('tr-TR', { minimumFractionDigits: 2 })}
+                        </p>
+                        <p className="text-xs text-gray-500 mt-1">
+                            {summary.totalPortfolios || 0} portföy
+                        </p>
+                    </CardContent>
+                </Card>
 
-                        <Card>
-                            <CardHeader className="pb-2">
-                                <CardTitle className="text-sm text-gray-600 flex items-center gap-2">
-                                    <Activity className="w-4 h-4" />
-                                    Toplam Kar/Zarar
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <p className={`text-3xl font-bold flex items-center gap-2 ${
-                                    stats.totalPnL >= 0 ? 'text-green-600' : 'text-red-600'
-                                }`}>
-                                    {stats.totalPnL >= 0 ? <TrendingUp className="w-6 h-6" /> : <TrendingDown className="w-6 h-6" />}
-                                    {stats.totalPnL >= 0 ? '+' : ''}₺{Math.abs(stats.totalPnL).toLocaleString('tr-TR', { minimumFractionDigits: 2 })}
-                                </p>
-                                <p className={`text-xs mt-1 ${stats.pnlPercent >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                                    {stats.pnlPercent >= 0 ? '+' : ''}{stats.pnlPercent.toFixed(2)}%
-                                </p>
-                            </CardContent>
-                        </Card>
+                <Card>
+                    <CardHeader className="pb-2">
+                        <CardTitle className="text-sm text-gray-600 flex items-center gap-2">
+                            <Activity className="w-4 h-4" />
+                            Toplam Kar/Zarar
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <p className={`text-3xl font-bold flex items-center gap-2 ${
+                            (summary.totalUnrealizedPnL || 0) >= 0 ? 'text-green-600' : 'text-red-600'
+                        }`}>
+                            {(summary.totalUnrealizedPnL || 0) >= 0 ? <TrendingUp className="w-6 h-6" /> : <TrendingDown className="w-6 h-6" />}
+                            {(summary.totalUnrealizedPnL || 0) >= 0 ? '+' : ''}₺{Math.abs(summary.totalUnrealizedPnL || 0).toLocaleString('tr-TR', { minimumFractionDigits: 2 })}
+                        </p>
+                        <p className={`text-xs mt-1 ${(summary.totalPnLPercent || 0) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                            {(summary.totalPnLPercent || 0) >= 0 ? '+' : ''}{(summary.totalPnLPercent || 0).toFixed(2)}%
+                        </p>
+                    </CardContent>
+                </Card>
 
-                        <Card>
-                            <CardHeader className="pb-2">
-                                <CardTitle className="text-sm text-gray-600 flex items-center gap-2">
-                                    <PieChartIcon className="w-4 h-4" />
-                                    Toplam Yatırım
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <p className="text-3xl font-bold text-gray-900">
-                                    ₺{stats.totalInvested.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}
-                                </p>
-                                <p className="text-xs text-gray-500 mt-1">
-                                    {stats.totalHoldings} varlık
-                                </p>
-                            </CardContent>
-                        </Card>
+                <Card>
+                    <CardHeader className="pb-2">
+                        <CardTitle className="text-sm text-gray-600 flex items-center gap-2">
+                            <PieChartIcon className="w-4 h-4" />
+                            Toplam Yatırım
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <p className="text-3xl font-bold text-gray-900">
+                            ₺{(summary.totalInvested || 0).toLocaleString('tr-TR', { minimumFractionDigits: 2 })}
+                        </p>
+                        <p className="text-xs text-gray-500 mt-1">
+                            {summary.assetAllocation?.reduce((sum, item) => sum + (item.count || 0), 0) || 0} varlık
+                        </p>
+                    </CardContent>
+                </Card>
 
-                        <Card>
-                            <CardHeader className="pb-2">
-                                <CardTitle className="text-sm text-gray-600 flex items-center gap-2">
-                                    <Wallet className="w-4 h-4" />
-                                    Aktif Portföyler
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <p className="text-3xl font-bold text-gray-900">
-                                    {stats.activePortfolios}
-                                </p>
-                                <p className="text-xs text-gray-500 mt-1">
-                                    / {stats.portfolioCount} toplam
-                                </p>
-                            </CardContent>
-                        </Card>
-                    </div>
+                <Card>
+                    <CardHeader className="pb-2">
+                        <CardTitle className="text-sm text-gray-600 flex items-center gap-2">
+                            <Wallet className="w-4 h-4" />
+                            Aktif Portföyler
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <p className="text-3xl font-bold text-gray-900">
+                            {activePortfolios}
+                        </p>
+                        <p className="text-xs text-gray-500 mt-1">
+                            / {summary.totalPortfolios || 0} toplam
+                        </p>
+                    </CardContent>
+                </Card>
+            </div>
 
-                    {/* Charts Row */}
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-                        {/* Portfolio Values Bar Chart */}
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Portföy Değerleri</CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="h-[300px]">
-                                    <ResponsiveContainer width="100%" height="100%">
-                                        <BarChart data={barChartData}>
-                                            <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                                            <XAxis
-                                                dataKey="name"
-                                                stroke="#9ca3af"
-                                                style={{ fontSize: '12px' }}
-                                            />
-                                            <YAxis
-                                                stroke="#9ca3af"
-                                                style={{ fontSize: '12px' }}
-                                                tickFormatter={(value) => `₺${(value / 1000).toFixed(0)}k`}
-                                            />
-                                            <RechartsTooltip
-                                                formatter={(value) => [`₺${value.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}`, 'Değer']}
-                                            />
-                                            <Bar dataKey="value" fill="#0066FF" radius={[8, 8, 0, 0]} />
-                                        </BarChart>
-                                    </ResponsiveContainer>
-                                </div>
-                            </CardContent>
-                        </Card>
+            {/* Charts Row */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                {/* Portfolio Values Bar Chart */}
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Portföy Değerleri</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="h-[300px]">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <BarChart data={barChartData}>
+                                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                                    <XAxis
+                                        dataKey="name"
+                                        stroke="#9ca3af"
+                                        style={{ fontSize: '12px' }}
+                                    />
+                                    <YAxis
+                                        stroke="#9ca3af"
+                                        style={{ fontSize: '12px' }}
+                                        tickFormatter={(value) => `₺${(value / 1000).toFixed(0)}k`}
+                                    />
+                                    <RechartsTooltip
+                                        formatter={(value) => [`₺${value.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}`, 'Değer']}
+                                    />
+                                    <Bar dataKey="value" fill="#0066FF" radius={[8, 8, 0, 0]} />
+                                </BarChart>
+                            </ResponsiveContainer>
+                        </div>
+                    </CardContent>
+                </Card>
 
-                        {/* Asset Allocation Pie Chart */}
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Portföy Tipi Dağılımı</CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="h-[300px]">
-                                    <ResponsiveContainer width="100%" height="100%">
-                                        <PieChart>
-                                            <Pie
-                                                data={pieChartData}
-                                                cx="50%"
-                                                cy="50%"
-                                                labelLine={false}
-                                                label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                                                outerRadius={100}
-                                                fill="#8884d8"
-                                                dataKey="value"
-                                            >
-                                                {pieChartData.map((entry, index) => (
-                                                    <Cell key={`cell-${index}`} fill={entry.color} />
-                                                ))}
-                                            </Pie>
-                                            <RechartsTooltip
-                                                formatter={(value) => `₺${value.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}`}
-                                            />
-                                        </PieChart>
-                                    </ResponsiveContainer>
-                                </div>
-                            </CardContent>
-                        </Card>
-                    </div>
+                {/* Asset Allocation Pie Chart */}
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Varlık Dağılımı</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        {pieChartData.length === 0 ? (
+                            <div className="h-[300px] flex items-center justify-center text-gray-500">
+                                Henüz varlık yok
+                            </div>
+                        ) : (
+                            <div className="h-[300px]">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <PieChart>
+                                        <Pie
+                                            data={pieChartData}
+                                            cx="50%"
+                                            cy="50%"
+                                            labelLine={false}
+                                            label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                                            outerRadius={100}
+                                            fill="#8884d8"
+                                            dataKey="value"
+                                        >
+                                            {pieChartData.map((entry, index) => (
+                                                <Cell key={`cell-${index}`} fill={entry.color} />
+                                            ))}
+                                        </Pie>
+                                        <RechartsTooltip
+                                            formatter={(value) => `₺${value.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}`}
+                                        />
+                                    </PieChart>
+                                </ResponsiveContainer>
+                            </div>
+                        )}
+                    </CardContent>
+                </Card>
+            </div>
 
-                    {/* Performance & Transactions Row */}
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                        {/* Top/Bottom Performers */}
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Performans</CardTitle>
-                            </CardHeader>
-                            <CardContent className="space-y-4">
-                                {performers.topPerformer && (
+            {/* Performance & Quick Links Row */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* ALL PORTFOLIOS */}
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Tüm Portföyler ({portfolios.length})</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-3 max-h-[400px] overflow-y-auto">
+                        {portfolios.length === 0 ? (
+                            <div className="text-center py-8">
+                                <p className="text-gray-500">Henüz portföy yok</p>
+                            </div>
+                        ) : (
+                            portfolios
+                                .sort((a, b) => (b.pnlPercent || 0) - (a.pnlPercent || 0)) // En iyiden en kötüye sırala
+                                .map((portfolio, index) => (
                                     <div
-                                        className="p-4 bg-green-50 border border-green-200 rounded-lg cursor-pointer hover:bg-green-100 transition-colors"
-                                        onClick={() => navigate(`/portfolios/${performers.topPerformer.id}`)}
+                                        key={portfolio.id}
+                                        className={`p-4 border rounded-lg cursor-pointer transition-colors ${
+                                            (portfolio.pnlPercent || 0) >= 0
+                                                ? 'bg-green-50 border-green-200 hover:bg-green-100'
+                                                : 'bg-red-50 border-red-200 hover:bg-red-100'
+                                        }`}
+                                        onClick={() => navigate(`/portfolios/${portfolio.id}`)}
                                     >
                                         <div className="flex items-center justify-between mb-2">
-                                            <p className="text-sm font-medium text-gray-600">🏆 En İyi Performans</p>
-                                            <TrendingUp className="w-5 h-5 text-green-600" />
-                                        </div>
-                                        <p className="font-bold text-lg text-gray-900">{performers.topPerformer.name}</p>
-                                        <div className="flex items-center justify-between mt-2">
-                                            <p className="text-sm text-gray-600">
-                                                ₺{performers.topPerformer.totalValue?.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}
-                                            </p>
-                                            <p className="text-sm font-semibold text-green-600">
-                                                +{performers.topPerformer.pnlPercent?.toFixed(2)}%
-                                            </p>
-                                        </div>
-                                    </div>
-                                )}
-
-                                {performers.bottomPerformer && performers.topPerformer?.id !== performers.bottomPerformer?.id && (
-                                    <div
-                                        className="p-4 bg-red-50 border border-red-200 rounded-lg cursor-pointer hover:bg-red-100 transition-colors"
-                                        onClick={() => navigate(`/portfolios/${performers.bottomPerformer.id}`)}
-                                    >
-                                        <div className="flex items-center justify-between mb-2">
-                                            <p className="text-sm font-medium text-gray-600">📉 Dikkat Gereken</p>
-                                            <TrendingDown className="w-5 h-5 text-red-600" />
-                                        </div>
-                                        <p className="font-bold text-lg text-gray-900">{performers.bottomPerformer.name}</p>
-                                        <div className="flex items-center justify-between mt-2">
-                                            <p className="text-sm text-gray-600">
-                                                ₺{performers.bottomPerformer.totalValue?.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}
-                                            </p>
-                                            <p className="text-sm font-semibold text-red-600">
-                                                {performers.bottomPerformer.pnlPercent?.toFixed(2)}%
-                                            </p>
-                                        </div>
-                                    </div>
-                                )}
-
-                                <Button
-                                    variant="outline"
-                                    className="w-full"
-                                    onClick={() => navigate('/portfolios')}
-                                >
-                                    Tüm Portföyleri Görüntüle
-                                    <ArrowRight className="w-4 h-4 ml-2" />
-                                </Button>
-                            </CardContent>
-                        </Card>
-
-                        {/* Recent Transactions */}
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Son İşlemler</CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                {recentTransactions.length === 0 ? (
-                                    <div className="text-center py-8">
-                                        <p className="text-gray-500">Henüz işlem yok</p>
-                                    </div>
-                                ) : (
-                                    <div className="space-y-3">
-                                        {recentTransactions.map((tx) => (
-                                            <div key={tx.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-                                                <div className="flex items-center gap-3">
-                                                    {tx.transactionType === 'BUY' ? (
-                                                        <div className="p-2 bg-green-100 rounded-full">
-                                                            <TrendingUp className="w-4 h-4 text-green-600" />
-                                                        </div>
-                                                    ) : (
-                                                        <div className="p-2 bg-red-100 rounded-full">
-                                                            <TrendingDown className="w-4 h-4 text-red-600" />
-                                                        </div>
-                                                    )}
-                                                    <div>
-                                                        <p className="font-semibold text-sm text-gray-900">
-                                                            {tx.instrumentSymbol}
-                                                        </p>
-                                                        <p className="text-xs text-gray-500">
-                                                            {formatDate(tx.transactionDate)}
-                                                        </p>
-                                                    </div>
-                                                </div>
-                                                <div className="text-right">
-                                                    <p className={`font-semibold text-sm ${
-                                                        tx.transactionType === 'BUY' ? 'text-green-600' : 'text-red-600'
-                                                    }`}>
-                                                        {tx.transactionType === 'BUY' ? '-' : '+'}₺{(tx.netAmount || tx.totalAmount || 0).toLocaleString('tr-TR', { minimumFractionDigits: 2 })}
-                                                    </p>
-                                                    <p className="text-xs text-gray-500">
-                                                        {tx.quantity} adet
-                                                    </p>
-                                                </div>
+                                            <div className="flex items-center gap-2">
+                                                {index === 0 && (portfolio.pnlPercent || 0) > 0 && (
+                                                    <span className="text-lg">🏆</span>
+                                                )}
+                                                {index === portfolios.length - 1 && (portfolio.pnlPercent || 0) < 0 && (
+                                                    <span className="text-lg">📉</span>
+                                                )}
+                                                <p className="text-sm font-medium text-gray-600">
+                                                    {portfolio.name}
+                                                </p>
                                             </div>
-                                        ))}
+                                            {(portfolio.pnlPercent || 0) >= 0 ? (
+                                                <TrendingUp className="w-5 h-5 text-green-600" />
+                                            ) : (
+                                                <TrendingDown className="w-5 h-5 text-red-600" />
+                                            )}
+                                        </div>
+                                        <div className="flex items-center justify-between">
+                                            <p className="text-sm text-gray-600">
+                                                ₺{(portfolio.totalValue || 0).toLocaleString('tr-TR', { minimumFractionDigits: 2 })}
+                                            </p>
+                                            <p className={`text-sm font-semibold ${
+                                                (portfolio.pnlPercent || 0) >= 0 ? 'text-green-600' : 'text-red-600'
+                                            }`}>
+                                                {(portfolio.pnlPercent || 0) >= 0 ? '+' : ''}{(portfolio.pnlPercent || 0).toFixed(2)}%
+                                            </p>
+                                        </div>
+                                        <div className="mt-2 pt-2 border-t border-gray-200">
+                                            <p className="text-xs text-gray-500">
+                                                {portfolio.holdingCount || 0} varlık • Yatırım: ₺{(portfolio.totalInvested || 0).toLocaleString('tr-TR', { maximumFractionDigits: 0 })}
+                                            </p>
+                                        </div>
                                     </div>
-                                )}
-                            </CardContent>
-                        </Card>
-                    </div>
-                </>
-            )}
+                                ))
+                        )}
+
+                        <Button
+                            variant="outline"
+                            className="w-full mt-3"
+                            onClick={() => navigate('/portfolios')}
+                        >
+                            Portföy Yönetimi
+                            <ArrowRight className="w-4 h-4 ml-2" />
+                        </Button>
+                    </CardContent>
+                </Card>
+
+                {/* Quick Actions */}
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Hızlı Erişim</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                        <Button
+                            variant="outline"
+                            className="w-full justify-start"
+                            onClick={() => navigate('/portfolios')}
+                        >
+                            <Wallet className="w-5 h-5 mr-3" />
+                            Portföy Listesi
+                        </Button>
+                        <Button
+                            variant="outline"
+                            className="w-full justify-start"
+                            onClick={() => navigate('/instruments')}
+                        >
+                            <Activity className="w-5 h-5 mr-3" />
+                            Enstrümanlar
+                        </Button>
+                        <Button
+                            variant="outline"
+                            className="w-full justify-start"
+                            onClick={() => navigate('/watchlist')}
+                        >
+                            <TrendingUp className="w-5 h-5 mr-3" />
+                            Watchlist
+                        </Button>
+
+                        <div className="pt-4 border-t border-gray-200">
+                            <p className="text-sm text-gray-600 mb-3">Önerilen İşlemler</p>
+                            <div className="space-y-2">
+                                <div className="p-3 bg-blue-50 rounded-lg">
+                                    <p className="text-xs font-medium text-blue-900">💡 Portföyünüzü çeşitlendirin</p>
+                                    <p className="text-xs text-blue-700 mt-1">Farklı varlık sınıflarına yatırım yaparak riski azaltın</p>
+                                </div>
+                                <div className="p-3 bg-green-50 rounded-lg">
+                                    <p className="text-xs font-medium text-green-900">📈 Performansı takip edin</p>
+                                    <p className="text-xs text-green-700 mt-1">Düzenli olarak portföy performansınızı gözden geçirin</p>
+                                </div>
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
+            </div>
         </div>
     );
 }
