@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { TrendingUp, TrendingDown, Plus, X, Search, RefreshCw } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '../UI/Card';
 import { Button } from '../UI/Button';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import {
     PieChart,
     Pie,
@@ -33,6 +33,7 @@ import {
 
 export default function PortfolioPage() {
     const { id } = useParams();
+    const navigate = useNavigate();
     const PORTFOLIO_ID = parseInt(id);
 
     const [portfolio, setPortfolio] = useState(null);
@@ -402,6 +403,12 @@ export default function PortfolioPage() {
                     >
                         <Plus className="w-5 h-5 mr-2" />
                         İşlem Ekle
+                    </Button>
+                    <Button
+                        variant="outline"
+                        onClick={() => navigate(`/portfolios/${PORTFOLIO_ID}/transactions`)}
+                    >
+                        İşlem Geçmişi
                     </Button>
                 </div>
             </div>
