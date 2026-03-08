@@ -2,13 +2,28 @@ import React, { useState, useEffect } from 'react';
 import { TrendingUp, TrendingDown, Plus, X, Search, RefreshCw } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '../UI/Card';
 import { Button } from '../UI/Button';
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip } from 'recharts';
 import { useParams } from 'react-router-dom';
+import {
+    PieChart,
+    Pie,
+    Cell,
+    ResponsiveContainer,
+    Tooltip as RechartsTooltip,
+    LineChart,
+    Line,
+    XAxis,
+    YAxis,
+    CartesianGrid,
+    ReferenceLine
+} from 'recharts';
 
 import {
     getPortfolioDetail,
     getAssetAllocation,
-    createTransaction
+    createTransaction,
+    getPortfolioPerformance,
+    updatePortfolio,
+    hardDeletePortfolio
 } from '../../API/portfolioApi';
 
 import {
@@ -18,14 +33,23 @@ import {
 
 export default function PortfolioPage() {
     const { id } = useParams();
+    const PORTFOLIO_ID = parseInt(id);
+
     const [portfolio, setPortfolio] = useState(null);
     const [holdings, setHoldings] = useState([]);
     const [assetAllocation, setAssetAllocation] = useState([]);
     const [availableInstruments, setAvailableInstruments] = useState([]);
+    const [performanceData, setPerformanceData] = useState([]);
 
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [error, setError] = useState(null);
+    const [showEditModal, setShowEditModal] = useState(false);
+    const [editFormData, setEditFormData] = useState({
+        name: '',
+        description: '',
+        active: true
+    });
 
     const [activeFilter, setActiveFilter] = useState('Tümü');
     const [showAddModal, setShowAddModal] = useState(false);
@@ -39,8 +63,6 @@ export default function PortfolioPage() {
     const [notes, setNotes] = useState('');
     const [submitting, setSubmitting] = useState(false);
 
-    const PORTFOLIO_ID = parseInt(id);
-
     useEffect(() => {
         loadAllData();
     }, []);
@@ -49,7 +71,8 @@ export default function PortfolioPage() {
         setLoading(true);
         await Promise.all([
             loadPortfolioData(),
-            loadInstruments()
+            loadInstruments(),
+            loadPerformanceData()
         ]);
         setLoading(false);
     };
@@ -80,10 +103,76 @@ export default function PortfolioPage() {
         }
     };
 
+    const loadPerformanceData = async () => {
+            try {
+                const data = await getPortfolioPerformance(PORTFOLIO_ID, 30);
+                setPerformanceData(data);
+                console.log('✅ Performance data loaded:', data);
+            } catch (err) {
+                console.error('❌ Error loading performance data:', err);
+                // Hata olsa da sayfa çalışmaya devam etsin
+                setPerformanceData([]);
+            }
+    };
+
     const handleRefresh = async () => {
         setRefreshing(true);
         await loadPortfolioData();
+        await loadPerformanceData();
         setRefreshing(false);
+    };
+
+    const handleUpdatePortfolio = async () => {
+        if (!editFormData.name.trim()) {
+            alert('Portföy adı boş olamaz');
+            return;
+        }
+
+        try {
+            setSubmitting(true);
+
+            await updatePortfolio(PORTFOLIO_ID, {
+                name: editFormData.name,
+                description: editFormData.description || undefined,
+                active: editFormData.active
+            });
+
+            setShowEditModal(false);
+            await loadPortfolioData();
+
+            alert('Portföy başarıyla güncellendi!');
+        } catch (err) {
+            console.error('Error updating portfolio:', err);
+            alert(err.response?.data?.message || 'Portföy güncellenirken hata oluştu');
+        } finally {
+            setSubmitting(false);
+        }
+    };
+
+    const handleDeletePortfolio = async () => {
+        const confirmDelete = window.confirm(
+            `"${portfolio.name}" portföyünü KALICI olarak silmek istediğinizden emin misiniz?\n\n` +
+            `Bu işlem GERİ ALINAMAZ! Tüm varlıklar ve işlemler silinecektir.`
+        );
+
+        if (!confirmDelete) return;
+
+        try {
+            setSubmitting(true);
+
+            await hardDeletePortfolio(PORTFOLIO_ID);  // ⭐ hardDeletePortfolio kullan
+
+            alert('Portföy kalıcı olarak silindi!');
+
+            // Redirect to portfolio list
+            window.location.href = '/portfolios';
+
+        } catch (err) {
+            console.error('Error deleting portfolio:', err);
+            alert(err.response?.data?.message || 'Portföy silinirken hata oluştu');
+        } finally {
+            setSubmitting(false);
+        }
     };
 
     const categories = ['Tümü', ...Array.from(new Set(holdings.map(h => h.instrumentType)))];
@@ -118,7 +207,7 @@ export default function PortfolioPage() {
             instruments = instruments.filter(inst => holdingInstrumentIds.includes(inst.id));
         }
 
-        // Search filtresi
+        // Search filtresi uygula
         if (searchTerm) {
             instruments = instruments.filter(inst =>
                 inst.symbol?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -134,6 +223,15 @@ export default function PortfolioPage() {
         if (!selectedInstrument || !quantity || !price) {
             alert('Lütfen tüm zorunlu alanları doldurun');
             return;
+        }
+
+        // Satış kontrolü - elinde olmayan miktarı satamaz
+        if (transactionType === 'SELL') {
+            const holding = holdings.find(h => h.instrumentId === selectedInstrument.id);
+            if (!holding || parseFloat(quantity) > holding.quantity) {
+                alert(`Yetersiz miktar! Mevcut: ${holding ? holding.quantity : 0}`);
+                return;
+            }
         }
 
         try {
@@ -153,6 +251,7 @@ export default function PortfolioPage() {
 
             resetForm();
             await loadPortfolioData();
+            await loadPerformanceData();
 
             alert(`${transactionType === 'BUY' ? 'Alış' : 'Satış'} işlemi başarıyla eklendi!`);
         } catch (err) {
@@ -246,9 +345,21 @@ export default function PortfolioPage() {
         <div className="p-8">
             {/* Header */}
             <div className="mb-6 flex items-center justify-between">
-                <div>
-                    <h1 className="text-3xl font-bold mb-2">{portfolio.name}</h1>
-                    <p className="text-gray-600">{portfolio.description || 'Yatırımlarınızın genel görünümü'}</p>
+                <div className="flex-1">
+                    <div className="flex items-center gap-3">
+                        <h1 className="text-3xl font-bold">{portfolio.name}</h1>
+                        {/* ⭐ Active/Passive Badge */}
+                        {portfolio.active ? (
+                            <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
+                    Aktif
+                </span>
+                        ) : (
+                            <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-800">
+                    Pasif
+                </span>
+                        )}
+                    </div>
+                    <p className="text-gray-600 mt-2">{portfolio.description || 'Yatırımlarınızın genel görünümü'}</p>
                 </div>
                 <div className="flex gap-3">
                     <Button
@@ -259,6 +370,31 @@ export default function PortfolioPage() {
                         <RefreshCw className={`w-5 h-5 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
                         Yenile
                     </Button>
+
+                    {/* ⭐ Düzenle Butonu */}
+                    <Button
+                        variant="outline"
+                        onClick={() => {
+                            setEditFormData({
+                                name: portfolio.name,
+                                description: portfolio.description || '',
+                                active: portfolio.active
+                            });
+                            setShowEditModal(true);
+                        }}
+                    >
+                        Düzenle
+                    </Button>
+
+                    {/* ⭐ Sil Butonu */}
+                    <Button
+                        variant="outline"
+                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                        onClick={handleDeletePortfolio}
+                    >
+                        Sil
+                    </Button>
+
                     <Button
                         variant="default"
                         onClick={() => setShowAddModal(true)}
@@ -326,6 +462,52 @@ export default function PortfolioPage() {
                     </CardContent>
                 </Card>
             </div>
+
+            {/* Performance Chart */}
+            {performanceData.length > 0 && (
+                <Card className="mb-6">
+                    <CardHeader>
+                        <CardTitle>Portföy Performansı (Son 30 Gün)</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="h-[400px]">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <LineChart data={performanceData}>
+                                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                                    <XAxis
+                                        dataKey="date"
+                                        stroke="#9ca3af"
+                                        style={{ fontSize: '12px' }}
+                                    />
+                                    <YAxis
+                                        stroke="#9ca3af"
+                                        style={{ fontSize: '12px' }}
+                                        tickFormatter={(value) => `₺${value.toLocaleString('tr-TR')}`}
+                                    />
+                                    <RechartsTooltip
+                                        formatter={(value) => [`₺${value.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}`, 'Değer']}
+                                        labelFormatter={(label) => `Tarih: ${label}`}
+                                    />
+                                    <Line
+                                        type="monotone"
+                                        dataKey="value"
+                                        stroke={portfolio.unrealizedPnL >= 0 ? '#10B981' : '#EF4444'}
+                                        strokeWidth={3}
+                                        dot={{ fill: portfolio.unrealizedPnL >= 0 ? '#10B981' : '#EF4444', r: 4 }}
+                                        activeDot={{ r: 6 }}
+                                    />
+                                    <ReferenceLine
+                                        y={portfolio.initialBalance}
+                                        stroke="#6B7280"
+                                        strokeDasharray="3 3"
+                                        label={{ value: 'Başlangıç', position: 'right', fill: '#6B7280' }}
+                                    />
+                                </LineChart>
+                            </ResponsiveContainer>
+                        </div>
+                    </CardContent>
+                </Card>
+            )}
 
             {/* Pie Chart */}
             {pieChartData.length > 0 && (
@@ -482,6 +664,93 @@ export default function PortfolioPage() {
                     </div>
                 </CardContent>
             </Card>
+            {/* Edit Portfolio Modal */}
+            {showEditModal && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-lg shadow-2xl w-full max-w-md">
+                        <div className="p-6 border-b border-gray-200">
+                            <h2 className="text-2xl font-bold text-gray-900">Portföyü Düzenle</h2>
+                        </div>
+
+                        <div className="p-6 space-y-5">
+                            {/* Portfolio Name */}
+                            <div>
+                                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                    Portföy Adı *
+                                </label>
+                                <input
+                                    type="text"
+                                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0066FF] focus:border-transparent"
+                                    placeholder="Portföy adı"
+                                    value={editFormData.name}
+                                    onChange={(e) => setEditFormData({ ...editFormData, name: e.target.value })}
+                                    disabled={submitting}
+                                />
+                            </div>
+
+                            {/* Description */}
+                            <div>
+                                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                    Açıklama
+                                </label>
+                                <textarea
+                                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0066FF] focus:border-transparent resize-none"
+                                    placeholder="Portföy açıklaması (opsiyonel)"
+                                    rows={3}
+                                    value={editFormData.description}
+                                    onChange={(e) => setEditFormData({ ...editFormData, description: e.target.value })}
+                                    disabled={submitting}
+                                />
+                            </div>
+
+                            {/* Active Status */}
+                            <div>
+                                <label className="flex items-center gap-3">
+                                    <input
+                                        type="checkbox"
+                                        className="w-5 h-5 text-[#0066FF] border-gray-300 rounded focus:ring-[#0066FF]"
+                                        checked={editFormData.active}
+                                        onChange={(e) => setEditFormData({ ...editFormData, active: e.target.checked })}
+                                        disabled={submitting}
+                                    />
+                                    <span className="text-sm font-semibold text-gray-700">
+                            Portföy Aktif
+                        </span>
+                                </label>
+                                <p className="text-xs text-gray-500 mt-1 ml-8">
+                                    Pasif portföyler liste sayfasında gizlenir
+                                </p>
+                            </div>
+                        </div>
+
+                        {/* Action Buttons */}
+                        <div className="p-6 border-t border-gray-200 flex gap-3">
+                            <Button
+                                variant="outline"
+                                className="flex-1 h-12 font-semibold border-2"
+                                onClick={() => setShowEditModal(false)}
+                                disabled={submitting}
+                            >
+                                İptal
+                            </Button>
+                            <Button
+                                className="flex-1 h-12 font-semibold bg-[#0066FF] hover:bg-[#0052CC]"
+                                onClick={handleUpdatePortfolio}
+                                disabled={!editFormData.name.trim() || submitting}
+                            >
+                                {submitting ? (
+                                    <>
+                                        <RefreshCw className="w-5 h-5 mr-2 animate-spin" />
+                                        Güncelleniyor...
+                                    </>
+                                ) : (
+                                    'Güncelle'
+                                )}
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Add Transaction Modal */}
             {showAddModal && (
@@ -526,7 +795,12 @@ export default function PortfolioPage() {
 
                             {/* Instrument Search */}
                             <div>
-                                <label className="block text-sm font-semibold text-gray-700 mb-2">Enstrüman Seç *</label>
+                                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                    Enstrüman Seç *
+                                    {transactionType === 'SELL' && (
+                                        <span className="text-xs text-gray-500 ml-2">(Sadece portföyünüzdeki varlıklar)</span>
+                                    )}
+                                </label>
                                 <div className="relative">
                                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
                                     <input
@@ -565,7 +839,12 @@ export default function PortfolioPage() {
                                             ))
                                         ) : (
                                             <div className="px-4 py-6 text-center">
-                                                <p className="text-gray-500 font-medium">Enstrüman bulunamadı</p>
+                                                <p className="text-gray-500 font-medium">
+                                                    {transactionType === 'SELL'
+                                                        ? 'Portföyünüzde bu kriterde varlık yok'
+                                                        : 'Enstrüman bulunamadı'
+                                                    }
+                                                </p>
                                             </div>
                                         )}
                                     </div>
@@ -581,13 +860,12 @@ export default function PortfolioPage() {
                                                 <div>
                                                     <span className="font-semibold text-gray-900 block">{selectedInstrument.symbol}</span>
                                                     <span className="text-xs text-gray-600">{selectedInstrument.name}</span>
-                                                    {/* ⭐ Satışta mevcut miktar göster */}
                                                     {transactionType === 'SELL' && (() => {
                                                         const holding = holdings.find(h => h.instrumentId === selectedInstrument.id);
                                                         return holding ? (
                                                             <span className="text-xs text-green-600 block mt-1">
-                                                                Mevcut: {holding.quantity.toFixed(2)}
-                                                            </span>
+                                Mevcut: {holding.quantity.toFixed(2)}
+                              </span>
                                                         ) : null;
                                                     })()}
                                                 </div>
@@ -605,26 +883,22 @@ export default function PortfolioPage() {
                                 )}
                             </div>
 
-                            {/* Quantity - Modal içinde */}
+                            {/* Quantity */}
                             <div>
                                 <label className="block text-sm font-semibold text-gray-700 mb-2">
                                     Miktar *
                                     {transactionType === 'SELL' && selectedInstrument && (
                                         <span className="text-xs text-gray-500 ml-2">
-                                            (Mevcut: {(() => {
+                      (Mevcut: {(() => {
                                             const holding = holdings.find(h => h.instrumentId === selectedInstrument.id);
                                             return holding ? holding.quantity.toFixed(2) : '0';
                                         })()})
-                                        </span>
+                    </span>
                                     )}
                                 </label>
                                 <input
                                     type="number"
                                     step="any"
-                                    max={transactionType === 'SELL' && selectedInstrument ? (() => {
-                                        const holding = holdings.find(h => h.instrumentId === selectedInstrument.id);
-                                        return holding ? holding.quantity : undefined;
-                                    })() : undefined}
                                     className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0066FF] focus:border-transparent"
                                     placeholder="Örn: 100"
                                     value={quantity}
