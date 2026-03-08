@@ -32,8 +32,8 @@ function App() {
                     <Route path="/instruments/:type" element={<CategoryDetailPage />} />
                     <Route path="/instruments/detail/:id" element={<InstrumentDetailPage />} />
                     <Route path="/comparison" element={<ComparisonPage />} />
-                    <Route path="/portfolio" element={< PortfolioListPage/>} />
-                    <Route path="/portfolio/:id" element={<PortfolioPage />} />
+                    <Route path="/portfolios" element={< PortfolioListPage/>} />
+                    <Route path="/portfolios/:id" element={<PortfolioPage />} />
                     <Route path="/watchlist" element={<WatchlistPage/>} />
                 </Routes>
             </Layout>
