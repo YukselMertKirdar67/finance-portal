@@ -65,6 +65,17 @@ export const createTransaction = async (portfolioId, data) => {
     }
 };
 
+// Portfolio özeti getir (Dashboard için)
+export const getPortfolioSummary = async () => {
+    try {
+        const response = await api.get('/portfolios/summary');
+        return response.data;
+    } catch (error) {
+        console.error('Error fetching portfolio summary:', error);
+        throw error;
+    }
+};
+
 // Transaction'ları getir (sayfalı)
 export const getTransactions = async (portfolioId, page = 0, size = 50) => {
     try {
