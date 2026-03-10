@@ -30,36 +30,39 @@ public class SecurityConfig {
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
                 .authorizeHttpRequests(auth -> auth
-                        // ✅ Public endpoints
-                        .requestMatchers("/api/**").permitAll()
+                        // Public endpoints (Swagger, Actuator)
                         .requestMatchers("/actuator/**").permitAll()
                         .requestMatchers("/swagger-ui/**").permitAll()
                         .requestMatchers("/v3/api-docs/**").permitAll()
-                        // ✅ Admin endpoints
-                        .requestMatchers("/admin/**").permitAll()
-                        .requestMatchers("/api/admin/**").permitAll()
-                        // ✅ User endpoints
-                        .requestMatchers("/me/**").authenticated()
-                        // ✅ Geri kalanlar
+
+                        // Admin endpoints
+                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
+
+                        // User endpoints
+                        .requestMatchers("/api/**").hasAnyRole("USER", "ADMIN")
+
+                        // Geri kalanlar authenticated olmalı
                         .anyRequest().authenticated()
-                );
-                /*.oauth2ResourceServer(oauth2 -> oauth2
+                )
+                .oauth2ResourceServer(oauth2 -> oauth2  // ⭐ COMMENT KALDIR
                         .jwt(jwt -> jwt
                                 .jwtAuthenticationConverter(jwtAuthenticationConverter())
                         )
-                );*/
+                );
 
         return http.build();
     }
 
-    /*@Bean
+    @Bean
     public JwtAuthenticationConverter jwtAuthenticationConverter() {
-        JwtGrantedAuthoritiesConverter converter = new JwtGrantedAuthoritiesConverter();
-        // ✅ Keycloak role converter kullan
-        JwtAuthenticationConverter jwtConverter = new JwtAuthenticationConverter();
-        jwtConverter.setJwtGrantedAuthoritiesConverter(new KeycloakRoleConverter());
-        return jwtConverter;
-    }*/
+        JwtGrantedAuthoritiesConverter grantedAuthoritiesConverter = new JwtGrantedAuthoritiesConverter();
+        grantedAuthoritiesConverter.setAuthoritiesClaimName("realm_access.roles");
+        grantedAuthoritiesConverter.setAuthorityPrefix("ROLE_");
+
+        JwtAuthenticationConverter jwtAuthenticationConverter = new JwtAuthenticationConverter();
+        jwtAuthenticationConverter.setJwtGrantedAuthoritiesConverter(grantedAuthoritiesConverter);
+        return jwtAuthenticationConverter;
+    }
 
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
