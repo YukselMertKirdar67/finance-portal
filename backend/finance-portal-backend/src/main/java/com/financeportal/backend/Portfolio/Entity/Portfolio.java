@@ -23,7 +23,7 @@ public class Portfolio {
     private Long id;
 
     @Column(name = "user_id", nullable = false, length = 100)
-    private String userId; //Mock user
+    private String userId;
 
     @Column(name = "name", nullable = false, length = 100)
     private String name;
