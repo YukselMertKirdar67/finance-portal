@@ -1,13 +1,5 @@
-import axios from 'axios';
+import api from './instrumentsApi';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
-
-const api = axios.create({
-    baseURL: API_BASE_URL,
-    headers: {
-        'Content-Type': 'application/json',
-    },
-});
 
 // Tüm haberleri getir (SAYFALAMA EKLENDİ)
 export const getAllNews = async (page = 0, size = 20) => {
@@ -67,5 +59,3 @@ export const fetchNewsFromAPI = async () => {
         throw error;
     }
 };
-
-export default api;
