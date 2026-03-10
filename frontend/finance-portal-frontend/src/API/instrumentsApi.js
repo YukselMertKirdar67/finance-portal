@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { getToken, updateToken, doLogout } from '../keycloak';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
 
@@ -9,7 +10,46 @@ const api = axios.create({
     },
 });
 
-// ✅ Tüm enstrümanları getir (sayfalı)
+// ✅ REQUEST INTERCEPTOR - Her isteğe token ekle
+api.interceptors.request.use(
+    (config) => {
+        const token = getToken();
+        if (token) {
+            config.headers.Authorization = `Bearer ${token}`;
+        }
+        return config;
+    },
+    (error) => {
+        return Promise.reject(error);
+    }
+);
+
+// ✅ RESPONSE INTERCEPTOR - 401 Unauthorized handling
+api.interceptors.response.use(
+    (response) => response,
+    async (error) => {
+        const originalRequest = error.config;
+
+        // Token expired, try refresh
+        if (error.response?.status === 401 && !originalRequest._retry) {
+            originalRequest._retry = true;
+
+            return new Promise((resolve, reject) => {
+                updateToken((newToken) => {
+                    originalRequest.headers.Authorization = `Bearer ${newToken}`;
+                    resolve(api(originalRequest));
+                });
+            }).catch((err) => {
+                doLogout();
+                return Promise.reject(err);
+            });
+        }
+
+        return Promise.reject(error);
+    }
+);
+
+// Tüm enstrümanları getir (sayfalı)
 export const getAllInstruments = async (page = 0, size = 20) => {
     try {
         const response = await api.get('/instruments', {
@@ -22,7 +62,7 @@ export const getAllInstruments = async (page = 0, size = 20) => {
     }
 };
 
-// ✅ Tipe göre enstrümanları getir
+// Tipe göre enstrümanları getir
 export const getInstrumentsByType = async (type, page = 0, size = 20) => {
     try {
         const response = await api.get(`/instruments/type/${type}`, {
@@ -35,7 +75,7 @@ export const getInstrumentsByType = async (type, page = 0, size = 20) => {
     }
 };
 
-// ✅ ID ile enstrüman detayı
+// ID ile enstrüman detayı
 export const getInstrumentById = async (id) => {
     try {
         const response = await api.get(`/instruments/${id}`);
@@ -46,7 +86,7 @@ export const getInstrumentById = async (id) => {
     }
 };
 
-// ✅ Sembol ile enstrüman detayı (slash sorunu için query param)
+// Sembol ile enstrüman detayı (slash sorunu için query param)
 export const getInstrumentBySymbol = async (symbol) => {
     try {
         const response = await api.get('/instruments/symbol', {
@@ -59,7 +99,7 @@ export const getInstrumentBySymbol = async (symbol) => {
     }
 };
 
-// ✅ Enstrüman ara
+// Enstrüman ara
 export const searchInstruments = async (query, page = 0, size = 20) => {
     try {
         const response = await api.get('/instruments/search', {
@@ -72,7 +112,7 @@ export const searchInstruments = async (query, page = 0, size = 20) => {
     }
 };
 
-// ✅ Anlık fiyat
+// Anlık fiyat
 export const getInstrumentPrice = async (id) => {
     try {
         const response = await api.get(`/instruments/${id}/price`);
@@ -83,7 +123,7 @@ export const getInstrumentPrice = async (id) => {
     }
 };
 
-// ✅ Geçmiş fiyatlar
+// Geçmiş fiyatlar
 export const getHistoricalPrices = async (id, startDate, endDate) => {
     try {
         const response = await api.get(`/instruments/${id}/history`, {
