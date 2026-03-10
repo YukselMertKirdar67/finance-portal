@@ -8,6 +8,7 @@ import com.financeportal.backend.Instrument.Entity.InstrumentPrice;
 import com.financeportal.backend.Instrument.Mapper.InstrumentMapper;
 import com.financeportal.backend.Instrument.Repository.InstrumentPriceRepository;
 import com.financeportal.backend.Instrument.Repository.InstrumentRepository;
+import com.financeportal.backend.Util.SecurityUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -35,22 +36,23 @@ public class WatchlistServiceImpl implements WatchlistService {
     private final InstrumentMapper instrumentMapper;
     private final RedisTemplate<String, Object> redisTemplate;
 
-    @Qualifier("objectMapper")  // ✅ EKLE - Temiz mapper
+    @Qualifier("objectMapper")
     private final ObjectMapper cleanMapper;
 
-    private static final String MOCK_USER_ID = "mock-user-001";
     private static final String CACHE_PREFIX = "watchlist:";
     private static final long CACHE_TTL = 5; // 5 dakika
 
     @Override
     @Transactional
     public WatchlistDTO.WatchlistResponse addToWatchlist(Long instrumentId) {
+        String currentUserId = SecurityUtils.getCurrentUserKeycloakId();
+
         BaseInstrument instrument = instrumentRepository.findById(instrumentId)
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Instrument not found: " + instrumentId
                 ));
 
-        if (watchlistRepository.existsByUserIdAndInstrument(MOCK_USER_ID, instrument)) {
+        if (watchlistRepository.existsByUserIdAndInstrument(currentUserId, instrument)) {
             return WatchlistDTO.WatchlistResponse.builder()
                     .success(false)
                     .message("Bu enstrüman zaten takip listenizde")
@@ -58,14 +60,14 @@ public class WatchlistServiceImpl implements WatchlistService {
         }
 
         Watchlist watchlist = Watchlist.builder()
-                .userId(MOCK_USER_ID)
+                .userId(currentUserId)
                 .instrument(instrument)
                 .build();
 
         watchlistRepository.save(watchlist);
-        clearCache();
+        clearCache(currentUserId);
 
-        log.info("✅ Added to watchlist: {}", instrument.getSymbol());
+        log.info("✅ Added to watchlist: {} for user: {}", instrument.getSymbol(), currentUserId);
 
         return WatchlistDTO.WatchlistResponse.builder()
                 .success(true)
@@ -76,22 +78,24 @@ public class WatchlistServiceImpl implements WatchlistService {
     @Override
     @Transactional
     public WatchlistDTO.WatchlistResponse removeFromWatchlist(Long instrumentId) {
+        String currentUserId = SecurityUtils.getCurrentUserKeycloakId();
+
         BaseInstrument instrument = instrumentRepository.findById(instrumentId)
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Instrument not found: " + instrumentId
                 ));
 
-        if (!watchlistRepository.existsByUserIdAndInstrument(MOCK_USER_ID, instrument)) {
+        if (!watchlistRepository.existsByUserIdAndInstrument(currentUserId, instrument)) {
             return WatchlistDTO.WatchlistResponse.builder()
                     .success(false)
                     .message("Bu enstrüman takip listenizde değil")
                     .build();
         }
 
-        watchlistRepository.deleteByUserIdAndInstrument(MOCK_USER_ID, instrument);
-        clearCache();
+        watchlistRepository.deleteByUserIdAndInstrument(currentUserId, instrument);
+        clearCache(currentUserId);
 
-        log.info("✅ Removed from watchlist: {}", instrument.getSymbol());
+        log.info("✅ Removed from watchlist: {} for user: {}", instrument.getSymbol(), currentUserId);
 
         return WatchlistDTO.WatchlistResponse.builder()
                 .success(true)
@@ -102,23 +106,24 @@ public class WatchlistServiceImpl implements WatchlistService {
     @Override
     @Transactional(readOnly = true)
     public WatchlistPageDTO getWatchlist(int page, int size) {
-        String cacheKey = CACHE_PREFIX + MOCK_USER_ID + ":page:" + page + ":size:" + size;
+        String currentUserId = SecurityUtils.getCurrentUserKeycloakId();
+        String cacheKey = CACHE_PREFIX + currentUserId + ":page:" + page + ":size:" + size;
 
         // ✅ JSON string olarak oku
         try {
             String cachedJson = (String) redisTemplate.opsForValue().get(cacheKey);
             if (cachedJson != null) {
-                log.info("✅ Cache HIT - Watchlist");
+                log.info("✅ Cache HIT - Watchlist for user: {}", currentUserId);
                 return cleanMapper.readValue(cachedJson, WatchlistPageDTO.class);
             }
         } catch (Exception e) {
             log.warn("⚠️ Cache read error: {}", e.getMessage());
         }
 
-        log.info("🔍 Cache MISS - Fetching from DB");
+        log.info("🔍 Cache MISS - Fetching from DB for user: {}", currentUserId);
 
         Pageable pageable = PageRequest.of(page, size, Sort.by("addedAt").descending());
-        Page<Watchlist> watchlistPage = watchlistRepository.findByUserId(MOCK_USER_ID, pageable);
+        Page<Watchlist> watchlistPage = watchlistRepository.findByUserId(currentUserId, pageable);
 
         List<WatchlistDTO.WatchlistItemDTO> items = watchlistPage.getContent().stream()
                 .map(item -> {
@@ -151,7 +156,7 @@ public class WatchlistServiceImpl implements WatchlistService {
         try {
             String jsonToCache = cleanMapper.writeValueAsString(result);
             redisTemplate.opsForValue().set(cacheKey, jsonToCache, CACHE_TTL, TimeUnit.MINUTES);
-            log.info("✅ Cached watchlist (JSON)");
+            log.info("✅ Cached watchlist (JSON) for user: {}", currentUserId);
         } catch (Exception e) {
             log.warn("⚠️ Cache write error: {}", e.getMessage());
         }
@@ -163,7 +168,8 @@ public class WatchlistServiceImpl implements WatchlistService {
     @Override
     @Transactional(readOnly = true)
     public boolean isInWatchlist(Long instrumentId) {
-        String cacheKey = CACHE_PREFIX + "check:" + MOCK_USER_ID + ":inst:" + instrumentId;
+        String currentUserId = SecurityUtils.getCurrentUserKeycloakId();
+        String cacheKey = CACHE_PREFIX + "check:" + currentUserId + ":inst:" + instrumentId;
 
         // ✅ String olarak oku
         try {
@@ -178,7 +184,7 @@ public class WatchlistServiceImpl implements WatchlistService {
         BaseInstrument instrument = instrumentRepository.findById(instrumentId).orElse(null);
         if (instrument == null) return false;
 
-        boolean exists = watchlistRepository.existsByUserIdAndInstrument(MOCK_USER_ID, instrument);
+        boolean exists = watchlistRepository.existsByUserIdAndInstrument(currentUserId, instrument);
 
         // ✅ String olarak kaydet
         try {
@@ -190,12 +196,13 @@ public class WatchlistServiceImpl implements WatchlistService {
         return exists;
     }
 
-    private void clearCache() {
+    private void clearCache(String userId) {
         try {
-            Set<String> keys = redisTemplate.keys(CACHE_PREFIX + "*");
+            String pattern = CACHE_PREFIX + userId + "*";
+            Set<String> keys = redisTemplate.keys(pattern);
             if (keys != null && !keys.isEmpty()) {
                 redisTemplate.delete(keys);
-                log.info("🗑️ Cleared {} cache keys", keys.size());
+                log.info("🗑️ Cleared {} cache keys for user: {}", keys.size(), userId);
             }
         } catch (Exception e) {
             log.warn("⚠️ Cache clear error: {}", e.getMessage());

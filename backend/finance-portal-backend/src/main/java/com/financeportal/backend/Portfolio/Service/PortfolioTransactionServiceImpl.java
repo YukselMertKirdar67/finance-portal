@@ -15,6 +15,7 @@ import com.financeportal.backend.Portfolio.Mapper.PortfolioMapper;
 import com.financeportal.backend.Portfolio.Repository.PortfolioHoldingRepository;
 import com.financeportal.backend.Portfolio.Repository.PortfolioRepository;
 import com.financeportal.backend.Portfolio.Repository.PortfolioTransactionRepository;
+import com.financeportal.backend.Util.SecurityUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -39,8 +40,6 @@ public class PortfolioTransactionServiceImpl implements PortfolioTransactionServ
     private final InstrumentRepository instrumentRepository;
     private final PortfolioCalculationService calculationService;
     private final PortfolioMapper portfolioMapper;
-
-    private static final String MOCK_USER_ID = "mock-user-001";
 
     @Override
     @Transactional
@@ -70,7 +69,7 @@ public class PortfolioTransactionServiceImpl implements PortfolioTransactionServ
         BaseInstrument instrument = instrumentRepository.findById(request.getInstrumentId())
                 .orElseThrow(() -> new ResourceNotFoundException("Instrument not found with id: " + request.getInstrumentId()));
 
-        // ⭐ 3. CHECK CASH BALANCE (NEW)
+        // ⭐ 3. CHECK CASH BALANCE
         BigDecimal totalCost = calculateTotalTransactionCost(request);
         BigDecimal availableCash = calculateAvailableCash(portfolio);
 
@@ -360,7 +359,8 @@ public class PortfolioTransactionServiceImpl implements PortfolioTransactionServ
         Portfolio portfolio = portfolioRepository.findById(portfolioId)
                 .orElseThrow(() -> new ResourceNotFoundException("Portfolio not found with id: " + portfolioId));
 
-        if (!portfolio.getUserId().equals(MOCK_USER_ID)) {
+        String currentUserId = SecurityUtils.getCurrentUserKeycloakId();
+        if (!portfolio.getUserId().equals(currentUserId)) {
             throw new BusinessRuleException("You don't have permission to access this portfolio");
         }
 

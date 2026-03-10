@@ -15,6 +15,7 @@ import com.financeportal.backend.Portfolio.Enum.TransactionType;
 import com.financeportal.backend.Portfolio.Mapper.PortfolioMapper;
 import com.financeportal.backend.Portfolio.Repository.PortfolioHoldingRepository;
 import com.financeportal.backend.Portfolio.Repository.PortfolioRepository;
+import com.financeportal.backend.Util.SecurityUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -41,17 +42,15 @@ public class PortfolioServiceImpl implements PortfolioService {
     private final InstrumentRepository instrumentRepository;
     private final PortfolioHoldingRepository holdingRepository;
 
-    // Mock user ID (will be replaced with SecurityContextHolder.getContext().getAuthentication())
-    private static final String MOCK_USER_ID = "mock-user-001";
-
     @Override
     @Transactional
     public PortfolioDTO createPortfolio(CreatePortfolioRequestDTO request) {
-        log.info("Creating new portfolio: {} for user: {}", request.getName(), MOCK_USER_ID);
+        String currentUserId = SecurityUtils.getCurrentUserKeycloakId();
+        log.info("Creating new portfolio: {} for user: {}", request.getName(), currentUserId);
 
         // Map request to entity
         Portfolio portfolio = portfolioMapper.toEntity(request);
-        portfolio.setUserId(MOCK_USER_ID);
+        portfolio.setUserId(currentUserId);
 
         // Save
         Portfolio saved = portfolioRepository.save(portfolio);
@@ -120,9 +119,10 @@ public class PortfolioServiceImpl implements PortfolioService {
     @Override
     @Transactional(readOnly = true)
     public List<PortfolioDTO> getUserPortfolios() {
-        log.info("Fetching all portfolios for user: {}", MOCK_USER_ID);
+        String currentUserId = SecurityUtils.getCurrentUserKeycloakId();
+        log.info("Fetching all portfolios for user: {}", currentUserId);
 
-        List<Portfolio> portfolios = portfolioRepository.findByUserId(MOCK_USER_ID);
+        List<Portfolio> portfolios = portfolioRepository.findByUserId(currentUserId);
 
         return portfolios.stream()
                 .map(p -> enrichPortfolioDTO(portfolioMapper.toDTO(p), p))
@@ -132,9 +132,10 @@ public class PortfolioServiceImpl implements PortfolioService {
     @Override
     @Transactional(readOnly = true)
     public Page<PortfolioDTO> getUserPortfolios(Pageable pageable) {
-        log.info("Fetching portfolios for user: {} (paginated)", MOCK_USER_ID);
+        String currentUserId = SecurityUtils.getCurrentUserKeycloakId();
+        log.info("Fetching portfolios for user: {} (paginated)", currentUserId);
 
-        Page<Portfolio> portfolioPage = portfolioRepository.findByUserId(MOCK_USER_ID, pageable);
+        Page<Portfolio> portfolioPage = portfolioRepository.findByUserId(currentUserId, pageable);
 
         return portfolioPage.map(p -> enrichPortfolioDTO(portfolioMapper.toDTO(p), p));
     }
@@ -142,9 +143,10 @@ public class PortfolioServiceImpl implements PortfolioService {
     @Override
     @Transactional(readOnly = true)
     public List<PortfolioDTO> getActivePortfolios() {
-        log.info("Fetching active portfolios for user: {}", MOCK_USER_ID);
+        String currentUserId = SecurityUtils.getCurrentUserKeycloakId();
+        log.info("Fetching active portfolios for user: {}", currentUserId);
 
-        List<Portfolio> portfolios = portfolioRepository.findByUserIdAndActiveTrue(MOCK_USER_ID);
+        List<Portfolio> portfolios = portfolioRepository.findByUserIdAndActiveTrue(currentUserId);
 
         return portfolios.stream()
                 .map(p -> enrichPortfolioDTO(portfolioMapper.toDTO(p), p))
@@ -163,7 +165,8 @@ public class PortfolioServiceImpl implements PortfolioService {
             log.info("Portfolio found: {}", portfolio.getName());
 
             // Ownership check
-            if (!portfolio.getUserId().equals(MOCK_USER_ID)) {
+            String currentUserId = SecurityUtils.getCurrentUserKeycloakId();
+            if (!portfolio.getUserId().equals(currentUserId)) {
                 throw new UnauthorizedException("You don't have permission to access this portfolio");
             }
 
@@ -237,9 +240,10 @@ public class PortfolioServiceImpl implements PortfolioService {
     @Override
     @Transactional(readOnly = true)
     public PortfolioSummaryDTO getPortfolioSummary() {
-        log.info("Fetching portfolio summary for user: {}", MOCK_USER_ID);
+        String currentUserId = SecurityUtils.getCurrentUserKeycloakId();
+        log.info("Fetching portfolio summary for user: {}", currentUserId);
 
-        List<Portfolio> portfolios = portfolioRepository.findByUserId(MOCK_USER_ID);
+        List<Portfolio> portfolios = portfolioRepository.findByUserId(currentUserId);
 
         BigDecimal totalValue = BigDecimal.ZERO;
         BigDecimal totalInvested = BigDecimal.ZERO;
@@ -528,9 +532,10 @@ public class PortfolioServiceImpl implements PortfolioService {
     @Override
     @Transactional(readOnly = true)
     public BigDecimal calculateTotalPortfolioValue() {
-        log.info("Calculating total portfolio value for user: {}", MOCK_USER_ID);
+        String currentUserId = SecurityUtils.getCurrentUserKeycloakId();
+        log.info("Calculating total portfolio value for user: {}", currentUserId);
 
-        List<Portfolio> portfolios = portfolioRepository.findByUserId(MOCK_USER_ID);
+        List<Portfolio> portfolios = portfolioRepository.findByUserId(currentUserId);
 
         return portfolios.stream()
                 .map(p -> holdingService.calculateCurrentValue(p.getId()))
@@ -540,9 +545,10 @@ public class PortfolioServiceImpl implements PortfolioService {
     @Override
     @Transactional(readOnly = true)
     public BigDecimal calculateTotalUnrealizedPnL() {
-        log.info("Calculating total unrealized P&L for user: {}", MOCK_USER_ID);
+        String currentUserId = SecurityUtils.getCurrentUserKeycloakId();
+        log.info("Calculating total unrealized P&L for user: {}", currentUserId);
 
-        List<Portfolio> portfolios = portfolioRepository.findByUserId(MOCK_USER_ID);
+        List<Portfolio> portfolios = portfolioRepository.findByUserId(currentUserId);
 
         return portfolios.stream()
                 .map(p -> holdingService.calculateUnrealizedPnL(p.getId()))
@@ -576,9 +582,10 @@ public class PortfolioServiceImpl implements PortfolioService {
     @Override
     @Transactional(readOnly = true)
     public List<PortfolioDTO> searchPortfoliosByName(String searchTerm) {
+        String currentUserId = SecurityUtils.getCurrentUserKeycloakId();
         log.info("Searching portfolios by name: {}", searchTerm);
 
-        List<Portfolio> portfolios = portfolioRepository.searchByName(MOCK_USER_ID, searchTerm);
+        List<Portfolio> portfolios = portfolioRepository.searchByName(currentUserId, searchTerm);
 
         return portfolios.stream()
                 .map(p -> enrichPortfolioDTO(portfolioMapper.toDTO(p), p))
@@ -588,10 +595,11 @@ public class PortfolioServiceImpl implements PortfolioService {
     @Override
     @Transactional(readOnly = true)
     public List<PortfolioDTO> getPortfoliosByType(String portfolioType) {
+        String currentUserId = SecurityUtils.getCurrentUserKeycloakId();
         log.info("Fetching portfolios by type: {}", portfolioType);
 
         PortfolioType type = PortfolioType.valueOf(portfolioType.toUpperCase());
-        List<Portfolio> portfolios = portfolioRepository.findByUserIdAndPortfolioType(MOCK_USER_ID, type);
+        List<Portfolio> portfolios = portfolioRepository.findByUserIdAndPortfolioType(currentUserId, type);
 
         return portfolios.stream()
                 .map(p -> enrichPortfolioDTO(portfolioMapper.toDTO(p), p))
@@ -607,8 +615,9 @@ public class PortfolioServiceImpl implements PortfolioService {
         Portfolio portfolio = portfolioRepository.findById(portfolioId)
                 .orElseThrow(() -> new ResourceNotFoundException("Portfolio not found with id: " + portfolioId));
 
-        if (!portfolio.getUserId().equals(MOCK_USER_ID)) {
-            log.error("Unauthorized access attempt to portfolio: {} by user: {}", portfolioId, MOCK_USER_ID);
+        String currentUserId = SecurityUtils.getCurrentUserKeycloakId();
+        if (!portfolio.getUserId().equals(currentUserId)) {
+            log.error("Unauthorized access attempt to portfolio: {} by user: {}", portfolioId, currentUserId);
             throw new UnauthorizedException("You don't have permission to access this portfolio");
         }
 
