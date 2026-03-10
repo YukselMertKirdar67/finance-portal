@@ -1,8 +1,11 @@
-/*package com.financeportal.backend.Service;
+package com.financeportal.backend.User.Service;
 
-import com.financeportal.backend.DTO.UserResponseDTO;
-import com.financeportal.backend.Entity.User;
-import com.financeportal.backend.Repository.UserRepository;
+
+import com.financeportal.backend.Exception.ResourceNotFoundException;
+import com.financeportal.backend.User.Entity.User;
+import com.financeportal.backend.User.UserMapper;
+import com.financeportal.backend.User.Repository.UserRepository;
+import com.financeportal.backend.User.DTO.UserResponseDTO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -33,4 +36,4 @@ public class AdminServiceImpl implements AdminService {
         user.setEnabled(false);
         userRepository.save(user);
     }
-}*/
+}

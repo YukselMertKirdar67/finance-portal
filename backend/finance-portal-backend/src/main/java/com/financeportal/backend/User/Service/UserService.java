@@ -1,9 +1,7 @@
-/*package com.financeportal.backend.Service;
+package com.financeportal.backend.User.Service;
 
-import com.financeportal.backend.Entity.User;
+import com.financeportal.backend.User.Entity.User;
 import org.springframework.security.oauth2.jwt.Jwt;
-
-import java.util.Optional;
 
 public interface UserService {
 
@@ -11,4 +9,4 @@ public interface UserService {
     User getOrCreateUser(Jwt jwt);
 
     User getByKeycloakId(String keycloakId);
-}*/
+}

@@ -1,4 +1,4 @@
-/*package com.financeportal.backend.DTO;
+package com.financeportal.backend.User.DTO;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -15,4 +15,4 @@ public class MeResponseDTO {
     private String username;
     private String email;
     private List<String> roles;
-}*/
+}

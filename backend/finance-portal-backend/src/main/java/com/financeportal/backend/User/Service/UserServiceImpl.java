@@ -1,14 +1,11 @@
-/*package com.financeportal.backend.Service;
+package com.financeportal.backend.User.Service;
 
-import com.financeportal.backend.Entity.User;
-import com.financeportal.backend.Enum.Role;
-import com.financeportal.backend.Repository.UserRepository;
+
+import com.financeportal.backend.User.Entity.User;
+import com.financeportal.backend.User.Repository.UserRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
-
-import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -41,5 +38,5 @@ public class UserServiceImpl implements UserService {
                 .orElseThrow(() ->
                         new RuntimeException("User not found with keycloakId: " + keycloakId));
     }
-}*/
+}
 

@@ -1,9 +1,8 @@
-/*package com.financeportal.backend.Controller;
+package com.financeportal.backend.User.Controller;
 
-import com.financeportal.backend.DTO.UserResponseDTO;
-import com.financeportal.backend.Entity.User;
-import com.financeportal.backend.Repository.UserRepository;
-import com.financeportal.backend.Service.AdminService;
+
+import com.financeportal.backend.User.Service.AdminService;
+import com.financeportal.backend.User.DTO.UserResponseDTO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -32,4 +31,4 @@ public class AdminController {
     public void disableUser(@PathVariable Long id) {
         adminService.disableUser(id);
     }
-}*/
+}

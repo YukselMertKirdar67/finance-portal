@@ -1,6 +1,11 @@
-/*package com.financeportal.backend.Mapper;
+package com.financeportal.backend.User;
 
+import com.financeportal.backend.User.DTO.MeResponseDTO;
+import com.financeportal.backend.User.DTO.UserResponseDTO;
+import com.financeportal.backend.User.Entity.User;
 import org.springframework.stereotype.Component;
+
+import java.util.List;
 
 @Component
 public class UserMapper {
@@ -24,4 +29,4 @@ public class UserMapper {
                 roles
         );
     }
-}*/
+}

@@ -1,8 +1,9 @@
-/*package com.financeportal.backend.Controller;
+package com.financeportal.backend.User.Controller;
 
-import com.financeportal.backend.DTO.MeResponseDTO;
-import com.financeportal.backend.Entity.User;
-import com.financeportal.backend.Service.UserService;
+import com.financeportal.backend.User.DTO.MeResponseDTO;
+import com.financeportal.backend.User.Entity.User;
+import com.financeportal.backend.User.UserMapper;
+import com.financeportal.backend.User.Service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -11,7 +12,9 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/me")
@@ -46,4 +49,4 @@ public class UserController {
         List<String> roles = (List<String>) realmAccess.get("roles");
         return roles != null ? roles : Collections.emptyList();
     }
-}*/
+}

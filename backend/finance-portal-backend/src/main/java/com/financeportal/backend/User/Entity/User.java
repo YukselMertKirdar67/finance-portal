@@ -1,6 +1,5 @@
-/*package com.financeportal.backend.Entity;
+package com.financeportal.backend.User.Entity;
 
-import com.financeportal.backend.Enum.Role;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -48,5 +47,5 @@ public class User {
     protected void onUpdate() {
         this.updatedAt = LocalDateTime.now();
     }
-}*/
+}
 
