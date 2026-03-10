@@ -26,7 +26,7 @@ public class Watchlist {
     private Long id;
 
     @Column(name = "user_id", nullable = false)
-    private String userId;  // Şimdilik String, sonra User entity'ye bağlanacak
+    private String userId;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "instrument_id", nullable = false)
