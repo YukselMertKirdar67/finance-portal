@@ -10,7 +10,7 @@ const api = axios.create({
     },
 });
 
-// ✅ REQUEST INTERCEPTOR - Her isteğe token ekle
+// REQUEST INTERCEPTOR - Her isteğe token ekle
 api.interceptors.request.use(
     (config) => {
         const token = getToken();
@@ -24,7 +24,7 @@ api.interceptors.request.use(
     }
 );
 
-// ✅ RESPONSE INTERCEPTOR - 401 Unauthorized handling
+//RESPONSE INTERCEPTOR - 401 Unauthorized handling
 api.interceptors.response.use(
     (response) => response,
     async (error) => {
@@ -34,15 +34,19 @@ api.interceptors.response.use(
         if (error.response?.status === 401 && !originalRequest._retry) {
             originalRequest._retry = true;
 
-            return new Promise((resolve, reject) => {
-                updateToken((newToken) => {
-                    originalRequest.headers.Authorization = `Bearer ${newToken}`;
-                    resolve(api(originalRequest));
+            try {
+                // Token'ı yenile ve isteği tekrar dene
+                const newToken = await new Promise((resolve) => {
+                    updateToken(resolve);
                 });
-            }).catch((err) => {
+
+                originalRequest.headers.Authorization = `Bearer ${newToken}`;
+                return api(originalRequest);
+            } catch (refreshError) {
+                // Token yenileme başarısız, logout
                 doLogout();
-                return Promise.reject(err);
-            });
+                return Promise.reject(refreshError);
+            }
         }
 
         return Promise.reject(error);
