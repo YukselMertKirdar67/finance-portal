@@ -10,13 +10,46 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./init-keycloak-db.sql:/docker-entrypoint-initdb.d/init-keycloak-db.sql
     networks:
       - finance-network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
       interval: 10s
       timeout: 5s
       retries: 5
+
+  #KEYCLOAK
+  keycloak:
+    image: quay.io/keycloak/keycloak:23.0
+    container_name: finance-keycloak
+    environment:
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://finance-postgres:5432/keycloak
+      KC_DB_USERNAME: postgres
+      KC_DB_PASSWORD: 357159
+      KC_HOSTNAME: localhost
+      KC_HOSTNAME_PORT: 8180
+      KC_HOSTNAME_STRICT: false
+      KC_HOSTNAME_STRICT_HTTPS: false
+      KC_HTTP_ENABLED: true
+    ports:
+      - "8180:8080"  # Backend ile çakışmasın diye 8180
+    command:
+      - start-dev
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - finance-network
+    healthcheck:
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/8080 || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
 
   redis:
     image: redis:7
@@ -99,6 +132,9 @@ services:
       context: ./backend/finance-portal-backend
       dockerfile: Dockerfile
     container_name: finance-backend
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
     ports:
       - "8080:8080"
     environment:
@@ -108,6 +144,10 @@ services:
       SPRING_DATA_REDIS_HOST: redis
       SPRING_DATA_REDIS_PORT: 6379
       SPRING_KAFKA_BOOTSTRAP_SERVERS: finance-kafka:9092
+
+      # KEYCLOAK CONFIG
+      SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI: http://keycloak:8080/realms/finance-portal
+      SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI: http://keycloak:8080/realms/finance-portal/protocol/openid-connect/certs
 
       JAVA_TOOL_OPTIONS: >
         -javaagent:/app/opentelemetry-javaagent.jar
@@ -123,6 +163,8 @@ services:
         condition: service_healthy
       kafka:
         condition: service_started
+      keycloak:
+        condition: service_healthy  #Keycloak'a bağımlı
       otel-collector:
         condition: service_started
     networks:
