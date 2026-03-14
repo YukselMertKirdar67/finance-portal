@@ -30,13 +30,12 @@ services:
       KC_DB_URL: jdbc:postgresql://finance-postgres:5432/keycloak
       KC_DB_USERNAME: postgres
       KC_DB_PASSWORD: 357159
-      KC_HOSTNAME: localhost
-      KC_HOSTNAME_PORT: 8180
-      KC_HOSTNAME_STRICT: false
+      KC_HOSTNAME_STRICT: false  # ⭐ Strict mode kapat
       KC_HOSTNAME_STRICT_HTTPS: false
       KC_HTTP_ENABLED: true
+      KC_HOSTNAME_STRICT_BACKCHANNEL: false  # ⭐ Backchannel strict kapat
     ports:
-      - "8180:8080"  # Backend ile çakışmasın diye 8180
+      - "8180:8080"
     command:
       - start-dev
     depends_on:
@@ -45,7 +44,7 @@ services:
     networks:
       - finance-network
     healthcheck:
-      test: ["CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/8080 || exit 1"]
+      test: [ "CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/8080 || exit 1" ]
       interval: 30s
       timeout: 10s
       retries: 5
@@ -174,9 +173,15 @@ services:
     build:
       context: ./frontend/finance-portal-frontend
       dockerfile: Dockerfile
+      args:
+        VITE_KEYCLOAK_URL: http://localhost:8180
+        VITE_API_BASE_URL: http://localhost:8080/api
     container_name: finance-frontend
     ports:
       - "3000:80"
+    environment:
+          VITE_KEYCLOAK_URL: http://localhost:8180
+          VITE_API_BASE_URL: http://localhost:8080/api
     depends_on:
       backend:
         condition: service_started
