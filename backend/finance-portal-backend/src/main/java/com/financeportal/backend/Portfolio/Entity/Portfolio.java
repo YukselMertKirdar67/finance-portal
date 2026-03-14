@@ -42,7 +42,7 @@ public class Portfolio {
     private String currency; // TRY, USD, EUR
 
     @Column(name = "active", nullable = false)
-    private Boolean active = true;
+    private boolean active = true;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
