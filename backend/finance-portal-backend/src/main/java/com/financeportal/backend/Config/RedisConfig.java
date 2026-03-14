@@ -104,7 +104,6 @@ public class RedisConfig {
     public RedisCacheManager cacheManager(
             RedisConnectionFactory connectionFactory
     ) {
-        // ✅ Redis için özel ObjectMapper
         ObjectMapper redisMapper = redisObjectMapper();
         GenericJackson2JsonRedisSerializer serializer =
                 new GenericJackson2JsonRedisSerializer(redisMapper);
@@ -134,6 +133,13 @@ public class RedisConfig {
         RedisCacheConfiguration instrumentDetailsConfig =
                 defaultConfig.entryTtl(Duration.ofHours(1));
 
+        // ===== WATCHLIST CACHE ===== ✅ EKLE
+        RedisCacheConfiguration watchlistConfig =
+                defaultConfig.entryTtl(Duration.ofMinutes(5));
+
+        RedisCacheConfiguration watchlistCheckConfig =
+                defaultConfig.entryTtl(Duration.ofMinutes(5));
+
         return RedisCacheManager.builder(connectionFactory)
                 .cacheDefaults(defaultConfig)
                 // News
@@ -143,6 +149,9 @@ public class RedisConfig {
                 // Instruments
                 .withCacheConfiguration("instrumentPrices", instrumentPricesConfig)
                 .withCacheConfiguration("instrumentDetails", instrumentDetailsConfig)
+                // Watchlist ✅ EKLE
+                .withCacheConfiguration("watchlist", watchlistConfig)
+                .withCacheConfiguration("watchlistCheck", watchlistCheckConfig)
                 .build();
     }
 }
