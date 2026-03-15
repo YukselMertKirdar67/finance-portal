@@ -7,6 +7,13 @@ import org.springframework.security.config.annotation.method.configuration.Enabl
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.oauth2.core.DelegatingOAuth2TokenValidator;
+import org.springframework.security.oauth2.core.OAuth2TokenValidator;
+import org.springframework.security.oauth2.core.OAuth2TokenValidatorResult;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
+import org.springframework.security.oauth2.jwt.JwtTimestampValidator;
+import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
 import org.springframework.security.web.SecurityFilterChain;
@@ -35,6 +42,8 @@ public class SecurityConfig {
                         .requestMatchers("/swagger-ui/**").permitAll()
                         .requestMatchers("/v3/api-docs/**").permitAll()
 
+                        .requestMatchers("/api/auth/**").permitAll()
+
                         // Admin endpoints
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
 
@@ -44,8 +53,9 @@ public class SecurityConfig {
                         // Geri kalanlar authenticated olmalı
                         .anyRequest().authenticated()
                 )
-                .oauth2ResourceServer(oauth2 -> oauth2  // ⭐ COMMENT KALDIR
+                .oauth2ResourceServer(oauth2 -> oauth2
                         .jwt(jwt -> jwt
+                                .decoder(jwtDecoder())  // Custom decoder
                                 .jwtAuthenticationConverter(jwtAuthenticationConverter())
                         )
                 );
@@ -54,13 +64,41 @@ public class SecurityConfig {
     }
 
     @Bean
-    public JwtAuthenticationConverter jwtAuthenticationConverter() {
-        JwtGrantedAuthoritiesConverter grantedAuthoritiesConverter = new JwtGrantedAuthoritiesConverter();
-        grantedAuthoritiesConverter.setAuthoritiesClaimName("realm_access.roles");
-        grantedAuthoritiesConverter.setAuthorityPrefix("ROLE_");
+    public JwtDecoder jwtDecoder() {
+        //  JWK Set URI - Docker network üzerinden Keycloak'a erişim
+        String jwkSetUri = "http://finance-keycloak:8080/realms/finance-portal/protocol/openid-connect/certs";
 
+        NimbusJwtDecoder jwtDecoder = NimbusJwtDecoder.withJwkSetUri(jwkSetUri).build();
+
+        //  Custom validator - Issuer validation'ı esnek yap
+        OAuth2TokenValidator<Jwt> withIssuer = new DelegatingOAuth2TokenValidator<>(
+                // Timestamp validation (exp, nbf)
+                new JwtTimestampValidator(),
+                // Custom issuer validator - hem localhost:8180 hem finance-keycloak:8080 kabul et
+                token -> {
+                    String issuer = token.getIssuer().toString();
+                    if (issuer.equals("http://localhost:8180/realms/finance-portal") ||
+                            issuer.equals("http://finance-keycloak:8080/realms/finance-portal")) {
+                        return OAuth2TokenValidatorResult.success();
+                    }
+                    return OAuth2TokenValidatorResult.failure(
+                            new org.springframework.security.oauth2.core.OAuth2Error("invalid_token", "Invalid issuer", null)
+                    );
+                }
+        );
+
+        jwtDecoder.setJwtValidator(withIssuer);
+
+        return jwtDecoder;
+    }
+
+    @Bean
+    public JwtAuthenticationConverter jwtAuthenticationConverter() {
         JwtAuthenticationConverter jwtAuthenticationConverter = new JwtAuthenticationConverter();
-        jwtAuthenticationConverter.setJwtGrantedAuthoritiesConverter(grantedAuthoritiesConverter);
+
+        // Custom Keycloak role converter kullan
+        jwtAuthenticationConverter.setJwtGrantedAuthoritiesConverter(new KeycloakRoleConverter());
+
         return jwtAuthenticationConverter;
     }
 
