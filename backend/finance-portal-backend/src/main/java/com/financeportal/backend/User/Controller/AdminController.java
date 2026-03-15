@@ -39,12 +39,12 @@ public class AdminController {
     }
 
     @PutMapping("/users/{id}/disable")
-    public void disableUser(@PathVariable Long id) {
+    public void disableUser(@PathVariable String id) {
         adminService.disableUser(id);
     }
 
     @PutMapping("/users/{id}/enable")
-    public void enableUser(@PathVariable Long id) {
+    public void enableUser(@PathVariable String id) {
         adminService.enableUser(id);
     }
 
