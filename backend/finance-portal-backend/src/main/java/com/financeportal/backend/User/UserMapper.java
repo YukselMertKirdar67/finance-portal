@@ -10,20 +10,22 @@ import java.util.List;
 @Component
 public class UserMapper {
 
-    // Entity → UserResponseDTO
+    // Entity → UserResponseDTO (Keycloak ID kullan)
     public UserResponseDTO toUserResponseDTO(User user) {
-        return new UserResponseDTO(
-                user.getId(),
-                user.getUsername(),
-                user.getEmail(),
-                user.isEnabled()
-        );
+        return UserResponseDTO.builder()
+                .id(user.getKeycloakId())
+                .username(user.getUsername())
+                .email(user.getEmail())
+                .enabled(user.isEnabled())
+                .emailVerified(false)
+                .createdAt(user.getCreatedAt())
+                .build();
     }
 
     // Entity + Roles → MeResponseDTO
     public MeResponseDTO toMeResponseDTO(User user, List<String> roles) {
         return new MeResponseDTO(
-                user.getId(),
+                user.getKeycloakId(),
                 user.getUsername(),
                 user.getEmail(),
                 roles
