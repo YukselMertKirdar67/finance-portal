@@ -10,10 +10,21 @@ import org.keycloak.admin.client.resource.UsersResource;
 import org.keycloak.representations.idm.UserRepresentation;
 import org.keycloak.representations.idm.CredentialRepresentation;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.stereotype.Service;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
+import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.RestTemplate;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -21,6 +32,7 @@ import java.util.List;
 public class AuthServiceImpl implements AuthService {
 
     private final Keycloak keycloakAdminClient;
+    private final JwtDecoder jwtDecoder;
 
     @Value("${keycloak.admin.realm}")
     private String realm;
@@ -61,6 +73,15 @@ public class AuthServiceImpl implements AuthService {
 
                 // USER role'ünü ata
                 assignUserRole(realmResource, userId);
+
+                try {
+                    usersResource.get(userId).executeActionsEmail(
+                            Collections.singletonList("VERIFY_EMAIL")
+                    );
+                    log.info("Email verification sent to: {}", request.getEmail());
+                } catch (Exception e) {
+                    log.error("Failed to send verification email: {}", e.getMessage());
+                }
 
                 return RegisterResponseDTO.builder()
                         .success(true)
@@ -162,6 +183,181 @@ public class AuthServiceImpl implements AuthService {
             return PasswordResetResponseDTO.builder()
                     .success(false)
                     .message("Failed to reset password. Invalid or expired token.")
+                    .build();
+        }
+    }
+
+    @Override
+    public EmailVerificationResponseDTO sendVerificationEmail(EmailVerificationRequestDTO request) {
+        log.info("Sending email verification to: {}", request.getEmail());
+
+        try {
+            RealmResource realmResource = keycloakAdminClient.realm(realm);
+            UsersResource usersResource = realmResource.users();
+
+            List<UserRepresentation> users = usersResource.search(null, null, null,
+                    request.getEmail(), 0, 1);
+
+            if (users.isEmpty()) {
+                log.warn("User not found with email: {}", request.getEmail());
+
+                return EmailVerificationResponseDTO.builder()
+                        .success(false)
+                        .message("User not found with this email")
+                        .emailVerified(false)
+                        .build();
+            }
+
+            UserRepresentation user = users.get(0);
+            String userId = user.getId();
+
+            if (Boolean.TRUE.equals(user.isEmailVerified())) {
+                log.info("Email already verified: {}", request.getEmail());
+
+                return EmailVerificationResponseDTO.builder()
+                        .success(true)
+                        .message("Email is already verified")
+                        .emailVerified(true)
+                        .build();
+            }
+
+            // Email verification email'i gönder (redirect URL ile)
+            String redirectUri = "http://localhost:3000/login";
+            String clientId = "finance-portal-frontend";
+
+            usersResource.get(userId).executeActionsEmail(
+                    redirectUri,
+                    clientId,
+                    null,
+                    Collections.singletonList("VERIFY_EMAIL")
+                                    );
+
+            log.info("✅ Email verification sent successfully to: {} (redirect: {})", request.getEmail(), redirectUri);
+
+            return EmailVerificationResponseDTO.builder()
+                    .success(true)
+                    .message("Verification email sent successfully. Please check your inbox.")
+                    .emailVerified(false)
+                    .build();
+
+        } catch (Exception e) {
+            log.error("❌ Error sending verification email: {}", e.getMessage(), e);
+
+            return EmailVerificationResponseDTO.builder()
+                    .success(false)
+                    .message("Failed to send verification email. Please try again.")
+                    .emailVerified(false)
+                    .build();
+        }
+    }
+
+    @Override
+    public EmailVerificationResponseDTO checkEmailVerification(String email) {
+        log.info("Checking email verification status for: {}", email);
+
+        try {
+            RealmResource realmResource = keycloakAdminClient.realm(realm);
+            UsersResource usersResource = realmResource.users();
+
+            // Email ile user'ı bul
+            List<UserRepresentation> users = usersResource.search(null, null, null,
+                    email, 0, 1);
+
+            if (users.isEmpty()) {
+                log.warn("User not found with email: {}", email);
+
+                return EmailVerificationResponseDTO.builder()
+                        .success(false)
+                        .message("User not found")
+                        .emailVerified(false)
+                        .build();
+            }
+
+            UserRepresentation user = users.get(0);
+            boolean isVerified = Boolean.TRUE.equals(user.isEmailVerified());
+
+            log.info("Email verification status for {}: {}", email, isVerified);
+
+            return EmailVerificationResponseDTO.builder()
+                    .success(true)
+                    .message(isVerified ? "Email is verified" : "Email is not verified")
+                    .emailVerified(isVerified)
+                    .build();
+
+        } catch (Exception e) {
+            log.error("Error checking email verification: {}", e.getMessage(), e);
+
+            return EmailVerificationResponseDTO.builder()
+                    .success(false)
+                    .message("Failed to check verification status")
+                    .emailVerified(false)
+                    .build();
+        }
+    }
+
+    @Override
+    public LoginResponseDTO login(LoginRequestDTO request) {
+        log.info("Login attempt for user: {}", request.getUsername());
+
+        try {
+            // Keycloak token endpoint'e istek at
+            String tokenUrl = "http://finance-keycloak:8080/realms/finance-portal/protocol/openid-connect/token";
+
+            RestTemplate restTemplate = new RestTemplate();
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
+
+            MultiValueMap<String, String> body = new LinkedMultiValueMap<>();
+            body.add("client_id", "finance-portal-frontend");
+            body.add("username", request.getUsername());
+            body.add("password", request.getPassword());
+            body.add("grant_type", "password");
+
+            HttpEntity<MultiValueMap<String, String>> entity = new HttpEntity<>(body, headers);
+
+            try {
+                ResponseEntity<Map> response = restTemplate.postForEntity(tokenUrl, entity, Map.class);
+                Map<String, Object> tokenResponse = response.getBody();
+
+                String accessToken = (String) tokenResponse.get("access_token");
+                String refreshToken = (String) tokenResponse.get("refresh_token");
+
+                // JWT parse et
+                Jwt jwt = jwtDecoder.decode(accessToken);
+                String username = jwt.getClaimAsString("preferred_username");
+                String email = jwt.getClaimAsString("email");
+
+                // Roles çıkar
+                Map<String, Object> realmAccess = jwt.getClaimAsMap("realm_access");
+                List<String> roles = (List<String>) realmAccess.get("roles");
+
+                log.info("Login successful for user: {}", username);
+
+                return LoginResponseDTO.builder()
+                        .success(true)
+                        .message("Login successful")
+                        .accessToken(accessToken)
+                        .refreshToken(refreshToken)
+                        .username(username)
+                        .email(email)
+                        .roles(roles)
+                        .build();
+
+            } catch (HttpClientErrorException e) {
+                log.warn("Login failed for user: {} - {}", request.getUsername(), e.getMessage());
+
+                return LoginResponseDTO.builder()
+                        .success(false)
+                        .message("Invalid username or password")
+                        .build();
+            }
+
+        } catch (Exception e) {
+            log.error("Error during login: {}", e.getMessage(), e);
+
+            return LoginResponseDTO.builder()
+                    .success(false)
+                    .message("Login failed. Please try again.")
                     .build();
         }
     }
