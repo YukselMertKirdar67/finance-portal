@@ -10,12 +10,12 @@ public interface AdminService {
 
     List<UserResponseDTO> getAllUsers();
 
-    void disableUser(Long userId);
+    void disableUser(String userId);
 
     AdminStatsDTO getAdminStats();
 
     List<UserResponseDTO> searchUsers(String query);
 
-    void enableUser(Long userId);
+    void enableUser(String userId);
 
 }
