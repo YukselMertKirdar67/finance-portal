@@ -8,4 +8,10 @@ public interface AuthService {
     PasswordResetResponseDTO sendPasswordResetEmail(ForgotPasswordRequestDTO request);
 
     PasswordResetResponseDTO resetPassword(ResetPasswordRequestDTO request);
+
+    EmailVerificationResponseDTO sendVerificationEmail(EmailVerificationRequestDTO request);
+
+    EmailVerificationResponseDTO checkEmailVerification(String email);
+
+    LoginResponseDTO login(LoginRequestDTO request);
 }
