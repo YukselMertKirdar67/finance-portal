@@ -1,5 +1,4 @@
 import axios from 'axios';
-import { getToken, updateToken, doLogout } from '../keycloak';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
 
@@ -10,10 +9,10 @@ const api = axios.create({
     },
 });
 
-// REQUEST INTERCEPTOR - Her isteğe token ekle
+// REQUEST INTERCEPTOR - Her isteğe token ekle (localStorage'dan)
 api.interceptors.request.use(
     (config) => {
-        const token = getToken();
+        const token = localStorage.getItem('token');
         if (token) {
             config.headers.Authorization = `Bearer ${token}`;
         }
@@ -24,7 +23,7 @@ api.interceptors.request.use(
     }
 );
 
-//RESPONSE INTERCEPTOR - 401 Unauthorized handling
+// RESPONSE INTERCEPTOR - 401 Unauthorized handling
 api.interceptors.response.use(
     (response) => response,
     async (error) => {
@@ -35,16 +34,29 @@ api.interceptors.response.use(
             originalRequest._retry = true;
 
             try {
-                // Token'ı yenile ve isteği tekrar dene
-                const newToken = await new Promise((resolve) => {
-                    updateToken(resolve);
-                });
+                const refreshToken = localStorage.getItem('refreshToken');
 
-                originalRequest.headers.Authorization = `Bearer ${newToken}`;
-                return api(originalRequest);
+                if (refreshToken) {
+                    // const response = await axios.post(`${API_BASE_URL}/auth/refresh`, {
+                    //     refreshToken
+                    // });
+                    // localStorage.setItem('token', response.data.accessToken);
+                    // originalRequest.headers.Authorization = `Bearer ${response.data.accessToken}`;
+                    // return api(originalRequest);
+                }
+
+                // Refresh token yok veya başarısız, logout
+                localStorage.removeItem('token');
+                localStorage.removeItem('refreshToken');
+                localStorage.removeItem('user');
+                window.location.href = '/login';
+
             } catch (refreshError) {
                 // Token yenileme başarısız, logout
-                doLogout();
+                localStorage.removeItem('token');
+                localStorage.removeItem('refreshToken');
+                localStorage.removeItem('user');
+                window.location.href = '/login';
                 return Promise.reject(refreshError);
             }
         }
