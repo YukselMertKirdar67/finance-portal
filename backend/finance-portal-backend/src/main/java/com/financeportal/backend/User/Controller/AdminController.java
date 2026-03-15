@@ -55,10 +55,4 @@ public class AdminController {
         return adminService.getAdminStats();
     }
 
-    // ===== PORTFOLIO MANAGEMENT =====
-
-    @GetMapping("/portfolios")
-    public List<PortfolioDTO> getAllPortfolios() {
-        return adminService.getAllPortfolios();
-    }
 }

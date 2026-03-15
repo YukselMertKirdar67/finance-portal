@@ -18,5 +18,4 @@ public interface AdminService {
 
     void enableUser(Long userId);
 
-    List<PortfolioDTO> getAllPortfolios();
 }

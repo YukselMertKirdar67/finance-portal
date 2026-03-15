@@ -138,14 +138,4 @@ public class AdminServiceImpl implements AdminService {
                 .build();
     }
 
-    @Override
-    @Transactional(readOnly = true)
-    public List<PortfolioDTO> getAllPortfolios() {
-        log.info("Admin: Fetching all portfolios (all users)");
-
-        return portfolioRepository.findAll()
-                .stream()
-                .map(portfolioMapper::toDTO)
-                .collect(Collectors.toList());
-    }
 }
