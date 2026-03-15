@@ -1,23 +1,44 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Sidebar from './Sidebar';
 import Header from './Header';
+import EmailVerificationBanner from '../UI/EmailVerificationBanner';
+import api from '../../API/instrumentsApi';
 
 export default function Layout({
                                    children,
                                    isLoggedIn = false,
-                                   onLogin,
                                    onLogout,
-                                   onRegister
+                                   user = null
                                }) {
+    const [showBanner, setShowBanner] = useState(false);
+    const [emailVerified, setEmailVerified] = useState(true);
+
+    useEffect(() => {
+        const checkEmailVerification = async () => {
+            if (!user?.email) return;
+
+            try {
+                const response = await api.get(`/auth/check-email-verification?email=${user.email}`);
+                setEmailVerified(response.data.emailVerified);
+                setShowBanner(!response.data.emailVerified);
+            } catch (err) {
+                console.error('Error checking email verification:', err);
+            }
+        };
+
+        if (isLoggedIn && user?.email) {
+            checkEmailVerification();
+        }
+    }, [isLoggedIn, user?.email]);
+
     return (
         <div className="flex h-screen bg-gray-50">
 
             {/* SIDEBAR */}
             <Sidebar
                 isLoggedIn={isLoggedIn}
-                onLogin={onLogin}
                 onLogout={onLogout}
-                onRegister={onRegister}
+                user={user}
             />
 
             {/* MAIN CONTENT */}
@@ -26,9 +47,17 @@ export default function Layout({
                 {/* HEADER */}
                 <Header
                     isLoggedIn={isLoggedIn}
-                    onLogin={onLogin}
-                    onRegister={onRegister}
+                    onLogout={onLogout}
+                    user={user}
                 />
+
+                {/* EMAIL VERIFICATION BANNER */}
+                {showBanner && !emailVerified && (
+                    <EmailVerificationBanner
+                        email={user?.email}
+                        onClose={() => setShowBanner(false)}
+                    />
+                )}
 
                 {/* PAGE CONTENT */}
                 <main className="flex-1 overflow-y-auto">
