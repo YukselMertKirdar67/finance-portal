@@ -16,6 +16,11 @@ import com.financeportal.backend.User.DTO.UserResponseDTO;
 import com.financeportal.backend.Watchlist.WatchlistRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.keycloak.admin.client.Keycloak;
+import org.keycloak.admin.client.resource.RealmResource;
+import org.keycloak.admin.client.resource.UsersResource;
+import org.keycloak.representations.idm.UserRepresentation;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,114 +33,192 @@ import java.util.stream.Collectors;
 @Slf4j
 public class AdminServiceImpl implements AdminService {
 
-    private final UserRepository userRepository;
-    private final UserMapper userMapper;
+    private final Keycloak keycloakAdminClient;
     private final PortfolioRepository portfolioRepository;
-    private final PortfolioMapper portfolioMapper;
     private final PortfolioTransactionRepository transactionRepository;
     private final WatchlistRepository watchlistRepository;
 
+    @Value("${keycloak.admin.realm}")
+    private String realm;
+
+    // ===== USER MANAGEMENT (KEYCLOAK) =====
+
     @Override
-    @Transactional(readOnly = true)
     public List<UserResponseDTO> getAllUsers() {
-        log.info("Admin: Fetching all users");
+        log.info("Admin: Fetching all users from Keycloak");
 
-        return userRepository.findAll()
-                .stream()
-                .map(userMapper::toUserResponseDTO)
-                .collect(Collectors.toList());
+        try {
+            RealmResource realmResource = keycloakAdminClient.realm(realm);
+            List<UserRepresentation> users = realmResource.users().list();
+
+            return users.stream()
+                    .map(this::mapToUserResponseDTO)
+                    .collect(Collectors.toList());
+
+        } catch (Exception e) {
+            log.error("Error fetching users from Keycloak: {}", e.getMessage(), e);
+            throw new RuntimeException("Failed to fetch users from Keycloak", e);
+        }
     }
 
     @Override
-    @Transactional
-    public void disableUser(Long userId) {
-        log.info("Admin: Disabling user with id: {}", userId);
+    public void disableUser(String userId) {
+        log.info("Admin: Disabling user with Keycloak ID: {}", userId);
 
-        User user = userRepository.findById(userId)
-                .orElseThrow(() ->
-                        new ResourceNotFoundException("User not found with id: " + userId));
+        try {
+            RealmResource realmResource = keycloakAdminClient.realm(realm);
+            UsersResource usersResource = realmResource.users();
 
-        user.setEnabled(false);
-        userRepository.save(user);
+            // Keycloak'ta user ID string olarak kullanılır
+            String keycloakUserId = String.valueOf(userId);
+            UserRepresentation user = usersResource.get(keycloakUserId).toRepresentation();
 
-        log.info("Admin: User disabled successfully: {}", userId);
+            user.setEnabled(false);
+            usersResource.get(keycloakUserId).update(user);
+
+            log.info("Admin: User disabled successfully: {}", userId);
+
+        } catch (Exception e) {
+            log.error("Error disabling user: {}", e.getMessage(), e);
+            throw new RuntimeException("Failed to disable user", e);
+        }
     }
 
     @Override
-    @Transactional
-    public void enableUser(Long userId) {
-        log.info("Admin: Enabling user with id: {}", userId);
+    public void enableUser(String userId) {
+        log.info("Admin: Enabling user with Keycloak ID: {}", userId);
 
-        User user = userRepository.findById(userId)
-                .orElseThrow(() ->
-                        new ResourceNotFoundException("User not found with id: " + userId));
+        try {
+            RealmResource realmResource = keycloakAdminClient.realm(realm);
+            UsersResource usersResource = realmResource.users();
 
-        user.setEnabled(true);
-        userRepository.save(user);
+            String keycloakUserId = String.valueOf(userId);
+            UserRepresentation user = usersResource.get(keycloakUserId).toRepresentation();
 
-        log.info("Admin: User enabled successfully: {}", userId);
+            user.setEnabled(true);
+            usersResource.get(keycloakUserId).update(user);
+
+            log.info("Admin: User enabled successfully: {}", userId);
+
+        } catch (Exception e) {
+            log.error("Error enabling user: {}", e.getMessage(), e);
+            throw new RuntimeException("Failed to enable user", e);
+        }
     }
 
     @Override
-    @Transactional(readOnly = true)
     public List<UserResponseDTO> searchUsers(String query) {
         log.info("Admin: Searching users with query: {}", query);
 
-        return userRepository.findAll()
-                .stream()
-                .filter(user ->
-                        user.getUsername().toLowerCase().contains(query.toLowerCase()) ||
-                                user.getEmail().toLowerCase().contains(query.toLowerCase())
-                )
-                .map(userMapper::toUserResponseDTO)
-                .collect(Collectors.toList());
+        try {
+            RealmResource realmResource = keycloakAdminClient.realm(realm);
+            List<UserRepresentation> users = realmResource.users().search(query);
+
+            return users.stream()
+                    .map(this::mapToUserResponseDTO)
+                    .collect(Collectors.toList());
+
+        } catch (Exception e) {
+            log.error("Error searching users: {}", e.getMessage(), e);
+            throw new RuntimeException("Failed to search users", e);
+        }
     }
+
+    // ===== ADMIN STATS =====
 
     @Override
     @Transactional(readOnly = true)
     public AdminStatsDTO getAdminStats() {
         log.info("Admin: Fetching admin dashboard statistics");
 
-        // Kullanıcı istatistikleri
-        Long totalUsers = userRepository.count();
-        Long activeUsers = userRepository.findAll().stream()
-                .filter(User::isEnabled)
-                .count();
-        Long disabledUsers = totalUsers - activeUsers;
+        try {
+            //  KEYCLOAK'TAN KULLANICI İSTATİSTİKLERİ
+            RealmResource realmResource = keycloakAdminClient.realm(realm);
+            List<UserRepresentation> allUsers = realmResource.users().list();
 
-        // Portföy istatistikleri
-        Long totalPortfolios = portfolioRepository.count();
-        Long activePortfolios = portfolioRepository.findAll().stream()
-                .filter(Portfolio::isActive)
-                .count();
+            Long totalUsers = (long) allUsers.size();
+            Long activeUsers = allUsers.stream()
+                    .filter(UserRepresentation::isEnabled)
+                    .count();
+            Long disabledUsers = totalUsers - activeUsers;
 
-        // Toplam portföy değeri (basit hesaplama - initial balance toplamı)
-        BigDecimal totalPortfolioValue = portfolioRepository.findAll().stream()
-                .map(Portfolio::getInitialBalance)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+            log.info("✅ Keycloak stats - Total: {}, Active: {}, Disabled: {}",
+                    totalUsers, activeUsers, disabledUsers);
 
-        // İşlem istatistikleri
-        Long totalTransactions = transactionRepository.count();
-        Long buyTransactions = transactionRepository.findAll().stream()
-                .filter(tx -> tx.getTransactionType() == TransactionType.BUY)
-                .count();
-        Long sellTransactions = totalTransactions - buyTransactions;
+            //  DATABASE'DEN PORTFÖY İSTATİSTİKLERİ
+            Long totalPortfolios = portfolioRepository.count();
+            Long activePortfolios = portfolioRepository.findAll().stream()
+                    .filter(Portfolio::isActive)
+                    .count();
 
-        // Watchlist istatistikleri
-        Long totalWatchlistItems = watchlistRepository.count();
+            log.info("✅ Portfolio stats - Total: {}, Active: {}", totalPortfolios, activePortfolios);
 
-        return AdminStatsDTO.builder()
-                .totalUsers(totalUsers)
-                .activeUsers(activeUsers)
-                .disabledUsers(disabledUsers)
-                .totalPortfolios(totalPortfolios)
-                .activePortfolios(activePortfolios)
-                .totalPortfolioValue(totalPortfolioValue)
-                .totalTransactions(totalTransactions)
-                .buyTransactions(buyTransactions)
-                .sellTransactions(sellTransactions)
-                .totalWatchlistItems(totalWatchlistItems)
-                .build();
+            // Toplam portföy değeri
+            BigDecimal totalPortfolioValue = portfolioRepository.findAll().stream()
+                    .map(Portfolio::getInitialBalance)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+            //  İŞLEM İSTATİSTİKLERİ
+            Long totalTransactions = transactionRepository.count();
+            Long buyTransactions = transactionRepository.findAll().stream()
+                    .filter(tx -> tx.getTransactionType() == TransactionType.BUY)
+                    .count();
+            Long sellTransactions = totalTransactions - buyTransactions;
+
+            log.info("✅ Transaction stats - Total: {}, Buy: {}, Sell: {}",
+                    totalTransactions, buyTransactions, sellTransactions);
+
+            //  WATCHLIST İSTATİSTİKLERİ
+            Long totalWatchlistItems = watchlistRepository.count();
+
+            log.info("✅ Watchlist stats - Total: {}", totalWatchlistItems);
+
+            return AdminStatsDTO.builder()
+                    .totalUsers(totalUsers)
+                    .activeUsers(activeUsers)
+                    .disabledUsers(disabledUsers)
+                    .totalPortfolios(totalPortfolios)
+                    .activePortfolios(activePortfolios)
+                    .totalPortfolioValue(totalPortfolioValue)
+                    .totalTransactions(totalTransactions)
+                    .buyTransactions(buyTransactions)
+                    .sellTransactions(sellTransactions)
+                    .totalWatchlistItems(totalWatchlistItems)
+                    .build();
+
+        } catch (Exception e) {
+            log.error("❌ Error fetching admin stats: {}", e.getMessage(), e);
+
+            // Hata durumunda 0'lar döndür
+            return AdminStatsDTO.builder()
+                    .totalUsers(0L)
+                    .activeUsers(0L)
+                    .disabledUsers(0L)
+                    .totalPortfolios(0L)
+                    .activePortfolios(0L)
+                    .totalPortfolioValue(BigDecimal.ZERO)
+                    .totalTransactions(0L)
+                    .buyTransactions(0L)
+                    .sellTransactions(0L)
+                    .totalWatchlistItems(0L)
+                    .build();
+        }
     }
 
+    // ===== HELPER METHODS =====
+
+    private UserResponseDTO mapToUserResponseDTO(UserRepresentation keycloakUser) {
+        return UserResponseDTO.builder()
+                .id(keycloakUser.getId())  // Keycloak UUID (String)
+                .username(keycloakUser.getUsername())
+                .email(keycloakUser.getEmail())
+                .enabled(keycloakUser.isEnabled())
+                .emailVerified(keycloakUser.isEmailVerified())
+                .createdAt(keycloakUser.getCreatedTimestamp() != null
+                        ? new java.util.Date(keycloakUser.getCreatedTimestamp()).toInstant()
+                        .atZone(java.time.ZoneId.systemDefault())
+                        .toLocalDateTime()
+                        : null)
+                .build();
+    }
 }
