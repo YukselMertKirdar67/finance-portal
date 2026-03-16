@@ -416,6 +416,91 @@ public class AuthServiceImpl implements AuthService {
         }
     }
 
+    @Override
+    public ChangePasswordResponseDTO changePassword(String userId, ChangePasswordRequestDTO request) {
+        log.info("Changing password for user: {}", userId);
+
+        try {
+            // Şifrelerin eşleştiğini kontrol et
+            if (!request.getNewPassword().equals(request.getConfirmPassword())) {
+                log.warn("Password confirmation mismatch for user: {}", userId);
+
+                return ChangePasswordResponseDTO.builder()
+                        .success(false)
+                        .message("New password and confirm password do not match")
+                        .build();
+            }
+
+            // Keycloak admin client
+            RealmResource realmResource = keycloakAdminClient.realm(realm);
+            UsersResource usersResource = realmResource.users();
+
+            // Önce mevcut şifreyi doğrula (login denemesi yap)
+            try {
+                UserRepresentation user = usersResource.get(userId).toRepresentation();
+                String username = user.getUsername();
+
+                // Mevcut şifreyle login dene
+                String tokenUrl = "http://finance-keycloak:8080/realms/finance-portal/protocol/openid-connect/token";
+
+                RestTemplate restTemplate = new RestTemplate();
+                HttpHeaders headers = new HttpHeaders();
+                headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
+
+                MultiValueMap<String, String> body = new LinkedMultiValueMap<>();
+                body.add("client_id", "finance-portal-frontend");
+                body.add("username", username);
+                body.add("password", request.getCurrentPassword());
+                body.add("grant_type", "password");
+
+                HttpEntity<MultiValueMap<String, String>> entity = new HttpEntity<>(body, headers);
+
+                try {
+                    restTemplate.postForEntity(tokenUrl, entity, Map.class);
+
+                } catch (HttpClientErrorException e) {
+                    log.warn("Current password is incorrect for user: {}", userId);
+
+                    return ChangePasswordResponseDTO.builder()
+                            .success(false)
+                            .message("Current password is incorrect")
+                            .build();
+                }
+
+            } catch (Exception e) {
+                log.error("Error validating current password: {}", e.getMessage());
+
+                return ChangePasswordResponseDTO.builder()
+                        .success(false)
+                        .message("Failed to validate current password")
+                        .build();
+            }
+
+            // Yeni şifreyi ayarla
+            CredentialRepresentation credential = new CredentialRepresentation();
+            credential.setType(CredentialRepresentation.PASSWORD);
+            credential.setValue(request.getNewPassword());
+            credential.setTemporary(false);
+
+            usersResource.get(userId).resetPassword(credential);
+
+            log.info("✅ Password changed successfully for user: {}", userId);
+
+            return ChangePasswordResponseDTO.builder()
+                    .success(true)
+                    .message("Password changed successfully")
+                    .build();
+
+        } catch (Exception e) {
+            log.error("❌ Error changing password: {}", e.getMessage(), e);
+
+            return ChangePasswordResponseDTO.builder()
+                    .success(false)
+                    .message("Failed to change password. Please try again.")
+                    .build();
+        }
+    }
+
 
 
     private void assignUserRole(RealmResource realmResource, String userId) {
