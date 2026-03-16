@@ -14,4 +14,6 @@ public interface AuthService {
     EmailVerificationResponseDTO checkEmailVerification(String email);
 
     LoginResponseDTO login(LoginRequestDTO request);
+
+    RefreshTokenResponseDTO refreshToken(RefreshTokenRequestDTO request);
 }
