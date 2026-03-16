@@ -362,6 +362,60 @@ public class AuthServiceImpl implements AuthService {
         }
     }
 
+    @Override
+    public RefreshTokenResponseDTO refreshToken(RefreshTokenRequestDTO request) {
+        log.info("Refreshing access token");
+
+        try {
+            // Keycloak token endpoint
+            String tokenUrl = "http://finance-keycloak:8080/realms/finance-portal/protocol/openid-connect/token";
+
+            RestTemplate restTemplate = new RestTemplate();
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
+
+            MultiValueMap<String, String> body = new LinkedMultiValueMap<>();
+            body.add("client_id", "finance-portal-frontend");
+            body.add("grant_type", "refresh_token");
+            body.add("refresh_token", request.getRefreshToken());
+
+            HttpEntity<MultiValueMap<String, String>> entity = new HttpEntity<>(body, headers);
+
+            try {
+                ResponseEntity<Map> response = restTemplate.postForEntity(tokenUrl, entity, Map.class);
+                Map<String, Object> tokenResponse = response.getBody();
+
+                String newAccessToken = (String) tokenResponse.get("access_token");
+                String newRefreshToken = (String) tokenResponse.get("refresh_token");
+
+                log.info("✅ Token refreshed successfully");
+
+                return RefreshTokenResponseDTO.builder()
+                        .success(true)
+                        .message("Token refreshed successfully")
+                        .accessToken(newAccessToken)
+                        .refreshToken(newRefreshToken)
+                        .build();
+
+            } catch (HttpClientErrorException e) {
+                log.warn("❌ Token refresh failed: {}", e.getMessage());
+
+                return RefreshTokenResponseDTO.builder()
+                        .success(false)
+                        .message("Invalid or expired refresh token")
+                        .build();
+            }
+
+        } catch (Exception e) {
+            log.error("❌ Error during token refresh: {}", e.getMessage(), e);
+
+            return RefreshTokenResponseDTO.builder()
+                    .success(false)
+                    .message("Token refresh failed. Please login again.")
+                    .build();
+        }
+    }
+
 
 
     private void assignUserRole(RealmResource realmResource, String userId) {
