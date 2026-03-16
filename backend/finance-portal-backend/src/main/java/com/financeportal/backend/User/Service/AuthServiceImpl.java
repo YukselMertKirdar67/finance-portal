@@ -501,6 +501,56 @@ public class AuthServiceImpl implements AuthService {
         }
     }
 
+    @Override
+    public LogoutResponseDTO logout(LogoutRequestDTO request) {
+        log.info("Logout request - terminating Keycloak session");
+
+        try {
+            // Keycloak logout endpoint
+            String logoutUrl = "http://finance-keycloak:8080/realms/finance-portal/protocol/openid-connect/logout";
+
+            RestTemplate restTemplate = new RestTemplate();
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
+
+            MultiValueMap<String, String> body = new LinkedMultiValueMap<>();
+            body.add("client_id", "finance-portal-frontend");
+            body.add("refresh_token", request.getRefreshToken());
+
+            HttpEntity<MultiValueMap<String, String>> entity = new HttpEntity<>(body, headers);
+
+            try {
+                // Keycloak logout endpoint'ine istek at
+                restTemplate.postForEntity(logoutUrl, entity, String.class);
+
+                log.info("✅ Keycloak session terminated successfully");
+
+                return LogoutResponseDTO.builder()
+                        .success(true)
+                        .message("Logout successful")
+                        .build();
+
+            } catch (HttpClientErrorException e) {
+                log.warn("⚠️ Logout request failed (token may be already invalid): {}", e.getMessage());
+
+                // Token zaten geçersiz olabilir, yine de başarılı say
+                return LogoutResponseDTO.builder()
+                        .success(true)
+                        .message("Logout successful")
+                        .build();
+            }
+
+        } catch (Exception e) {
+            log.error("❌ Error during logout: {}", e.getMessage(), e);
+
+            // Hata olsa bile frontend'de logout devam etsin
+            return LogoutResponseDTO.builder()
+                    .success(true)
+                    .message("Logout completed (session cleanup may have failed)")
+                    .build();
+        }
+    }
+
 
 
     private void assignUserRole(RealmResource realmResource, String userId) {
