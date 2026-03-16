@@ -9,9 +9,14 @@ const api = axios.create({
     },
 });
 
-// REQUEST INTERCEPTOR - Her isteğe token ekle (localStorage'dan)
+// REQUEST INTERCEPTOR - /auth/refresh hariç token ekle
 api.interceptors.request.use(
     (config) => {
+        // /auth/refresh isteğine token ekleme
+        if (config.url && config.url.includes('/auth/refresh')) {
+            return config;
+        }
+
         const token = localStorage.getItem('token');
         if (token) {
             config.headers.Authorization = `Bearer ${token}`;
@@ -23,39 +28,55 @@ api.interceptors.request.use(
     }
 );
 
-// RESPONSE INTERCEPTOR - 401 Unauthorized handling
+// RESPONSE INTERCEPTOR - Auto Token Refresh
 api.interceptors.response.use(
     (response) => response,
     async (error) => {
         const originalRequest = error.config;
 
-        // Token expired, try refresh
         if (error.response?.status === 401 && !originalRequest._retry) {
             originalRequest._retry = true;
 
-            try {
-                const refreshToken = localStorage.getItem('refreshToken');
+            const refreshTokenValue = localStorage.getItem('refreshToken');
 
-                if (refreshToken) {
-                    // const response = await axios.post(`${API_BASE_URL}/auth/refresh`, {
-                    //     refreshToken
-                    // });
-                    // localStorage.setItem('token', response.data.accessToken);
-                    // originalRequest.headers.Authorization = `Bearer ${response.data.accessToken}`;
-                    // return api(originalRequest);
+            if (!refreshTokenValue) {
+                console.log('❌ No refresh token found, logging out...');
+                localStorage.clear();
+                window.location.href = '/login';
+                return Promise.reject(error);
+            }
+
+            try {
+                console.log('🔄 Access token expired, refreshing...');
+
+                // Direkt axios kullan (api instance değil!)
+                const response = await axios.post(`${API_BASE_URL}/auth/refresh`, {
+                    refreshToken: refreshTokenValue
+                }, {
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (response.data && response.data.success) {
+                    const { accessToken, refreshToken: newRefreshToken } = response.data;
+
+                    localStorage.setItem('token', accessToken);
+                    if (newRefreshToken) {
+                        localStorage.setItem('refreshToken', newRefreshToken);
+                    }
+
+                    originalRequest.headers.Authorization = `Bearer ${accessToken}`;
+
+                    console.log('✅ Token refreshed successfully, retrying request...');
+                    return api(originalRequest);
+                } else {
+                    throw new Error('Refresh token response invalid');
                 }
 
-                // Refresh token yok veya başarısız, logout
-                localStorage.removeItem('token');
-                localStorage.removeItem('refreshToken');
-                localStorage.removeItem('user');
-                window.location.href = '/login';
-
             } catch (refreshError) {
-                // Token yenileme başarısız, logout
-                localStorage.removeItem('token');
-                localStorage.removeItem('refreshToken');
-                localStorage.removeItem('user');
+                console.error('❌ Token refresh failed:', refreshError);
+                localStorage.clear();
                 window.location.href = '/login';
                 return Promise.reject(refreshError);
             }
