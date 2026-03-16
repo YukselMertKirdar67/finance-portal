@@ -82,6 +82,14 @@ public class AuthController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
         }
     }
+    @PostMapping("/logout")
+    public ResponseEntity<LogoutResponseDTO> logout(
+            @Valid @RequestBody LogoutRequestDTO request) {
+
+        LogoutResponseDTO response = authService.logout(request);
+
+        return ResponseEntity.ok(response);
+    }
 
     @PostMapping("/refresh")
     public ResponseEntity<RefreshTokenResponseDTO> refreshToken(
