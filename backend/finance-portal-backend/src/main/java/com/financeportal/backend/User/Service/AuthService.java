@@ -16,4 +16,6 @@ public interface AuthService {
     LoginResponseDTO login(LoginRequestDTO request);
 
     RefreshTokenResponseDTO refreshToken(RefreshTokenRequestDTO request);
+
+    ChangePasswordResponseDTO changePassword(String userId, ChangePasswordRequestDTO request);
 }
