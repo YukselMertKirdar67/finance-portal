@@ -66,3 +66,47 @@ export const enableUser = async (userId) => {
         throw error;
     }
 };
+
+/**
+ * Kullanıcıyı ID ye göre getir
+ */
+export const getUserDetail = async (userId) => {
+    try {
+        const response = await api.get(`/admin/users/${userId}`);
+        return response.data;
+    } catch (error) {
+        console.error('Error fetching user detail:', error);
+        throw error;
+    }
+};
+
+/**
+ * Kullanıcıya rol ata
+ */
+export const assignRole = async (userId, roleName) => {
+    try {
+        const response = await api.post(`/admin/users/${userId}/assign-role`, {
+            roleName
+        });
+        return response.data;
+    } catch (error) {
+        console.error('Error assigning role:', error);
+        throw error;
+    }
+};
+
+/**
+ * Kullanıcının rolünü kaldır
+ */
+export const removeRole = async (userId, roleName) => {
+    try {
+        const response = await api.post(`/admin/users/${userId}/remove-role`, {
+            roleName
+        });
+        return response.data;
+    } catch (error) {
+        console.error('Error removing role:', error);
+        throw error;
+    }
+};
+
