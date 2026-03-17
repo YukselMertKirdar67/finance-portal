@@ -20,6 +20,7 @@ import TransactionPage from './Components/Page/TransactionPage';
 import UserProfilePage from './Components/Page/UserProfilePage';
 import AdminDashboard from './Components/Page/AdminDashboard';
 import AdminUsersPage from './Components/Page/AdminUsersPage';
+import AdminUserDetailPage from './Components/Page/AdminUserDetailPage';
 
 // Protected Route Component
 const ProtectedRoute = ({ children, adminOnly = false }) => {
@@ -114,6 +115,15 @@ const AppRoutes = () => {
                                     element={
                                         <ProtectedRoute adminOnly>
                                             <AdminUsersPage />
+                                        </ProtectedRoute>
+                                    }
+                                />
+
+                                <Route
+                                    path="/admin/users/:id"
+                                    element={
+                                        <ProtectedRoute adminOnly>
+                                                <AdminUserDetailPage />
                                         </ProtectedRoute>
                                     }
                                 />
