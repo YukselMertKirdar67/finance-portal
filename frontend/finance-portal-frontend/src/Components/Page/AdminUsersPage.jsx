@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate,Link } from 'react-router-dom';
 import {
     Users,
     Search,
@@ -232,7 +232,12 @@ const AdminUsersPage = () => {
                                                 {user.username.substring(0, 2).toUpperCase()}
                                             </div>
                                             <div>
-                                                <p className="font-semibold text-gray-900">{user.username}</p>
+                                                <Link
+                                                    to={`/admin/users/${user.id}`}
+                                                    className="font-semibold text-blue-600 hover:text-blue-800 hover:underline"
+                                                >
+                                                    {user.username}
+                                                </Link>
                                                 <p className="text-sm text-gray-500">ID: {user.id}</p>
                                             </div>
                                         </div>
