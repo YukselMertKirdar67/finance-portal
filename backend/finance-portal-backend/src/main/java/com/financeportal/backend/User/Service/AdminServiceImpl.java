@@ -8,11 +8,10 @@ import com.financeportal.backend.Portfolio.Enum.TransactionType;
 import com.financeportal.backend.Portfolio.Mapper.PortfolioMapper;
 import com.financeportal.backend.Portfolio.Repository.PortfolioRepository;
 import com.financeportal.backend.Portfolio.Repository.PortfolioTransactionRepository;
-import com.financeportal.backend.User.DTO.AdminStatsDTO;
+import com.financeportal.backend.User.DTO.*;
 import com.financeportal.backend.User.Entity.User;
 import com.financeportal.backend.User.UserMapper;
 import com.financeportal.backend.User.Repository.UserRepository;
-import com.financeportal.backend.User.DTO.UserResponseDTO;
 import com.financeportal.backend.Watchlist.WatchlistRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -25,6 +24,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -121,6 +123,147 @@ public class AdminServiceImpl implements AdminService {
         } catch (Exception e) {
             log.error("Error searching users: {}", e.getMessage(), e);
             throw new RuntimeException("Failed to search users", e);
+        }
+    }
+
+    @Override
+    public UserDetailDTO getUserDetail(String userId) {
+        log.info("Fetching user detail for userId: {}", userId);
+
+        try {
+            RealmResource realmResource = keycloakAdminClient.realm(realm);
+            UsersResource usersResource = realmResource.users();
+
+            // Keycloak'tan user bilgisi
+            UserRepresentation keycloakUser = usersResource.get(userId).toRepresentation();
+
+            // User'ın rollerini al
+            List<String> roles = usersResource.get(userId)
+                    .roles()
+                    .realmLevel()
+                    .listAll()
+                    .stream()
+                    .map(org.keycloak.representations.idm.RoleRepresentation::getName)
+                    .collect(Collectors.toList());
+
+            // Database'den user'ın Keycloak ID'sine göre istatistikleri al
+            int portfolioCount = 0;
+            int transactionCount = 0;
+            int watchlistCount = 0;
+
+            try {
+                // Portfolio count - userId direkt String olarak tutuluyor
+                portfolioCount = (int) portfolioRepository.findAll().stream()
+                        .filter(p -> userId.equals(p.getUserId()))
+                        .count();
+
+                // Transaction count - portfolio üzerinden userId kontrol et
+                transactionCount = (int) transactionRepository.findAll().stream()
+                        .filter(t -> t.getPortfolio() != null &&
+                                userId.equals(t.getPortfolio().getUserId()))
+                        .count();
+
+                // Watchlist count - userId direkt kontrol et
+                watchlistCount = (int) watchlistRepository.findAll().stream()
+                        .filter(w -> userId.equals(w.getUserId()))
+                        .count();
+
+            } catch (Exception e) {
+                log.warn("Could not fetch user statistics from database: {}", e.getMessage());
+            }
+
+            LocalDateTime createdAt = keycloakUser.getCreatedTimestamp() != null
+                    ? LocalDateTime.ofInstant(
+                    Instant.ofEpochMilli(keycloakUser.getCreatedTimestamp()),
+                    ZoneId.systemDefault())
+                    : null;
+
+            return UserDetailDTO.builder()
+                    .id(keycloakUser.getId())
+                    .username(keycloakUser.getUsername())
+                    .email(keycloakUser.getEmail())
+                    .enabled(keycloakUser.isEnabled())
+                    .emailVerified(keycloakUser.isEmailVerified())
+                    .createdAt(createdAt)
+                    .roles(roles)
+                    .portfolioCount(portfolioCount)
+                    .transactionCount(transactionCount)
+                    .watchlistCount(watchlistCount)
+                    .build();
+
+        } catch (Exception e) {
+            log.error("Error fetching user detail: {}", e.getMessage(), e);
+            throw new RuntimeException("Failed to fetch user detail");
+        }
+    }
+
+    @Override
+    public AssignRoleResponseDTO assignRole(String userId, AssignRoleRequestDTO request) {
+        log.info("Assigning role {} to user {}", request.getRoleName(), userId);
+
+        try {
+            RealmResource realmResource = keycloakAdminClient.realm(realm);
+            UsersResource usersResource = realmResource.users();
+
+            // Role'ü al
+            org.keycloak.representations.idm.RoleRepresentation roleRepresentation =
+                    realmResource.roles().get(request.getRoleName()).toRepresentation();
+
+            // User'a role ata
+            usersResource.get(userId)
+                    .roles()
+                    .realmLevel()
+                    .add(List.of(roleRepresentation));
+
+            log.info("✅ Role {} assigned to user {}", request.getRoleName(), userId);
+
+            return AssignRoleResponseDTO.builder()
+                    .success(true)
+                    .message("Role assigned successfully")
+                    .build();
+
+        } catch (Exception e) {
+            log.error("❌ Error assigning role: {}", e.getMessage(), e);
+
+            return AssignRoleResponseDTO.builder()
+                    .success(false)
+                    .message("Failed to assign role: " + e.getMessage())
+                    .build();
+        }
+    }
+
+    @Override
+    public RemoveRoleResponseDTO removeRole(String userId, RemoveRoleRequestDTO request) {
+        log.info("Removing role {} from user {}", request.getRoleName(), userId);
+
+        try {
+            RealmResource realmResource = keycloakAdminClient.realm(realm);
+            UsersResource usersResource = realmResource.users();
+
+            // Role'ü al
+            org.keycloak.representations.idm.RoleRepresentation roleRepresentation =
+                    realmResource.roles().get(request.getRoleName()).toRepresentation();
+
+            // User'dan role kaldır
+            usersResource.get(userId)
+                    .roles()
+                    .realmLevel()
+                    .remove(List.of(roleRepresentation));
+
+            log.info("✅ Role {} removed from user {}", request.getRoleName(), userId);
+
+            return RemoveRoleResponseDTO.builder()
+                    .success(true)
+                    .message("Role removed successfully")
+                    .build();
+
+        } catch (Exception e) {
+            log.error("❌ Error removing role: {}", e.getMessage(), e);
+
+            return RemoveRoleResponseDTO.builder()
+                    .success(false)
+                    .message("Failed to remove role: " + e.getMessage())
+                    .build();
         }
     }
 
