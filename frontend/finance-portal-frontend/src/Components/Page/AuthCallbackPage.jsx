@@ -1,10 +1,7 @@
 import React, { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import api from '../../API/instrumentsApi';
 
 const AuthCallbackPage = () => {
-    const navigate = useNavigate();
-
     useEffect(() => {
         const handleCallback = async () => {
             // URL'den authorization code al
@@ -17,7 +14,7 @@ const AuthCallbackPage = () => {
                 if (window.opener) {
                     window.close();
                 } else {
-                    navigate('/login');
+                    window.location.href = '/login';
                 }
                 return;
             }
@@ -33,7 +30,7 @@ const AuthCallbackPage = () => {
 
                     console.log('✅ Token exchange successful');
 
-                    //  Parent window'a token gönder (postMessage)
+                    // Parent window'a token gönder (postMessage)
                     if (window.opener) {
                         window.opener.postMessage({
                             type: 'KEYCLOAK_AUTH_SUCCESS',
@@ -59,7 +56,7 @@ const AuthCallbackPage = () => {
                         localStorage.setItem('refreshToken', refreshToken);
                         localStorage.setItem('user', JSON.stringify({ username, email, roles }));
 
-                        navigate('/home');
+                        window.location.href = '/home';
                     }
                 }
 
@@ -69,13 +66,13 @@ const AuthCallbackPage = () => {
                 if (window.opener) {
                     window.close();
                 } else {
-                    navigate('/login');
+                    window.location.href = '/login';
                 }
             }
         };
 
         handleCallback();
-    }, [navigate]);
+    }, []);  //  navigate dependency kaldırıldı
 
     return (
         <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
