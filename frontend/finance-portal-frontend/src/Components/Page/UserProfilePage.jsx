@@ -33,6 +33,10 @@ const UserProfilePage = () => {
     const [passwordLoading, setPasswordLoading] = useState(false);
     const [passwordSuccess, setPasswordSuccess] = useState('');
 
+    // OTP States
+    const [showOTPInput, setShowOTPInput] = useState(false);
+    const [otpCode, setOtpCode] = useState('');
+
     useEffect(() => {
         fetchProfile();
     }, []);
@@ -81,7 +85,6 @@ const UserProfilePage = () => {
             ...prev,
             [name]: value
         }));
-        // Hata mesajını temizle
         if (passwordErrors[name]) {
             setPasswordErrors(prev => ({
                 ...prev,
@@ -107,6 +110,11 @@ const UserProfilePage = () => {
             errors.confirmPassword = 'Şifreler eşleşmiyor';
         }
 
+        // OTP validation
+        if (showOTPInput && (!otpCode || otpCode.length !== 6)) {
+            errors.otpCode = '6 haneli OTP kodu gerekli';
+        }
+
         setPasswordErrors(errors);
         return Object.keys(errors).length === 0;
     };
@@ -123,7 +131,13 @@ const UserProfilePage = () => {
         setPasswordErrors({});
 
         try {
-            const response = await changePassword(passwordForm);
+            // OTP ile birlikte gönder
+            const response = await changePassword({
+                currentPassword: passwordForm.currentPassword,
+                newPassword: passwordForm.newPassword,
+                confirmPassword: passwordForm.confirmPassword,
+                otpCode: showOTPInput ? otpCode : null
+            });
 
             if (response.success) {
                 setPasswordSuccess(response.message);
@@ -134,17 +148,33 @@ const UserProfilePage = () => {
                     newPassword: '',
                     confirmPassword: ''
                 });
+                setOtpCode('');
+                setShowOTPInput(false);
 
                 // 2 saniye sonra modal'ı kapat
                 setTimeout(() => {
                     setShowPasswordModal(false);
                     setPasswordSuccess('');
                 }, 2000);
+
+            } else if (response.message === 'OTP_REQUIRED') {
+                setShowOTPInput(true);
+                setPasswordErrors({});
+
+            } else {
+                setPasswordErrors({ submit: response.message || 'Şifre değiştirme başarısız' });
             }
 
         } catch (error) {
             const errorMsg = error.response?.data?.message || 'Şifre değiştirme başarısız';
-            setPasswordErrors({ submit: errorMsg });
+
+            // OTP_REQUIRED kontrolü
+            if (errorMsg === 'OTP_REQUIRED') {
+                setShowOTPInput(true);
+                setPasswordErrors({});
+            } else {
+                setPasswordErrors({ submit: errorMsg });
+            }
         } finally {
             setPasswordLoading(false);
         }
@@ -194,23 +224,17 @@ const UserProfilePage = () => {
                 {/* Profile Card */}
                 <div className="lg:col-span-1">
                     <div className="bg-white rounded-xl shadow-md p-6 border border-gray-100">
-
-                        {/* Avatar */}
                         <div className="text-center mb-6">
                             <div className="w-24 h-24 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full mx-auto flex items-center justify-center text-white text-3xl font-bold shadow-lg">
                                 {user?.username?.substring(0, 2).toUpperCase()}
                             </div>
                         </div>
-
-                        {/* Username */}
                         <div className="text-center mb-6">
                             <h2 className="text-2xl font-bold text-gray-900 mb-1">
                                 {profileData?.username}
                             </h2>
                             <p className="text-gray-500 text-sm">@{profileData?.username}</p>
                         </div>
-
-                        {/* Roles */}
                         <div className="space-y-2">
                             <p className="text-sm font-medium text-gray-600 mb-2">Roller:</p>
                             <div className="flex flex-wrap gap-2">
@@ -237,8 +261,6 @@ const UserProfilePage = () => {
                         <h3 className="text-xl font-bold text-gray-800 mb-6">Hesap Bilgileri</h3>
 
                         <div className="space-y-6">
-
-                            {/* Username */}
                             <div className="flex items-start gap-4 pb-4 border-b border-gray-100">
                                 <div className="bg-blue-100 text-blue-600 p-3 rounded-lg">
                                     <User className="w-5 h-5" />
@@ -249,7 +271,6 @@ const UserProfilePage = () => {
                                 </div>
                             </div>
 
-                            {/* Email */}
                             <div className="flex items-start gap-4 pb-4 border-b border-gray-100">
                                 <div className="bg-green-100 text-green-600 p-3 rounded-lg">
                                     <Mail className="w-5 h-5" />
@@ -257,8 +278,6 @@ const UserProfilePage = () => {
                                 <div className="flex-1">
                                     <p className="text-sm text-gray-500 mb-1">Email</p>
                                     <p className="text-gray-900 font-semibold">{profileData?.email}</p>
-
-                                    {/* Email Verification Status */}
                                     <div className="mt-2">
                                         {profileData?.emailVerified ? (
                                             <span className="inline-flex items-center gap-1 text-sm text-green-600">
@@ -294,7 +313,6 @@ const UserProfilePage = () => {
                                 </div>
                             </div>
 
-                            {/* Account Status */}
                             <div className="flex items-start gap-4 pb-4 border-b border-gray-100">
                                 <div className="bg-purple-100 text-purple-600 p-3 rounded-lg">
                                     <Shield className="w-5 h-5" />
@@ -308,7 +326,6 @@ const UserProfilePage = () => {
                                 </div>
                             </div>
 
-                            {/* Created At */}
                             <div className="flex items-start gap-4">
                                 <div className="bg-indigo-100 text-indigo-600 p-3 rounded-lg">
                                     <Calendar className="w-5 h-5" />
@@ -330,7 +347,6 @@ const UserProfilePage = () => {
                     {/* Password Change Card */}
                     <div className="mt-6 bg-white rounded-xl shadow-md p-6 border border-gray-100">
                         <h3 className="text-xl font-bold text-gray-800 mb-4">Güvenlik</h3>
-
                         <button
                             onClick={() => setShowPasswordModal(true)}
                             className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition"
@@ -350,12 +366,10 @@ const UserProfilePage = () => {
                 </div>
             </div>
 
-            {/* Password Change Modal */}
+            {/* ⭐ Password Change Modal - OTP DESTEKLİ */}
             {showPasswordModal && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
                     <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6">
-
-                        {/* Header */}
                         <div className="flex items-center justify-between mb-6">
                             <h2 className="text-2xl font-bold text-gray-800">Şifre Değiştir</h2>
                             <button
@@ -368,6 +382,8 @@ const UserProfilePage = () => {
                                     });
                                     setPasswordErrors({});
                                     setPasswordSuccess('');
+                                    setShowOTPInput(false);
+                                    setOtpCode('');
                                 }}
                                 className="text-gray-400 hover:text-gray-600"
                             >
@@ -377,7 +393,6 @@ const UserProfilePage = () => {
                             </button>
                         </div>
 
-                        {/* Success Message */}
                         {passwordSuccess && (
                             <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg flex items-start gap-3">
                                 <CheckCircle className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
@@ -385,7 +400,6 @@ const UserProfilePage = () => {
                             </div>
                         )}
 
-                        {/* Error Message */}
                         {passwordErrors.submit && (
                             <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3">
                                 <AlertCircle className="w-5 h-5 text-red-600 mt-0.5 flex-shrink-0" />
@@ -393,10 +407,7 @@ const UserProfilePage = () => {
                             </div>
                         )}
 
-                        {/* Form */}
                         <form onSubmit={handlePasswordSubmit} className="space-y-4">
-
-                            {/* Current Password */}
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-2">
                                     Mevcut Şifre
@@ -408,7 +419,8 @@ const UserProfilePage = () => {
                                         name="currentPassword"
                                         value={passwordForm.currentPassword}
                                         onChange={handlePasswordChange}
-                                        className={`w-full pl-11 pr-4 py-3 border rounded-lg focus:outline-none focus:ring-2 transition ${
+                                        disabled={showOTPInput}
+                                        className={`w-full pl-11 pr-4 py-3 border rounded-lg focus:outline-none focus:ring-2 transition disabled:bg-gray-100 ${
                                             passwordErrors.currentPassword
                                                 ? 'border-red-300 focus:ring-red-500'
                                                 : 'border-gray-300 focus:ring-blue-500'
@@ -421,7 +433,6 @@ const UserProfilePage = () => {
                                 )}
                             </div>
 
-                            {/* New Password */}
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-2">
                                     Yeni Şifre
@@ -433,7 +444,8 @@ const UserProfilePage = () => {
                                         name="newPassword"
                                         value={passwordForm.newPassword}
                                         onChange={handlePasswordChange}
-                                        className={`w-full pl-11 pr-4 py-3 border rounded-lg focus:outline-none focus:ring-2 transition ${
+                                        disabled={showOTPInput}
+                                        className={`w-full pl-11 pr-4 py-3 border rounded-lg focus:outline-none focus:ring-2 transition disabled:bg-gray-100 ${
                                             passwordErrors.newPassword
                                                 ? 'border-red-300 focus:ring-red-500'
                                                 : 'border-gray-300 focus:ring-blue-500'
@@ -446,7 +458,6 @@ const UserProfilePage = () => {
                                 )}
                             </div>
 
-                            {/* Confirm Password */}
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-2">
                                     Yeni Şifre Tekrar
@@ -458,7 +469,8 @@ const UserProfilePage = () => {
                                         name="confirmPassword"
                                         value={passwordForm.confirmPassword}
                                         onChange={handlePasswordChange}
-                                        className={`w-full pl-11 pr-4 py-3 border rounded-lg focus:outline-none focus:ring-2 transition ${
+                                        disabled={showOTPInput}
+                                        className={`w-full pl-11 pr-4 py-3 border rounded-lg focus:outline-none focus:ring-2 transition disabled:bg-gray-100 ${
                                             passwordErrors.confirmPassword
                                                 ? 'border-red-300 focus:ring-red-500'
                                                 : 'border-gray-300 focus:ring-blue-500'
@@ -471,7 +483,30 @@ const UserProfilePage = () => {
                                 )}
                             </div>
 
-                            {/* Buttons */}
+                            {/* OTP INPUT (CONDITIONAL) */}
+                            {showOTPInput && (
+                                <div className="border-t pt-4">
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                        2FA Kod
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={otpCode}
+                                        onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-center text-2xl tracking-widest"
+                                        placeholder="000000"
+                                        maxLength={6}
+                                        autoFocus
+                                    />
+                                    <p className="text-sm text-gray-500 mt-2 text-center">
+                                        Authenticator uygulamanızdan 6 haneli kodu girin
+                                    </p>
+                                    {passwordErrors.otpCode && (
+                                        <p className="text-red-600 text-sm mt-1 text-center">{passwordErrors.otpCode}</p>
+                                    )}
+                                </div>
+                            )}
+
                             <div className="flex gap-3 mt-6">
                                 <button
                                     type="button"
@@ -484,6 +519,8 @@ const UserProfilePage = () => {
                                         });
                                         setPasswordErrors({});
                                         setPasswordSuccess('');
+                                        setShowOTPInput(false);
+                                        setOtpCode('');
                                     }}
                                     className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 font-semibold rounded-lg hover:bg-gray-50 transition"
                                 >
@@ -497,10 +534,10 @@ const UserProfilePage = () => {
                                     {passwordLoading ? (
                                         <>
                                             <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                                            Değiştiriliyor...
+                                            {showOTPInput ? 'Doğrulanıyor...' : 'Değiştiriliyor...'}
                                         </>
                                     ) : (
-                                        'Şifreyi Değiştir'
+                                        showOTPInput ? '2FA Doğrula' : 'Şifreyi Değiştir'
                                     )}
                                 </button>
                             </div>
