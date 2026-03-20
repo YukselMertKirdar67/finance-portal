@@ -51,6 +51,39 @@ services:
       timeout: 10s
       retries: 5
       start_period: 60s
+  openldap:
+    image: osixia/openldap:1.5.0
+    container_name: finance-openldap
+    environment:
+      LDAP_ORGANISATION: "Finance Portal"
+      LDAP_DOMAIN: "financeportal.com"
+      LDAP_ADMIN_PASSWORD: "admin123"
+      LDAP_CONFIG_PASSWORD: "config123"
+      LDAP_RFC2307BIS_SCHEMA: "true"
+      LDAP_REMOVE_CONFIG_AFTER_SETUP: "true"
+      LDAP_TLS_VERIFY_CLIENT: "never"
+    ports:
+      - "389:389"
+      - "636:636"
+    volumes:
+      - openldap_data:/var/lib/ldap
+      - openldap_config:/etc/ldap/slapd.d
+    networks:
+      - finance-network
+
+  phpldapadmin:
+      image: osixia/phpldapadmin:0.9.0
+      container_name: finance-phpldapadmin
+      environment:
+        PHPLDAPADMIN_LDAP_HOSTS: "finance-openldap"
+        PHPLDAPADMIN_HTTPS: "false"
+      ports:
+        - "8090:80"
+      depends_on:
+        - openldap
+      networks:
+        - finance-network
+
 
   redis:
     image: redis:7
@@ -193,6 +226,8 @@ services:
 volumes:
   postgres_data:
   opensearch_data:
+  openldap_data:
+  openldap_config:
 
 networks:
   finance-network:
