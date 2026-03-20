@@ -18,4 +18,6 @@ public class ChangePasswordRequestDTO {
 
     @NotBlank(message = "Confirm password is required")
     private String confirmPassword;
+
+    private String otpCode;
 }
