@@ -20,4 +20,9 @@ public interface AuthService {
     ChangePasswordResponseDTO changePassword(String userId, ChangePasswordRequestDTO request);
 
     LogoutResponseDTO logout(LogoutRequestDTO request);
+
+    PreAuthResponseDTO preAuth(LoginRequestDTO request);
+
+    LoginResponseDTO exchangeCodeForToken(String authCode);
+
 }
