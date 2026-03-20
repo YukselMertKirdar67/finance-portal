@@ -9,7 +9,7 @@ const api = axios.create({
     },
 });
 
-// REQUEST INTERCEPTOR - /auth/refresh hariç token ekle
+// REQUEST INTERCEPTOR - Token ekle
 api.interceptors.request.use(
     (config) => {
         // /auth/refresh isteğine token ekleme
@@ -17,7 +17,9 @@ api.interceptors.request.use(
             return config;
         }
 
-        const token = localStorage.getItem('token');
+        // Token'ı bul: Önce sessionStorage, sonra localStorage
+        const token = sessionStorage.getItem('token') || localStorage.getItem('token');
+
         if (token) {
             config.headers.Authorization = `Bearer ${token}`;
         }
@@ -37,11 +39,14 @@ api.interceptors.response.use(
         if (error.response?.status === 401 && !originalRequest._retry) {
             originalRequest._retry = true;
 
-            const refreshTokenValue = localStorage.getItem('refreshToken');
+            // Refresh token'ı bul: Önce sessionStorage, sonra localStorage
+            const refreshTokenValue = sessionStorage.getItem('refreshToken') ||
+                localStorage.getItem('refreshToken');
 
             if (!refreshTokenValue) {
                 console.log('❌ No refresh token found, logging out...');
                 localStorage.clear();
+                sessionStorage.clear();
                 window.location.href = '/login';
                 return Promise.reject(error);
             }
@@ -61,9 +66,14 @@ api.interceptors.response.use(
                 if (response.data && response.data.success) {
                     const { accessToken, refreshToken: newRefreshToken } = response.data;
 
-                    localStorage.setItem('token', accessToken);
+                    // Doğru storage'a kaydet
+                    const storage = sessionStorage.getItem('refreshToken')
+                        ? sessionStorage
+                        : localStorage;
+
+                    storage.setItem('token', accessToken);
                     if (newRefreshToken) {
-                        localStorage.setItem('refreshToken', newRefreshToken);
+                        storage.setItem('refreshToken', newRefreshToken);
                     }
 
                     originalRequest.headers.Authorization = `Bearer ${accessToken}`;
@@ -77,6 +87,7 @@ api.interceptors.response.use(
             } catch (refreshError) {
                 console.error('❌ Token refresh failed:', refreshError);
                 localStorage.clear();
+                sessionStorage.clear();
                 window.location.href = '/login';
                 return Promise.reject(refreshError);
             }
