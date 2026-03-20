@@ -25,4 +25,6 @@ public interface AuthService {
 
     LoginResponseDTO exchangeCodeForToken(String authCode);
 
+    boolean checkIfUserHasOTP(String userId);
+
 }
