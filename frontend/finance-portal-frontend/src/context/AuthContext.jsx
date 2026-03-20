@@ -4,10 +4,22 @@ import { logoutUser } from '../API/authApi';
 
 const AuthContext = createContext();
 
-// localStorage'dan initial state'i oku (useEffect yok!)
+// Storage helper (rememberMe'ye göre localStorage veya sessionStorage)
+const getStorage = (rememberMe) => {
+    return rememberMe ? localStorage : sessionStorage;
+};
+
+// Initial state'i oku (sessionStorage öncelikli, sonra localStorage)
 const getInitialAuthState = () => {
-    const token = localStorage.getItem('token');
-    const userStr = localStorage.getItem('user');
+    // Önce sessionStorage kontrol et (Remember Me kapalı ise burda olur)
+    let token = sessionStorage.getItem('token');
+    let userStr = sessionStorage.getItem('user');
+
+    // sessionStorage'da yoksa localStorage'a bak (Remember Me açık ise burda olur)
+    if (!token) {
+        token = localStorage.getItem('token');
+        userStr = localStorage.getItem('user');
+    }
 
     if (token && userStr) {
         try {
@@ -21,10 +33,10 @@ const getInitialAuthState = () => {
                 loading: false
             };
         } catch (error) {
-            console.error('Error parsing user data:', error);
-            localStorage.removeItem('token');
-            localStorage.removeItem('refreshToken');
-            localStorage.removeItem('user');
+            console.error('❌ Error parsing user data:', error);
+            // Hata varsa tüm storage'ı temizle
+            localStorage.clear();
+            sessionStorage.clear();
         }
     }
 
@@ -36,18 +48,27 @@ const getInitialAuthState = () => {
 };
 
 export const AuthProvider = ({ children }) => {
-    // Lazy initialization - sadece ilk render'da çalışır
     const [authState, setAuthState] = useState(getInitialAuthState);
 
-    const login = (tokenData) => {
-        localStorage.setItem('token', tokenData.accessToken);
-        localStorage.setItem('refreshToken', tokenData.refreshToken);
-        localStorage.setItem('user', JSON.stringify({
+    const login = (tokenData, rememberMe = false) => {
+        const storage = getStorage(rememberMe);
+
+        // Token'ları seçilen storage'a kaydet
+        storage.setItem('token', tokenData.accessToken);
+        storage.setItem('refreshToken', tokenData.refreshToken);
+        storage.setItem('user', JSON.stringify({
             username: tokenData.username,
             email: tokenData.email,
             roles: tokenData.roles
         }));
 
+        if (!rememberMe) {
+            localStorage.removeItem('token');
+            localStorage.removeItem('refreshToken');
+            localStorage.removeItem('user');
+        }
+
+        // Auth state'i güncelle
         setAuthState({
             authenticated: true,
             user: {
@@ -58,13 +79,15 @@ export const AuthProvider = ({ children }) => {
             },
             loading: false
         });
+
+        console.log(`✅ Login successful (Remember Me: ${rememberMe ? 'ON' : 'OFF'})`);
     };
 
     const logout = async () => {
         try {
-            const refreshToken = localStorage.getItem('refreshToken');
+            // Refresh token'ı bul (sessionStorage veya localStorage'dan)
+            const refreshToken = sessionStorage.getItem('refreshToken') || localStorage.getItem('refreshToken');
 
-            // Backend'e logout isteği at (Keycloak session sonlandır)
             if (refreshToken) {
                 console.log('🚪 Terminating Keycloak session...');
                 await logoutUser(refreshToken);
@@ -73,20 +96,26 @@ export const AuthProvider = ({ children }) => {
 
         } catch (error) {
             console.error('❌ Logout error:', error);
-            // Hata olsa bile devam et
+            // Hata olsa bile devam et (logout tamamlanmalı)
         } finally {
-            // Her durumda localStorage temizle ve login'e yönlendir
-            console.log('🧹 Cleaning up local storage...');
+            console.log('🧹 Cleaning up storage...');
+
+            // Her iki storage'ı da temizle
             localStorage.removeItem('token');
             localStorage.removeItem('refreshToken');
             localStorage.removeItem('user');
+            sessionStorage.removeItem('token');
+            sessionStorage.removeItem('refreshToken');
+            sessionStorage.removeItem('user');
 
+            // Auth state'i sıfırla
             setAuthState({
                 authenticated: false,
                 user: null,
                 loading: false
             });
 
+            // Login sayfasına yönlendir
             window.location.href = '/login';
         }
     };
