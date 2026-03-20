@@ -21,6 +21,7 @@ import UserProfilePage from './Components/Page/UserProfilePage';
 import AdminDashboard from './Components/Page/AdminDashboard';
 import AdminUsersPage from './Components/Page/AdminUsersPage';
 import AdminUserDetailPage from './Components/Page/AdminUserDetailPage';
+import AuthCallbackPage from './Components/Page/AuthCallbackPage';
 
 // Protected Route Component
 const ProtectedRoute = ({ children, adminOnly = false }) => {
@@ -29,8 +30,10 @@ const ProtectedRoute = ({ children, adminOnly = false }) => {
     if (loading) {
         return (
             <div className="min-h-screen flex items-center justify-center">
-                <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-                <div className="text-xl text-gray-600">Yükleniyor...</div>
+                <div className="text-center">
+                    <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+                    <p className="text-gray-600">Yükleniyor...</p>
+                </div>
             </div>
         );
     }
@@ -40,7 +43,7 @@ const ProtectedRoute = ({ children, adminOnly = false }) => {
     }
 
     if (adminOnly && !isAdmin) {
-        return <Navigate to="/dashboard" replace />;
+        return <Navigate to="/home" replace />;
     }
 
     return children;
@@ -71,6 +74,7 @@ const AppRoutes = () => {
                 element={authenticated ? <Navigate to="/home" replace /> : <RegisterPage />}
             />
             <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+            <Route path="/auth/callback" element={<AuthCallbackPage />} />
 
             {/* PROTECTED ROUTES - USER & ADMIN */}
             <Route
