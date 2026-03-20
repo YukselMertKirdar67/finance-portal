@@ -103,4 +103,16 @@ public class AuthController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
         }
     }
+
+    @PostMapping("/token-exchange")
+    public ResponseEntity<LoginResponseDTO> tokenExchange(@RequestBody TokenExchangeRequestDTO request) {
+        LoginResponseDTO response = authService.exchangeCodeForToken(request.getCode());
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/pre-auth")
+    public ResponseEntity<PreAuthResponseDTO> preAuth(@RequestBody LoginRequestDTO request) {
+        PreAuthResponseDTO response = authService.preAuth(request);
+        return ResponseEntity.ok(response);
+    }
 }
