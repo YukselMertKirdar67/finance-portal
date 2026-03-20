@@ -95,6 +95,17 @@ public class UserController {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
         }
     }
+    @GetMapping("/has-otp")
+    public ResponseEntity<Map<String, Boolean>> checkIfUserHasOTP(@AuthenticationPrincipal Jwt jwt) {
+        log.info("Checking if user has OTP enabled");
+
+        String userId = jwt.getSubject();
+        boolean hasOTP = authService.checkIfUserHasOTP(userId);
+
+        log.info("User {} has OTP: {}", userId, hasOTP);
+
+        return ResponseEntity.ok(Map.of("hasOTP", hasOTP));
+    }
 
     @GetMapping("/ping")
     public String ping() {
