@@ -61,7 +61,7 @@ const LoginPage = () => {
                 if (loginResponse.data.success) {
                     //  AuthContext'e rememberMe parametresi ile token kaydet
                     login(loginResponse.data, rememberMe);
-                    navigate('/home');
+                    window.location.href = '/home';
                 }
 
             } else if (preAuthResponse.data.requiresOTP) {
