@@ -4,10 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import com.financeportal.backend.Instrument.DTO.External.FinnhubPriceDTO;
-import com.financeportal.backend.Instrument.Entity.BaseInstrument;
-import com.financeportal.backend.Instrument.Entity.CryptoInstrument;
-import com.financeportal.backend.Instrument.Entity.InstrumentPrice;
-import com.financeportal.backend.Instrument.Entity.StockInstrument;
+import com.financeportal.backend.Instrument.Entity.*;
 import com.financeportal.backend.Instrument.Enum.InstrumentType;
 import com.financeportal.backend.Instrument.Repository.*;
 
@@ -20,8 +17,10 @@ import org.springframework.web.client.RestTemplate;
 
 import java.math.BigDecimal;
 import java.time.Duration;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -36,17 +35,15 @@ public class FinnhubService {
     private final RestTemplate restTemplate;
     private final InstrumentRepository instrumentRepository;
     private final InstrumentPriceRepository priceRepository;
+    private final PriceHistoryRepository historyRepository;
     private final RedisTemplate<String, Object> redisTemplate;
 
     public InstrumentPrice fetchQuote(String symbol) {
-
-        // ✅ Redis'ten DTO olarak oku
         String cacheKey = "finnhub:quote:" + symbol;
         FinnhubPriceDTO cachedDTO = (FinnhubPriceDTO) redisTemplate.opsForValue().get(cacheKey);
 
         if (cachedDTO != null) {
             log.info("✅ Cache HIT - Using cached price for: {}", symbol);
-            // DTO'dan Entity'ye dönüştür
             return convertToEntity(cachedDTO);
         }
 
@@ -54,16 +51,15 @@ public class FinnhubService {
 
         try {
             String url = FINNHUB_QUOTE_URL + "?symbol=" + symbol + "&token=" + apiKey;
-
             String response = restTemplate.getForObject(url, String.class);
             ObjectMapper mapper = new ObjectMapper();
             JsonNode root = mapper.readTree(response);
 
-            BigDecimal currentPrice = new BigDecimal(root.path("c").asText());
+            BigDecimal currentPrice  = new BigDecimal(root.path("c").asText());
             BigDecimal previousClose = new BigDecimal(root.path("pc").asText());
-            BigDecimal highPrice = new BigDecimal(root.path("h").asText());
-            BigDecimal lowPrice = new BigDecimal(root.path("l").asText());
-            BigDecimal openPrice = new BigDecimal(root.path("o").asText());
+            BigDecimal highPrice     = new BigDecimal(root.path("h").asText());
+            BigDecimal lowPrice      = new BigDecimal(root.path("l").asText());
+            BigDecimal openPrice     = new BigDecimal(root.path("o").asText());
 
             if (currentPrice.compareTo(BigDecimal.ZERO) == 0) {
                 log.warn("No valid price data for symbol: {}", symbol);
@@ -86,7 +82,10 @@ public class FinnhubService {
 
             priceRepository.save(price);
 
-            // ✅ DTO olarak Redis'e kaydet
+            // Tarihsel kayıt ekle
+            savePriceHistory(instrument, openPrice, highPrice, lowPrice, currentPrice);
+
+            // Redis cache
             FinnhubPriceDTO dto = FinnhubPriceDTO.builder()
                     .symbol(symbol)
                     .currentPrice(currentPrice)
@@ -99,8 +98,8 @@ public class FinnhubService {
 
             redisTemplate.opsForValue().set(cacheKey, dto, Duration.ofSeconds(60));
             log.info("✅ Cached price for: {} (TTL: 60s)", symbol);
-
             log.info("Updated Finnhub: {} = {}", symbol, currentPrice);
+
             return price;
 
         } catch (Exception e) {
@@ -109,7 +108,39 @@ public class FinnhubService {
         }
     }
 
-    // ✅ DTO'dan Entity'ye dönüştür
+    // PriceHistory kaydet
+    private void savePriceHistory(BaseInstrument instrument,
+                                  BigDecimal open, BigDecimal high,
+                                  BigDecimal low, BigDecimal close) {
+        try {
+            LocalDate today = LocalDate.now();
+
+            Optional<PriceHistory> existing = historyRepository
+                    .findByInstrumentAndDate(instrument, today);
+
+            if (existing.isPresent()) {
+                PriceHistory history = existing.get();
+                history.setClose(close);
+                history.setHigh(high.max(history.getHigh()));
+                history.setLow(low.min(history.getLow()));
+                historyRepository.save(history);
+                log.debug("Updated history for: {} on {}", instrument.getSymbol(), today);
+            } else {
+                PriceHistory history = PriceHistory.builder()
+                        .instrument(instrument)
+                        .date(today)
+                        .open(open)
+                        .high(high)
+                        .low(low)
+                        .close(close)
+                        .build();
+                historyRepository.save(history);
+                log.info("✅ Saved history for: {} on {}", instrument.getSymbol(), today);
+            }
+        } catch (Exception e) {
+            log.error("Error saving price history: {}", e.getMessage());
+        }
+    }
     private InstrumentPrice convertToEntity(FinnhubPriceDTO dto) {
         BaseInstrument instrument = instrumentRepository
                 .findBySymbol(dto.getSymbol())
@@ -136,11 +167,9 @@ public class FinnhubService {
                     .currency("USDT")
                     .active(true)
                     .build();
-
             instrumentRepository.save(crypto);
             log.info("✅ Auto-created CryptoInstrument: {}", symbol);
             return crypto;
-
         } else if (symbol.endsWith(".IS")) {
             StockInstrument stock = StockInstrument.builder()
                     .symbol(symbol)
@@ -150,11 +179,9 @@ public class FinnhubService {
                     .currency("TRY")
                     .active(true)
                     .build();
-
             instrumentRepository.save(stock);
             log.info("✅ Auto-created StockInstrument (BIST): {}", symbol);
             return stock;
-
         } else {
             StockInstrument stock = StockInstrument.builder()
                     .symbol(symbol)
@@ -164,7 +191,6 @@ public class FinnhubService {
                     .currency("USD")
                     .active(true)
                     .build();
-
             instrumentRepository.save(stock);
             log.info("✅ Auto-created StockInstrument (US): {}", symbol);
             return stock;
