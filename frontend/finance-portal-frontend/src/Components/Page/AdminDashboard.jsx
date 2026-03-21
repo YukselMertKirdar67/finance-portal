@@ -9,7 +9,8 @@ import {
     UserX,
     ArrowUpRight,
     ArrowDownRight,
-    Eye
+    Eye,
+    RefreshCw
 } from 'lucide-react';
 import { getAdminStats } from '../../API/adminApi';
 import { useAuth } from '../../context/AuthContext';
@@ -173,7 +174,7 @@ const AdminDashboard = () => {
             {/* Quick Actions */}
             <div className="bg-white rounded-xl shadow-md p-6 border border-gray-100">
                 <h3 className="text-lg font-semibold text-gray-800 mb-4">Hızlı İşlemler</h3>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">  {/* ⭐ 3 → 4 */}
 
                     <button
                         onClick={() => navigate('/admin/users')}
@@ -194,6 +195,18 @@ const AdminDashboard = () => {
                         <div className="text-left">
                             <p className="font-semibold text-gray-800">Portföy Yönetimi</p>
                             <p className="text-sm text-gray-500">Tüm portföyleri görüntüle</p>
+                        </div>
+                    </button>
+
+                    {/* Fiyat Güncelleme */}
+                    <button
+                        onClick={() => navigate('/admin/instruments')}
+                        className="flex items-center gap-3 p-4 border border-gray-200 rounded-lg hover:bg-orange-50 hover:border-orange-300 transition"
+                    >
+                        <RefreshCw className="w-6 h-6 text-orange-600" />
+                        <div className="text-left">
+                            <p className="font-semibold text-gray-800">Fiyat Güncellemesi</p>
+                            <p className="text-sm text-gray-500">Enstrüman fiyatlarını güncelle</p>
                         </div>
                     </button>
 
