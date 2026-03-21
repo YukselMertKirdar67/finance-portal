@@ -43,7 +43,7 @@ public class AlphaVantageService {
     private final ObjectMapper objectMapper;
     private final RedisTemplate<String, Object> redisTemplate;
 
-    // ✅ Desteklenen semboller
+    // Desteklenen semboller
     // AlphaVantage formatı → DB sembolü, isim, metalType, unit
     private static final List<Map<String, String>> PRECIOUS_METALS = List.of(
             Map.of("avSymbol", "XAUUSD", "dbSymbol", "XAU/USD",
@@ -56,7 +56,7 @@ public class AlphaVantageService {
                     "name", "Paladyum (Ons)", "metalType", "PALLADIUM", "unit", "oz")
     );
 
-    // ✅ Tek sembol için fiyat çek
+    // Tek sembol için fiyat çek
     public InstrumentPrice fetchQuote(String avSymbol, String dbSymbol,
                                       String name, String metalType, String unit) {
         try {
@@ -93,7 +93,7 @@ public class AlphaVantageService {
                 return null;
             }
 
-            // ✅ AlphaVantage field'ları
+            // AlphaVantage field'ları
             String priceStr    = quote.path("05. price").asText();
             String openStr     = quote.path("02. open").asText();
             String highStr     = quote.path("03. high").asText();
@@ -111,7 +111,7 @@ public class AlphaVantageService {
             BigDecimal lowPrice      = new BigDecimal(lowStr);
             BigDecimal previousClose = new BigDecimal(prevStr);
 
-            // ✅ Enstrümanı bul veya oluştur
+            // Enstrümanı bul veya oluştur
             BaseInstrument instrument = instrumentRepository
                     .findBySymbol(dbSymbol)
                     .orElseGet(() -> createPreciousInstrument(
@@ -132,7 +132,7 @@ public class AlphaVantageService {
 
             savePriceHistory(instrument, openPrice, highPrice, lowPrice, currentPrice);
 
-            // ✅ Redis'e kaydet (1 saat TTL - günlük 25 limit koruması)
+            // Redis'e kaydet (1 saat TTL - günlük 25 limit koruması)
             AlphaVantagePriceDTO dto = AlphaVantagePriceDTO.builder()
                     .symbol(dbSymbol)
                     .currentPrice(currentPrice)
@@ -157,7 +157,47 @@ public class AlphaVantageService {
         }
     }
 
-    // ✅ Tüm kıymetli metalleri güncelle
+    public int updatePreciousMetalsSample() {
+        log.info("📊 Updating precious metals SAMPLE (first 2) via AlphaVantage...");
+        int updated = 0;
+
+        // Sadece ilk 2 metal (Altın ve Gümüş)
+        List<Map<String, String>> sampleMetals = PRECIOUS_METALS.stream()
+                .limit(2)
+                .toList();
+
+        for (Map<String, String> metal : sampleMetals) {
+            try {
+                InstrumentPrice price = fetchQuote(
+                        metal.get("avSymbol"),
+                        metal.get("dbSymbol"),
+                        metal.get("name"),
+                        metal.get("metalType"),
+                        metal.get("unit")
+                );
+
+                if (price != null) {
+                    updated++;
+                    log.info("Updated {}/{}: {}",
+                            updated, sampleMetals.size(), metal.get("dbSymbol"));
+                }
+
+                // 15 saniye bekle (rate limit koruması)
+                Thread.sleep(15000);
+
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                break;
+            } catch (Exception e) {
+                log.error("❌ Failed: {}", metal.get("dbSymbol"));
+            }
+        }
+
+        log.info("✅ Precious metals SAMPLE updated: {}/{}", updated, sampleMetals.size());
+        return updated;
+    }
+
+    // Tüm kıymetli metalleri güncelle
     public int updatePreciousMetals() {
         log.info("📊 Updating precious metals via AlphaVantage...");
         int updated = 0;
@@ -226,7 +266,7 @@ public class AlphaVantageService {
         }
     }
 
-    // ✅ DTO → Entity
+    // DTO → Entity
     private InstrumentPrice convertToEntity(AlphaVantagePriceDTO dto) {
         BaseInstrument instrument = instrumentRepository
                 .findBySymbol(dto.getSymbol())
@@ -245,7 +285,7 @@ public class AlphaVantageService {
                 .build();
     }
 
-    // ✅ PreciousInstrument oluştur
+    // PreciousInstrument oluştur
     private BaseInstrument createPreciousInstrument(String symbol, String name,
                                                     String metalType, String unit) {
         PreciousInstrument precious = PreciousInstrument.builder()
