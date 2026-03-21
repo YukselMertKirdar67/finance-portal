@@ -8,7 +8,8 @@ import {
     Briefcase,
     Users,
     User,
-    Home
+    Home,
+    RefreshCw
 } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
 import { Button } from '../UI/Button';
@@ -99,6 +100,13 @@ export default function Sidebar({
                                 <NavLink to="/admin/users" className={navClass}>
                                     <Users className="w-5 h-5" />
                                     <span>Kullanıcı Yönetimi</span>
+                                </NavLink>
+                            </li>
+                            {/* ⭐ YENİ: Fiyat Güncellemesi */}
+                            <li>
+                                <NavLink to="/admin/instruments" className={navClass}>
+                                    <RefreshCw className="w-5 h-5" />
+                                    <span>Fiyat Güncellemesi</span>
                                 </NavLink>
                             </li>
                         </>
