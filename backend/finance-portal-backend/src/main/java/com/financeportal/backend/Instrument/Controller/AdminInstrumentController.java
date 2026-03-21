@@ -1,43 +1,83 @@
 package com.financeportal.backend.Instrument.Controller;
 
+import com.financeportal.backend.Instrument.DTO.InstrumentUpdateStatusDTO;
 import com.financeportal.backend.Instrument.Entity.InstrumentPrice;
-import com.financeportal.backend.Instrument.Service.AlphaVantageService;
-import com.financeportal.backend.Instrument.Service.FinnhubService;
-import com.financeportal.backend.Instrument.Service.TcmbService;
-import com.financeportal.backend.Instrument.Service.TwelveDataService;
+import com.financeportal.backend.Instrument.Service.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Map;
 
 @Slf4j
 @RestController
 @RequestMapping("/api/admin/instruments")
 @RequiredArgsConstructor
-// @PreAuthorize("hasRole('ADMIN')") // Şimdilik kapalı, sonra aç
 public class AdminInstrumentController {
 
     private final TcmbService tcmbService;
     private final FinnhubService finnhubService;
     private final TwelveDataService twelveDataService;
     private final AlphaVantageService alphaVantageService;
+    private final TcmbEvdsService tcmbEvdsService;
 
+    // Global update status
+    private InstrumentUpdateStatusDTO lastUpdateStatus = InstrumentUpdateStatusDTO.builder()
+            .updating(false)
+            .message("Henüz güncelleme yapılmadı")
+            .build();
 
-
+    /**
+     * Son güncelleme durumunu getir
+     */
+    @GetMapping("/update-status")
+    public ResponseEntity<InstrumentUpdateStatusDTO> getUpdateStatus() {
+        return ResponseEntity.ok(lastUpdateStatus);
+    }
 
     /**
      * TCMB kurlarını manuel güncelle
      */
     @PostMapping("/update-tcmb")
     public ResponseEntity<?> updateTcmbRates() {
-        int updated = tcmbService.fetchDailyRates().size();
-        return ResponseEntity.ok(Map.of(
-                "success", true,
-                "message", "TCMB döviz kurları güncellendi",
-                "updatedCount", updated
-        ));
+        lastUpdateStatus = InstrumentUpdateStatusDTO.builder()
+                .updating(true)
+                .message("TCMB kurları güncelleniyor...")
+                .build();
+
+        try {
+            int updated = tcmbService.fetchDailyRates().size();
+
+            lastUpdateStatus = InstrumentUpdateStatusDTO.builder()
+                    .updating(false)
+                    .lastUpdateTime(LocalDateTime.now())
+                    .totalUpdated(updated)
+                    .tcmbUpdated(updated)
+                    .message("TCMB kurları güncellendi")
+                    .build();
+
+            return ResponseEntity.ok(Map.of(
+                    "success", true,
+                    "message", "TCMB döviz kurları güncellendi",
+                    "updatedCount", updated
+            ));
+
+        } catch (Exception e) {
+            log.error("❌ TCMB update failed: {}", e.getMessage());
+
+            lastUpdateStatus = InstrumentUpdateStatusDTO.builder()
+                    .updating(false)
+                    .message("TCMB güncellemesi başarısız: " + e.getMessage())
+                    .build();
+
+            return ResponseEntity.status(500).body(Map.of(
+                    "success", false,
+                    "message", "TCMB güncellemesi başarısız"
+            ));
+        }
     }
 
     /**
@@ -45,12 +85,41 @@ public class AdminInstrumentController {
      */
     @PostMapping("/update-finnhub")
     public ResponseEntity<?> updateFinnhub() {
-        int updated = finnhubService.updateAllInstruments();
-        return ResponseEntity.ok(Map.of(
-                "success", true,
-                "message", "Finnhub fiyatları güncellendi",
-                "updatedCount", updated
-        ));
+        lastUpdateStatus = InstrumentUpdateStatusDTO.builder()
+                .updating(true)
+                .message("Finnhub güncellemesi devam ediyor...")
+                .build();
+
+        try {
+            int updated = finnhubService.updatePriorityInstruments();
+
+            lastUpdateStatus = InstrumentUpdateStatusDTO.builder()
+                    .updating(false)
+                    .lastUpdateTime(LocalDateTime.now())
+                    .totalUpdated(updated)
+                    .finnhubUpdated(updated)
+                    .message("Finnhub fiyatları güncellendi")
+                    .build();
+
+            return ResponseEntity.ok(Map.of(
+                    "success", true,
+                    "message", "Finnhub fiyatları güncellendi",
+                    "updatedCount", updated
+            ));
+
+        } catch (Exception e) {
+            log.error("❌ Finnhub update failed: {}", e.getMessage());
+
+            lastUpdateStatus = InstrumentUpdateStatusDTO.builder()
+                    .updating(false)
+                    .message("Finnhub güncellemesi başarısız: " + e.getMessage())
+                    .build();
+
+            return ResponseEntity.status(500).body(Map.of(
+                    "success", false,
+                    "message", "Finnhub güncellemesi başarısız"
+            ));
+        }
     }
 
     /**
@@ -58,12 +127,41 @@ public class AdminInstrumentController {
      */
     @PostMapping("/update-priority")
     public ResponseEntity<?> updatePriorityInstruments() {
-        int updated = finnhubService.updatePriorityInstruments();
-        return ResponseEntity.ok(Map.of(
-                "success", true,
-                "message", "Öncelikli enstrümanlar güncellendi (BIST + ABD + Kripto)",
-                "updatedCount", updated
-        ));
+        lastUpdateStatus = InstrumentUpdateStatusDTO.builder()
+                .updating(true)
+                .message("Öncelikli enstrümanlar güncelleniyor...")
+                .build();
+
+        try {
+            int updated = finnhubService.updatePriorityInstruments();
+
+            lastUpdateStatus = InstrumentUpdateStatusDTO.builder()
+                    .updating(false)
+                    .lastUpdateTime(LocalDateTime.now())
+                    .totalUpdated(updated)
+                    .finnhubUpdated(updated)
+                    .message("Öncelikli enstrümanlar güncellendi")
+                    .build();
+
+            return ResponseEntity.ok(Map.of(
+                    "success", true,
+                    "message", "Öncelikli enstrümanlar güncellendi (BIST + ABD + Kripto)",
+                    "updatedCount", updated
+            ));
+
+        } catch (Exception e) {
+            log.error("❌ Priority update failed: {}", e.getMessage());
+
+            lastUpdateStatus = InstrumentUpdateStatusDTO.builder()
+                    .updating(false)
+                    .message("Öncelikli güncelleme başarısız: " + e.getMessage())
+                    .build();
+
+            return ResponseEntity.status(500).body(Map.of(
+                    "success", false,
+                    "message", "Öncelikli güncelleme başarısız"
+            ));
+        }
     }
 
     /**
@@ -92,12 +190,41 @@ public class AdminInstrumentController {
      */
     @PostMapping("/update-us-stocks")
     public ResponseEntity<?> updateUsStocks() {
-        int updated = finnhubService.updateUsStocks();
-        return ResponseEntity.ok(Map.of(
-                "success", true,
-                "message", "ABD hisse senetleri güncellendi",
-                "updatedCount", updated
-        ));
+        lastUpdateStatus = InstrumentUpdateStatusDTO.builder()
+                .updating(true)
+                .message("ABD hisseleri güncelleniyor...")
+                .build();
+
+        try {
+            int updated = finnhubService.updateUsStocks();
+
+            lastUpdateStatus = InstrumentUpdateStatusDTO.builder()
+                    .updating(false)
+                    .lastUpdateTime(LocalDateTime.now())
+                    .totalUpdated(updated)
+                    .finnhubUpdated(updated)
+                    .message("ABD hisseleri güncellendi")
+                    .build();
+
+            return ResponseEntity.ok(Map.of(
+                    "success", true,
+                    "message", "ABD hisse senetleri güncellendi",
+                    "updatedCount", updated
+            ));
+
+        } catch (Exception e) {
+            log.error("❌ US stocks update failed: {}", e.getMessage());
+
+            lastUpdateStatus = InstrumentUpdateStatusDTO.builder()
+                    .updating(false)
+                    .message("ABD hisse güncellemesi başarısız: " + e.getMessage())
+                    .build();
+
+            return ResponseEntity.status(500).body(Map.of(
+                    "success", false,
+                    "message", "ABD hisse güncellemesi başarısız"
+            ));
+        }
     }
 
     /**
@@ -105,12 +232,41 @@ public class AdminInstrumentController {
      */
     @PostMapping("/update-crypto")
     public ResponseEntity<?> updateCryptos() {
-        int updated = finnhubService.updateCryptos();
-        return ResponseEntity.ok(Map.of(
-                "success", true,
-                "message", "Kripto paralar güncellendi",
-                "updatedCount", updated
-        ));
+        lastUpdateStatus = InstrumentUpdateStatusDTO.builder()
+                .updating(true)
+                .message("Kripto paralar güncelleniyor...")
+                .build();
+
+        try {
+            int updated = finnhubService.updateCryptos();
+
+            lastUpdateStatus = InstrumentUpdateStatusDTO.builder()
+                    .updating(false)
+                    .lastUpdateTime(LocalDateTime.now())
+                    .totalUpdated(updated)
+                    .finnhubUpdated(updated)
+                    .message("Kripto paralar güncellendi")
+                    .build();
+
+            return ResponseEntity.ok(Map.of(
+                    "success", true,
+                    "message", "Kripto paralar güncellendi",
+                    "updatedCount", updated
+            ));
+
+        } catch (Exception e) {
+            log.error("❌ Crypto update failed: {}", e.getMessage());
+
+            lastUpdateStatus = InstrumentUpdateStatusDTO.builder()
+                    .updating(false)
+                    .message("Kripto güncellemesi başarısız: " + e.getMessage())
+                    .build();
+
+            return ResponseEntity.status(500).body(Map.of(
+                    "success", false,
+                    "message", "Kripto güncellemesi başarısız"
+            ));
+        }
     }
 
     /**
@@ -118,15 +274,43 @@ public class AdminInstrumentController {
      */
     @PostMapping("/update-bist-twelvedata")
     public ResponseEntity<?> updateBistWithTwelveData() {
-        log.info("Starting BIST update via TwelveData...");
-        int updated = twelveDataService.updateBistStocks();
+        lastUpdateStatus = InstrumentUpdateStatusDTO.builder()
+                .updating(true)
+                .message("BIST hisseleri güncelleniyor...")
+                .build();
 
-        return ResponseEntity.ok(Map.of(
-                "success", true,
-                "message", "BIST hisseleri TwelveData ile güncellendi",
-                "updatedCount", updated,
-                "note", "Rate limit: 8 istek/dk (her hisse ~8sn)"
-        ));
+        try {
+            log.info("Starting BIST FULL update via TwelveData...");
+            int updated = twelveDataService.updateBistStocksSample();
+
+            lastUpdateStatus = InstrumentUpdateStatusDTO.builder()
+                    .updating(false)
+                    .lastUpdateTime(LocalDateTime.now())
+                    .totalUpdated(updated)
+                    .bistUpdated(updated)
+                    .message("BIST hisseleri güncellendi")
+                    .build();
+
+            return ResponseEntity.ok(Map.of(
+                    "success", true,
+                    "message", "BIST hisseleri TwelveData ile güncellendi",
+                    "updatedCount", updated,
+                    "note", "İlk 3 hisse güncellendi (~24sn)"
+            ));
+
+        } catch (Exception e) {
+            log.error("❌ BIST update failed: {}", e.getMessage());
+
+            lastUpdateStatus = InstrumentUpdateStatusDTO.builder()
+                    .updating(false)
+                    .message("BIST güncellemesi başarısız: " + e.getMessage())
+                    .build();
+
+            return ResponseEntity.status(500).body(Map.of(
+                    "success", false,
+                    "message", "BIST güncellemesi başarısız"
+            ));
+        }
     }
 
     /**
@@ -134,7 +318,6 @@ public class AdminInstrumentController {
      */
     @PostMapping("/update-bist-symbol/{symbol}")
     public ResponseEntity<?> updateBistSymbol(@PathVariable String symbol) {
-        // THYAO → THYAO:BIST formatına çevir
         String twelveDataSymbol = symbol.contains(":") ? symbol : symbol + ":BIST";
 
         InstrumentPrice price = twelveDataService.fetchQuote(twelveDataSymbol);
@@ -153,22 +336,56 @@ public class AdminInstrumentController {
         ));
     }
 
+    /**
+     * AlphaVantage - Kıymetli metaller
+     */
     @PostMapping("/update-precious")
     public ResponseEntity<?> updatePreciousMetals() {
-        log.info("Starting precious metals update via AlphaVantage...");
-        int updated = alphaVantageService.updatePreciousMetals();
+        lastUpdateStatus = InstrumentUpdateStatusDTO.builder()
+                .updating(true)
+                .message("Kıymetli metaller güncelleniyor...")
+                .build();
 
-        return ResponseEntity.ok(Map.of(
-                "success", true,
-                "message", "Kıymetli metaller güncellendi",
-                "updatedCount", updated,
-                "note", "Rate limit: 25 istek/gün (TTL: 1 saat)"
-        ));
+        try {
+            log.info("Starting precious metals SAMPLE update via AlphaVantage...");
+            int updated = alphaVantageService.updatePreciousMetalsSample();
+
+            lastUpdateStatus = InstrumentUpdateStatusDTO.builder()
+                    .updating(false)
+                    .lastUpdateTime(LocalDateTime.now())
+                    .totalUpdated(updated)
+                    .preciousUpdated(updated)
+                    .message("Kıymetli metaller güncellendi")
+                    .build();
+
+            return ResponseEntity.ok(Map.of(
+                    "success", true,
+                    "message", "Kıymetli metaller güncellendi",
+                    "updatedCount", updated,
+                    "note", "İlk 2 metal güncellendi (~30sn)"
+            ));
+
+        } catch (Exception e) {
+            log.error("❌ Precious metals update failed: {}", e.getMessage());
+
+            lastUpdateStatus = InstrumentUpdateStatusDTO.builder()
+                    .updating(false)
+                    .message("Kıymetli metal güncellemesi başarısız: " + e.getMessage())
+                    .build();
+
+            return ResponseEntity.status(500).body(Map.of(
+                    "success", false,
+                    "message", "Kıymetli metal güncellemesi başarısız"
+            ));
+        }
     }
 
+
+    /**
+     * AlphaVantage - Tek kıymetli metal güncelle
+     */
     @PostMapping("/update-precious/{symbol}")
     public ResponseEntity<?> updatePreciousSymbol(@PathVariable String symbol) {
-        // Örnek: XAU → XAUUSD / XAU/USD
         Map<String, String> symbolMap = Map.of(
                 "XAU", "XAUUSD",
                 "XAG", "XAGUSD",
@@ -204,24 +421,105 @@ public class AdminInstrumentController {
     }
 
     /**
+     * TCMB EVDS - Tahvil/Bono getiri oranlarını güncelle
+     */
+    @PostMapping("/update-bonds")
+    public ResponseEntity<?> updateBondYields() {
+        lastUpdateStatus = InstrumentUpdateStatusDTO.builder()
+                .updating(true)
+                .message("Tahvil/Bono güncellemesi devam ediyor...")
+                .build();
+
+        try {
+            log.info("Starting bond yields update via TCMB EVDS...");
+            List<InstrumentPrice> updated = tcmbEvdsService.fetchBondYields();
+
+            lastUpdateStatus = InstrumentUpdateStatusDTO.builder()
+                    .updating(false)
+                    .lastUpdateTime(LocalDateTime.now())
+                    .totalUpdated(updated.size())
+                    .bondsUpdated(updated.size())
+                    .message("Tahvil/Bono getiri oranları güncellendi")
+                    .build();
+
+            return ResponseEntity.ok(Map.of(
+                    "success", true,
+                    "message", "Tahvil/Bono getiri oranları güncellendi",
+                    "updatedCount", updated.size(),
+                    "note", "6 farklı vade (3A, 6A, 1Y, 2Y, 5Y, 10Y)"
+            ));
+
+        } catch (Exception e) {
+            log.error("❌ Bonds update failed: {}", e.getMessage());
+
+            lastUpdateStatus = InstrumentUpdateStatusDTO.builder()
+                    .updating(false)
+                    .message("Tahvil güncellemesi başarısız: " + e.getMessage())
+                    .build();
+
+            return ResponseEntity.status(500).body(Map.of(
+                    "success", false,
+                    "message", "Tahvil güncellemesi başarısız"
+            ));
+        }
+    }
+
+    /**
      * Tüm fiyatları güncelle
      */
     @PostMapping("/update-all")
     public ResponseEntity<?> updateAllPrices() {
-        int tcmbUpdated      = tcmbService.fetchDailyRates().size();
-        int finnhubUpdated   = finnhubService.updatePriorityInstruments();
-        int bistUpdated      = twelveDataService.updateBistStocks();
-        int preciousUpdated  = alphaVantageService.updatePreciousMetals();
+        lastUpdateStatus = InstrumentUpdateStatusDTO.builder()
+                .updating(true)
+                .message("Tüm fiyatlar güncelleniyor...")
+                .build();
 
-        return ResponseEntity.ok(Map.of(
-                "success", true,
-                "message", "Tüm fiyatlar güncellendi",
-                "tcmbUpdated", tcmbUpdated,
-                "finnhubUpdated", finnhubUpdated,
-                "bistUpdated", bistUpdated,
-                "preciousUpdated", preciousUpdated,
-                "totalUpdated", tcmbUpdated + finnhubUpdated + bistUpdated + preciousUpdated
-        ));
+        try {
+            int tcmbUpdated      = tcmbService.fetchDailyRates().size();
+            int finnhubUpdated   = finnhubService.updatePriorityInstruments();
+            int bistUpdated      = twelveDataService.updateBistStocksSample();
+            int preciousUpdated  = alphaVantageService.updatePreciousMetalsSample();
+            int bondsUpdated     = tcmbEvdsService.fetchBondYields().size();
+
+            int totalUpdated = tcmbUpdated + finnhubUpdated + bistUpdated +
+                    preciousUpdated + bondsUpdated;
+
+            lastUpdateStatus = InstrumentUpdateStatusDTO.builder()
+                    .updating(false)
+                    .lastUpdateTime(LocalDateTime.now())
+                    .totalUpdated(totalUpdated)
+                    .tcmbUpdated(tcmbUpdated)
+                    .finnhubUpdated(finnhubUpdated)
+                    .bistUpdated(bistUpdated)
+                    .preciousUpdated(preciousUpdated)
+                    .bondsUpdated(bondsUpdated)
+                    .message("Tüm fiyatlar başarıyla güncellendi")
+                    .build();
+
+            return ResponseEntity.ok(Map.of(
+                    "success", true,
+                    "message", "Tüm fiyatlar güncellendi",
+                    "tcmbUpdated", tcmbUpdated,
+                    "finnhubUpdated", finnhubUpdated,
+                    "bistUpdated", bistUpdated,
+                    "preciousUpdated", preciousUpdated,
+                    "bondsUpdated", bondsUpdated,
+                    "totalUpdated", totalUpdated
+            ));
+
+        } catch (Exception e) {
+            log.error("❌ Update all failed: {}", e.getMessage(), e);
+
+            lastUpdateStatus = InstrumentUpdateStatusDTO.builder()
+                    .updating(false)
+                    .message("Güncelleme başarısız: " + e.getMessage())
+                    .build();
+
+            return ResponseEntity.status(500).body(Map.of(
+                    "success", false,
+                    "message", "Güncelleme başarısız: " + e.getMessage()
+            ));
+        }
     }
 
     /**
@@ -233,6 +531,7 @@ public class AdminInstrumentController {
                 "success", true,
                 "apis", Map.of(
                         "tcmb",         Map.of("limit", "Sınırsız",      "usage", "Döviz"),
+                        "tcmbEvds",     Map.of("limit", "Sınırsız",      "usage", "Tahvil/Bono"),
                         "finnhub",      Map.of("limit", "60/dakika",     "usage", "ABD Hisse + Kripto"),
                         "twelveData",   Map.of("limit", "8/dakika",      "usage", "BIST Hisse"),
                         "alphaVantage", Map.of("limit", "25/gün",        "usage", "Altın/Gümüş")
