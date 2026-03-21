@@ -22,6 +22,7 @@ import AdminDashboard from './Components/Page/AdminDashboard';
 import AdminUsersPage from './Components/Page/AdminUsersPage';
 import AdminUserDetailPage from './Components/Page/AdminUserDetailPage';
 import AuthCallbackPage from './Components/Page/AuthCallbackPage';
+import AdminInstrumentUpdatePage from './Components/Page/AdminInstrumentUpdatePage';
 
 // Protected Route Component
 const ProtectedRoute = ({ children, adminOnly = false }) => {
@@ -128,6 +129,15 @@ const AppRoutes = () => {
                                     element={
                                         <ProtectedRoute adminOnly>
                                                 <AdminUserDetailPage />
+                                        </ProtectedRoute>
+                                    }
+                                />
+
+                                <Route
+                                    path="/admin/instruments"
+                                    element={
+                                        <ProtectedRoute adminOnly>
+                                            <AdminInstrumentUpdatePage />
                                         </ProtectedRoute>
                                     }
                                 />
