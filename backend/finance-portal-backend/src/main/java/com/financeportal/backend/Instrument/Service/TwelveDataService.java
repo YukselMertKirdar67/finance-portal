@@ -130,6 +130,60 @@ public class TwelveDataService {
             return null;
         }
     }
+
+    public int updateBistStocksSample() {
+        log.info("📊 Updating BIST stocks SAMPLE (first 3) via TwelveData...");
+        int updated = 0;
+
+        // Sadece ilk 3 hisse
+        List<String> sampleSymbols = BIST_SYMBOLS.stream()
+                .limit(3)
+                .toList();
+
+        for (String symbol : sampleSymbols) {
+            try {
+                InstrumentPrice price = fetchQuote(symbol);
+                if (price != null) {
+                    updated++;
+                    log.info("Updated {}/{}: {}", updated, sampleSymbols.size(), symbol);
+                }
+                Thread.sleep(8000);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                break;
+            } catch (Exception e) {
+                log.error("❌ Failed: {}", symbol);
+            }
+        }
+
+        log.info("✅ BIST SAMPLE updated: {}/{}", updated, sampleSymbols.size());
+        return updated;
+    }
+
+    public int updateBistStocks() {
+        log.info("📊 Updating ALL BIST stocks via TwelveData...");
+        int updated = 0;
+
+        for (String symbol : BIST_SYMBOLS) {
+            try {
+                InstrumentPrice price = fetchQuote(symbol);
+                if (price != null) {
+                    updated++;
+                    log.info("Updated {}/{}: {}", updated, BIST_SYMBOLS.size(), symbol);
+                }
+                Thread.sleep(8000);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                break;
+            } catch (Exception e) {
+                log.error("❌ Failed: {}", symbol);
+            }
+        }
+
+        log.info("✅ ALL BIST updated: {}/{}", updated, BIST_SYMBOLS.size());
+        return updated;
+    }
+
     private void savePriceHistory(BaseInstrument instrument,
                                   BigDecimal open, BigDecimal high,
                                   BigDecimal low, BigDecimal close) {
@@ -163,8 +217,6 @@ public class TwelveDataService {
         }
     }
 
-
-    // ✅ DTO'dan Entity'ye
     private InstrumentPrice convertToEntity(TwelveDataPriceDTO dto) {
         BaseInstrument instrument = instrumentRepository
                 .findBySymbol(dto.getSymbol())
@@ -181,30 +233,6 @@ public class TwelveDataService {
                 .previousClose(dto.getPreviousClose())
                 .timestamp(dto.getTimestamp())
                 .build();
-    }
-
-    public int updateBistStocks() {
-        log.info("📊 Updating BIST stocks via TwelveData...");
-        int updated = 0;
-
-        for (String symbol : BIST_SYMBOLS) {
-            try {
-                InstrumentPrice price = fetchQuote(symbol);
-                if (price != null) {
-                    updated++;
-                    log.info("Updated {}/{}: {}", updated, BIST_SYMBOLS.size(), symbol);
-                }
-                Thread.sleep(8000);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                break;
-            } catch (Exception e) {
-                log.error("❌ Failed: {}", symbol);
-            }
-        }
-
-        log.info("✅ BIST updated: {}/{}", updated, BIST_SYMBOLS.size());
-        return updated;
     }
 
     private String convertToDbSymbol(String twelveDataSymbol) {
