@@ -25,3 +25,19 @@ export const changePassword = async (passwordData) => {
         throw error;
     }
 };
+export const updateUsername = async (newUsername) => {
+    const response = await api.put('/me/username', { newUsername });
+    return response.data;
+};
+
+
+export const updateEmail = async (newEmail, password) => {
+    const response = await api.put('/me/email', { newEmail, password });
+    return response.data;
+};
+
+
+export const getPasswordLastChanged = async () => {
+    const response = await api.get('/me/password-last-changed');
+    return response.data;
+};
