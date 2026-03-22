@@ -82,6 +82,13 @@ export default function Sidebar({
                         </NavLink>
                     </li>
 
+                    <li>
+                        <NavLink to="/settings" className={navClass}>
+                            <Settings className="w-5 h-5" />
+                            <span>Ayarlar</span>
+                        </NavLink>
+                    </li>
+
                     {/* ADMIN MENU */}
                     {user?.isAdmin && (
                         <>
