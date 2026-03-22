@@ -1,6 +1,9 @@
 package com.financeportal.backend.User.Service;
 
+import com.financeportal.backend.Exception.ResourceNotFoundException;
 import com.financeportal.backend.User.DTO.*;
+import com.financeportal.backend.User.Entity.User;
+import com.financeportal.backend.User.Repository.UserRepository;
 import jakarta.ws.rs.core.Response;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -17,10 +20,13 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
+
+import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -33,6 +39,7 @@ public class AuthServiceImpl implements AuthService {
 
     private final Keycloak keycloakAdminClient;
     private final JwtDecoder jwtDecoder;
+    private final UserRepository userRepository;
 
     @Value("${keycloak.admin.realm}")
     private String realm;
@@ -406,6 +413,7 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
+    @Transactional
     public ChangePasswordResponseDTO changePassword(String userId, ChangePasswordRequestDTO request) {
         log.info("Changing password for user: {}", userId);
 
@@ -416,7 +424,7 @@ public class AuthServiceImpl implements AuthService {
 
                 return ChangePasswordResponseDTO.builder()
                         .success(false)
-                        .message("New password and confirm password do not match")
+                        .message("Yeni şifre ve onay şifresi eşleşmiyor")
                         .build();
             }
 
@@ -470,7 +478,7 @@ public class AuthServiceImpl implements AuthService {
 
                     return ChangePasswordResponseDTO.builder()
                             .success(false)
-                            .message("Current password or OTP is incorrect")
+                            .message("Mevcut şifre veya OTP kodu hatalı")
                             .build();
                 }
 
@@ -479,7 +487,7 @@ public class AuthServiceImpl implements AuthService {
 
                 return ChangePasswordResponseDTO.builder()
                         .success(false)
-                        .message("Failed to validate current password")
+                        .message("Şifre doğrulama başarısız")
                         .build();
             }
 
@@ -493,9 +501,23 @@ public class AuthServiceImpl implements AuthService {
 
             log.info("✅ Password changed successfully for user: {}", userId);
 
+            // Son şifre değişim tarihini güncelle
+            try {
+                User dbUser = userRepository.findByKeycloakId(userId)
+                        .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+                dbUser.setPasswordLastChanged(LocalDateTime.now());
+                userRepository.save(dbUser);
+
+                log.info("✅ Password last changed date updated for user: {}", userId);
+
+            } catch (Exception e) {
+                log.warn("Failed to update password last changed date: {}", e.getMessage());
+            }
+
             return ChangePasswordResponseDTO.builder()
                     .success(true)
-                    .message("Password changed successfully")
+                    .message("Şifreniz başarıyla değiştirildi")
                     .build();
 
         } catch (Exception e) {
@@ -503,7 +525,7 @@ public class AuthServiceImpl implements AuthService {
 
             return ChangePasswordResponseDTO.builder()
                     .success(false)
-                    .message("Failed to change password. Please try again.")
+                    .message("Şifre değiştirme işlemi başarısız. Lütfen tekrar deneyin.")
                     .build();
         }
     }
