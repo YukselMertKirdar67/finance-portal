@@ -1,6 +1,7 @@
 /* eslint-disable react-refresh/only-export-components */
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
 import { logoutUser } from '../API/authApi';
+import api from '../API/instrumentsApi';
 
 const AuthContext = createContext();
 
@@ -50,7 +51,31 @@ const getInitialAuthState = () => {
 export const AuthProvider = ({ children }) => {
     const [authState, setAuthState] = useState(getInitialAuthState);
 
-    const login = (tokenData, rememberMe = false) => {
+    // Component mount olduğunda user bilgilerini API'den çek
+    useEffect(() => {
+        const fetchUserProfile = async () => {
+            const token = sessionStorage.getItem('token') || localStorage.getItem('token');
+
+            if (token && authState.authenticated) {
+                try {
+                    const response = await api.get('/me/profile');
+                    setAuthState(prev => ({
+                        ...prev,
+                        user: {
+                            ...response.data,
+                            isAdmin: response.data.roles?.includes('ADMIN')
+                        }
+                    }));
+                } catch (error) {
+                    console.error('Failed to fetch user profile:', error);
+                }
+            }
+        };
+
+        fetchUserProfile();
+    }, []);
+
+    const login = async (tokenData, rememberMe = false) => {
         const storage = getStorage(rememberMe);
 
         // Token'ları seçilen storage'a kaydet
@@ -68,17 +93,31 @@ export const AuthProvider = ({ children }) => {
             localStorage.removeItem('user');
         }
 
-        // Auth state'i güncelle
-        setAuthState({
-            authenticated: true,
-            user: {
-                username: tokenData.username,
-                email: tokenData.email,
-                roles: tokenData.roles,
-                isAdmin: tokenData.roles?.includes('ADMIN')
-            },
-            loading: false
-        });
+        // API'den güncel user bilgilerini çek
+        try {
+            const response = await api.get('/me/profile');
+            setAuthState({
+                authenticated: true,
+                user: {
+                    ...response.data,
+                    isAdmin: response.data.roles?.includes('ADMIN')
+                },
+                loading: false
+            });
+        } catch (error) {
+            console.error('Failed to fetch user profile after login:', error);
+            // Fallback: tokenData'yı kullan
+            setAuthState({
+                authenticated: true,
+                user: {
+                    username: tokenData.username,
+                    email: tokenData.email,
+                    roles: tokenData.roles,
+                    isAdmin: tokenData.roles?.includes('ADMIN')
+                },
+                loading: false
+            });
+        }
 
         console.log(`✅ Login successful (Remember Me: ${rememberMe ? 'ON' : 'OFF'})`);
     };
@@ -120,6 +159,23 @@ export const AuthProvider = ({ children }) => {
         }
     };
 
+    // User bilgilerini refresh et
+    const refreshUser = async () => {
+        try {
+            const response = await api.get('/me/profile');
+            setAuthState(prev => ({
+                ...prev,
+                user: {
+                    ...response.data,
+                    isAdmin: response.data.roles?.includes('ADMIN')
+                }
+            }));
+        } catch (error) {
+            console.error('Failed to refresh user:', error);
+            throw error;
+        }
+    };
+
     const hasRole = (role) => {
         return authState.user?.roles?.includes(role) || false;
     };
@@ -130,6 +186,7 @@ export const AuthProvider = ({ children }) => {
         user: authState.user,
         login,
         logout,
+        refreshUser,
         hasRole,
         isAdmin: authState.user?.roles?.includes('ADMIN') || false,
     };
