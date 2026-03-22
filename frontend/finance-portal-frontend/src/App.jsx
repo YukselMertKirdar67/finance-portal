@@ -23,6 +23,8 @@ import AdminUsersPage from './Components/Page/AdminUsersPage';
 import AdminUserDetailPage from './Components/Page/AdminUserDetailPage';
 import AuthCallbackPage from './Components/Page/AuthCallbackPage';
 import AdminInstrumentUpdatePage from './Components/Page/AdminInstrumentUpdatePage';
+import LandingPage from './Components/Page/LandingPage';
+import SettingsPage from './Components/Page/SettingsPage';
 
 // Protected Route Component
 const ProtectedRoute = ({ children, adminOnly = false }) => {
@@ -66,6 +68,9 @@ const AppRoutes = () => {
     return (
         <Routes>
             {/* PUBLIC ROUTES */}
+
+            <Route path="/" element={<LandingPage />} />
+
             <Route
                 path="/login"
                 element={authenticated ? <Navigate to="/home" replace /> : <LoginPage />}
@@ -105,6 +110,7 @@ const AppRoutes = () => {
                                 <Route path="/portfolios/:id" element={<PortfolioPage />} />
                                 <Route path="/portfolios/:id/transactions" element={<TransactionPage />} />
                                 <Route path="/profile" element={<UserProfilePage />} />
+                                <Route path="/settings" element={<SettingsPage />} />
 
                                 {/* ADMIN ROUTES */}
                                 <Route
