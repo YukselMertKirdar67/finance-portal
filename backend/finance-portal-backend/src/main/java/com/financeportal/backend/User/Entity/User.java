@@ -30,6 +30,9 @@ public class User {
     @Column(nullable = false)
     private boolean enabled;
 
+    @Column(name = "password_last_changed")
+    private LocalDateTime passwordLastChanged;
+
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
