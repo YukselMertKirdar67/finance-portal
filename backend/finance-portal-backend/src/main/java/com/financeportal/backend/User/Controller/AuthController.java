@@ -1,19 +1,27 @@
 package com.financeportal.backend.User.Controller;
 
 import com.financeportal.backend.User.DTO.*;
+import com.financeportal.backend.User.Entity.User;
 import com.financeportal.backend.User.Service.AuthService;
+import com.financeportal.backend.User.Service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
+@Slf4j
 public class AuthController {
 
     private final AuthService authService;
+    private final UserService userService;
+    private final JwtDecoder jwtDecoder;
 
     @PostMapping("/register")
     public ResponseEntity<RegisterResponseDTO> register(@Valid @RequestBody RegisterRequestDTO request) {
@@ -25,6 +33,7 @@ public class AuthController {
             return ResponseEntity.badRequest().body(response);
         }
     }
+
     @PostMapping("/send-verification-email")
     public ResponseEntity<EmailVerificationResponseDTO> sendVerificationEmail(
             @Valid @RequestBody EmailVerificationRequestDTO request) {
@@ -74,14 +83,27 @@ public class AuthController {
 
     @PostMapping("/login")
     public ResponseEntity<LoginResponseDTO> login(@Valid @RequestBody LoginRequestDTO request) {
+        log.info("Login attempt for user: {}", request.getUsername());
+
         LoginResponseDTO response = authService.login(request);
 
         if (response.isSuccess()) {
+            try {
+                Jwt jwt = jwtDecoder.decode(response.getAccessToken());
+                User user = userService.getOrCreateUser(jwt);
+                log.info("✅ User ensured in DB: {} (keycloakId: {})", user.getUsername(), user.getKeycloakId());
+            } catch (Exception e) {
+                log.error("⚠️ Failed to save user to DB: {}", e.getMessage());
+            }
+
+            log.info("✅ Login successful for user: {}", request.getUsername());
             return ResponseEntity.ok(response);
         } else {
+            log.warn("❌ Login failed for user: {}", request.getUsername());
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
         }
     }
+
     @PostMapping("/logout")
     public ResponseEntity<LogoutResponseDTO> logout(
             @Valid @RequestBody LogoutRequestDTO request) {
@@ -106,7 +128,20 @@ public class AuthController {
 
     @PostMapping("/token-exchange")
     public ResponseEntity<LoginResponseDTO> tokenExchange(@RequestBody TokenExchangeRequestDTO request) {
+        log.info("Token exchange request");
+
         LoginResponseDTO response = authService.exchangeCodeForToken(request.getCode());
+
+        if (response.isSuccess()) {
+            try {
+                Jwt jwt = jwtDecoder.decode(response.getAccessToken());
+                User user = userService.getOrCreateUser(jwt);
+                log.info("✅ User ensured in DB after token exchange: {}", user.getUsername());
+            } catch (Exception e) {
+                log.error("⚠️ Failed to save user to DB after token exchange: {}", e.getMessage());
+            }
+        }
+
         return ResponseEntity.ok(response);
     }
 
