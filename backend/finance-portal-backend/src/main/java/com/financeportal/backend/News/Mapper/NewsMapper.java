@@ -28,6 +28,7 @@ public class NewsMapper {
         news.setContent(dto.getContent());
         news.setSource(dto.getSource());
         news.setCategory(dto.getCategory());
+        news.setImageUrl(dto.getImageUrl());
         news.setPublishDate(LocalDateTime.now());
         return news;
     }
