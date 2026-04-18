@@ -9,17 +9,27 @@ import java.util.List;
 @Setter
 public class ExternalNewsResponse {
 
+    private String status;
+    private Integer totalResults;
+    private List<Article> articles;
+
     @Getter
     @Setter
     public static class Article {
-        private Long id;
-        private String category;
-        private Long datetime;
-        private String headline;
-        private String image;
-        private String related;
-        private String source;
-        private String summary;
+        private Source source;
+        private String author;
+        private String title;
+        private String description;
         private String url;
+        private String urlToImage;
+        private String publishedAt;
+        private String content;
+    }
+
+    @Getter
+    @Setter
+    public static class Source {
+        private String id;
+        private String name;
     }
 }
