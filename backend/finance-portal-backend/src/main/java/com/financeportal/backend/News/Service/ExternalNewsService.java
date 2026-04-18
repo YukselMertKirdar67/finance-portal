@@ -10,20 +10,23 @@ import org.springframework.cache.annotation.Caching;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
-import java.time.Instant;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
-import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
+import java.nio.charset.StandardCharsets;
 
 @Service
 @Slf4j
 public class ExternalNewsService {
 
-    @Value("${finance.api.key}")
+    @Value("${newsapi.api.key}")
     private String apiKey;
 
-    @Value("${finance.api.url}")
+    @Value("${newsapi.api.url}")
     private String apiUrl;
 
     private final RestTemplate restTemplate;
@@ -36,10 +39,6 @@ public class ExternalNewsService {
         this.imageService = imageService;
     }
 
-    /**
-     * Tüm kategorilerden haberleri otomatik çek ve kaydet
-     * ✅ CACHE TEMİZLİĞİ EKLENDİ
-     */
     @Caching(evict = {
             @CacheEvict(value = "news", allEntries = true),
             @CacheEvict(value = "allNews", allEntries = true),
@@ -52,79 +51,98 @@ public class ExternalNewsService {
         int totalFetched = 0;
         int totalSkipped = 0;
 
-        // Finnhub kategorileri
+        // NewsAPI — keyword bazlı kategori mapping
         Map<String, String> categories = new LinkedHashMap<>();
-        categories.put("general", "FINANS");
-        categories.put("forex", "DOVIZ");
-        categories.put("crypto", "KRIPTO");
-        categories.put("merger", "BIRLESME");
+        categories.put("borsa OR hisse senedi OR ekonomi", "FINANS");
+        categories.put("döviz OR forex OR kur", "DOVIZ");
+        categories.put("kripto OR bitcoin OR ethereum", "KRIPTO");
+        categories.put("şirket birleşme OR satın alma", "BIRLESME");
 
-        log.info("Starting to fetch news from all categories...");
+        log.info("Starting to fetch news from NewsAPI...");
 
         for (Map.Entry<String, String> entry : categories.entrySet()) {
-            String apiCategory = entry.getKey();
+            String query = entry.getKey();
             String displayCategory = entry.getValue();
 
             try {
-                String url = apiUrl + "?category=" + apiCategory + "&token=" + apiKey;
+                String encodedQuery = URLEncoder.encode(query, StandardCharsets.UTF_8);
+                String url = apiUrl
+                        + "?q=" + encodedQuery
+                        + "&language=tr"
+                        + "&sortBy=publishedAt"
+                        + "&pageSize=20"
+                        + "&apiKey=" + apiKey;
 
                 log.info("Fetching {} news...", displayCategory);
 
-                ExternalNewsResponse.Article[] articlesArray =
-                        restTemplate.getForObject(url, ExternalNewsResponse.Article[].class);
+                ExternalNewsResponse response =
+                        restTemplate.getForObject(url, ExternalNewsResponse.class);
 
-                if (articlesArray == null || articlesArray.length == 0) {
+                if (response == null || response.getArticles() == null || response.getArticles().isEmpty()) {
                     log.warn("No {} articles found", displayCategory);
                     categoryResults.put(displayCategory, 0);
                     skippedResults.put(displayCategory, 0);
                     continue;
                 }
 
-                totalFetched += articlesArray.length;
-                log.info("Found {} {} articles", articlesArray.length, displayCategory);
+                List<ExternalNewsResponse.Article> articles = response.getArticles();
+                totalFetched += articles.size();
+                log.info("Found {} {} articles", articles.size(), displayCategory);
 
                 int savedCount = 0;
                 int skippedCount = 0;
 
-                for (ExternalNewsResponse.Article article : articlesArray) {
+                for (ExternalNewsResponse.Article article : articles) {
+
+                    log.info("RAW CONTENT: {}", article.getContent());
+                    log.info("RAW DESCRIPTION: {}", article.getDescription());
+
 
                     // 1. BAŞLIK KONTROLÜ
-                    if (article.getHeadline() == null || article.getHeadline().trim().isEmpty()) {
+                    if (article.getTitle() == null || article.getTitle().trim().isEmpty()) {
                         skippedCount++;
-                        log.debug("Skipped: No headline");
+                        log.debug("Skipped: No title");
+                        continue;
+                    }
+
+
+                    if (article.getTitle().equalsIgnoreCase("[Removed]")) {
+                        skippedCount++;
+                        log.debug("Skipped: Removed article");
                         continue;
                     }
 
                     // 2. İÇERİK KONTROLÜ
                     if (!hasValidContent(article)) {
                         skippedCount++;
-                        log.debug("Skipped: No valid content - {}", article.getHeadline());
+                        log.debug("Skipped: No valid content - {}", article.getTitle());
                         continue;
                     }
 
                     // 3. DUPLICATE KONTROLÜ
-                    if (newsRepository.existsByTitleAndSource(
-                            article.getHeadline(),
-                            article.getSource()
-                    )) {
+                    String sourceName = article.getSource() != null
+                            ? article.getSource().getName()
+                            : "Unknown";
+
+                    if (newsRepository.existsByTitleAndSource(article.getTitle(), sourceName)) {
                         skippedCount++;
-                        log.debug("Skipped: Duplicate - {}", article.getHeadline());
+                        log.debug("Skipped: Duplicate - {}", article.getTitle());
                         continue;
                     }
 
+                    // 4. KAYIT
                     News news = new News();
-                    news.setTitle(article.getHeadline());
-                    news.setContent(article.getSummary());
-                    news.setSource(article.getSource() != null ?
-                            article.getSource() : "Unknown");
+                    news.setTitle(article.getTitle());
+                    news.setContent(getContent(article));
+                    news.setSource(sourceName);
                     news.setCategory(displayCategory);
-                    news.setImageUrl(imageService.getImageUrl(article.getImage(), displayCategory));
+                    news.setImageUrl(imageService.getImageUrl(article.getUrlToImage(), displayCategory));
 
-                    // Unix timestamp'i LocalDateTime'a çevir
-                    if (article.getDatetime() != null) {
-                        news.setPublishDate(LocalDateTime.ofInstant(
-                                Instant.ofEpochSecond(article.getDatetime()),
-                                ZoneId.systemDefault()
+                    // ISO string → LocalDateTime
+                    if (article.getPublishedAt() != null) {
+                        news.setPublishDate(LocalDateTime.parse(
+                                article.getPublishedAt(),
+                                DateTimeFormatter.ISO_DATE_TIME
                         ));
                     } else {
                         news.setPublishDate(LocalDateTime.now());
@@ -133,10 +151,10 @@ public class ExternalNewsService {
                     try {
                         newsRepository.save(news);
                         savedCount++;
-                        log.debug("Saved: {} - {}", displayCategory, article.getHeadline());
+                        log.debug("Saved: {} - {}", displayCategory, article.getTitle());
                     } catch (Exception e) {
                         skippedCount++;
-                        log.error("Error saving article: {}", article.getHeadline(), e);
+                        log.error("Error saving article: {}", article.getTitle(), e);
                     }
                 }
 
@@ -176,41 +194,39 @@ public class ExternalNewsService {
     }
 
     /**
-     * İçeriğin geçerli olup olmadığını kontrol et
+     * content yoksa description'a düş, NewsAPI'nin [+N chars] suffix'ini temizle
      */
+    private String getContent(ExternalNewsResponse.Article article) {
+
+        String content = article.getDescription() != null
+                ? article.getDescription()
+                : article.getContent();
+
+        if (content == null) return "";
+
+        return content.replaceAll("\\[\\+\\d+ chars\\]", "").trim();
+    }
+
     private boolean hasValidContent(ExternalNewsResponse.Article article) {
-        String summary = article.getSummary();
 
-        // İçerik null veya boş mu?
-        if (summary == null || summary.trim().isEmpty()) {
-            return false;
-        }
+        String content = article.getDescription() != null
+                ? article.getDescription()
+                : article.getContent();
 
-        // Çok kısa içerik (minimum 50 karakter)
-        if (summary.trim().length() < 50) {
-            log.debug("Content too short ({}): {}", summary.length(), summary);
-            return false;
-        }
+        if (content == null || content.trim().isEmpty()) return false;
+        if (content.trim().length() < 50) return false;
 
-        // Minimum kelime sayısı (en az 10 kelime)
-        String[] words = summary.trim().split("\\s+");
-        if (words.length < 10) {
-            log.debug("Not enough words ({}): {}", words.length, summary);
-            return false;
-        }
+        String[] words = content.trim().split("\\s+");
+        if (words.length < 10) return false;
 
-        // Sadece boşluk karakterleri mi?
-        if (summary.trim().replaceAll("\\s+", "").isEmpty()) {
-            return false;
-        }
+        if (content.trim().replaceAll("\\s+", "").isEmpty()) return false;
 
-        // "No content", "Not available" gibi anlamsız içerikler
-        String lowerContent = summary.toLowerCase();
-        if (lowerContent.contains("no content") ||
-                lowerContent.contains("not available") ||
-                lowerContent.contains("content not found") ||
-                lowerContent.equals("null") ||
-                lowerContent.equals("n/a")) {
+        String lower = content.toLowerCase();
+        if (lower.contains("no content") ||
+                lower.contains("not available") ||
+                lower.contains("content not found") ||
+                lower.equals("null") ||
+                lower.equals("n/a")) {
             return false;
         }
 
