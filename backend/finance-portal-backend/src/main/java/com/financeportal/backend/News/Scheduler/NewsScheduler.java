@@ -17,10 +17,10 @@ public class NewsScheduler {
     private final ExternalNewsService externalNewsService;
 
     /**
-     * ✅ Her 6 saatte bir haberleri güncelle
+     * Her 6 saatte bir haberleri güncelle
      * 06:00, 12:00, 18:00, 00:00
      */
-    @Scheduled(cron = "0 */10 * * * *")
+    @Scheduled(cron = "0 0 0,6,12,18 * * *")
     public void fetchNewsScheduled() {
         log.info("⏰ [SCHEDULER] Haber güncelleme başladı: {}", LocalDateTime.now());
 
