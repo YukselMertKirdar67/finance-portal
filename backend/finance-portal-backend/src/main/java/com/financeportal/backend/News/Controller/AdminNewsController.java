@@ -373,6 +373,9 @@ public class AdminNewsController {
                 log.info("Cache 'news' cleared");
             }
 
+            Cache allNewsCache = cacheManager.getCache("allNews");
+            if (allNewsCache != null) allNewsCache.clear();
+
             Cache newsByCategoryCache = cacheManager.getCache("newsByCategory");
             if (newsByCategoryCache != null) {
                 newsByCategoryCache.clear();
