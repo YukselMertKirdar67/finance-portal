@@ -39,7 +39,6 @@ public interface PortfolioMapper {
     @Mapping(target = "currentValue", ignore = true)
     @Mapping(target = "unrealizedPnL", ignore = true)
     @Mapping(target = "pnlPercent", ignore = true)
-    @Mapping(target = "cashBalance", ignore = true)
     @Mapping(target = "totalHoldings", ignore = true)
     @Mapping(target = "totalTransactions", ignore = true)
     PortfolioDetailDTO toDetailDTO(Portfolio portfolio);
@@ -67,7 +66,7 @@ public interface PortfolioMapper {
     // ===================================================================
 
     /**
-     * ⭐ FIX: instrument.instrumentType çağrısı (abstract method)
+     * instrument.instrumentType çağrısı (abstract method)
      */
     @Mapping(source = "holding.id", target = "holdingId")
     @Mapping(source = "holding.instrument.id", target = "instrumentId")
@@ -105,7 +104,7 @@ public interface PortfolioMapper {
     // ===================================================================
 
     /**
-     * ⭐ FIX: instrument.instrumentType çağrısı (abstract method)
+     * instrument.instrumentType çağrısı (abstract method)
      */
     @Mapping(source = "portfolio.id", target = "portfolioId")
     @Mapping(source = "portfolio.name", target = "portfolioName")
@@ -138,7 +137,7 @@ public interface PortfolioMapper {
     // ===================================================================
 
     /**
-     * ⭐ Map InstrumentType enum to String
+     * Map InstrumentType enum to String
      */
     default String mapInstrumentType(BaseInstrument instrument) {
         if (instrument == null) {
