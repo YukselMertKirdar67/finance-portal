@@ -47,6 +47,12 @@ public class PortfolioTransaction {
     @Column(name = "total_amount", precision = 18, scale = 2, nullable = false)
     private BigDecimal totalAmount; // Toplam tutar (quantity × price)
 
+    @Column(name = "currency", length = 10)
+    private String currency; // İşlem para birimi
+
+    @Column(name = "exchange_rate", precision = 18, scale = 6)
+    private BigDecimal exchangeRate; // İşlem anındaki kur
+
     @Column(name = "commission", precision = 18, scale = 2)
     private BigDecimal commission; // Komisyon
 
