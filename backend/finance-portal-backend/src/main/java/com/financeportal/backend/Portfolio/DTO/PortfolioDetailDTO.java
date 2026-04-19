@@ -20,7 +20,6 @@ public class PortfolioDetailDTO {
     private String name;
     private String description;
     private PortfolioType portfolioType;
-    private BigDecimal initialBalance;
     private String currency;
     private Boolean active;
 
@@ -32,7 +31,6 @@ public class PortfolioDetailDTO {
     private BigDecimal currentValue;        // Güncel toplam değer
     private BigDecimal unrealizedPnL;       // Gerçekleşmemiş kar/zarar
     private BigDecimal pnlPercent;          // Kar/zarar yüzdesi
-    private BigDecimal cashBalance;         // Nakit bakiye (initialBalance - totalInvested)
 
     // Statistics
     private Integer totalHoldings;          // Toplam varlık sayısı
