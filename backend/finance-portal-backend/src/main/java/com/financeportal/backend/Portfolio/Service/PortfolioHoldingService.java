@@ -118,4 +118,9 @@ public interface PortfolioHoldingService {
      * @return Number of holdings deleted
      */
     int deleteZeroQuantityHoldings(Long portfolioId);
+
+    List<HoldingDTO> getHoldingsByPortfolioId(Long portfolioId, String portfolioCurrency);
+    BigDecimal calculateTotalInvestment(Long portfolioId, String portfolioCurrency);
+    BigDecimal calculateCurrentValue(Long portfolioId, String portfolioCurrency);
+    List<AssetAllocationDTO> getAssetAllocation(Long portfolioId, String portfolioCurrency);
 }
