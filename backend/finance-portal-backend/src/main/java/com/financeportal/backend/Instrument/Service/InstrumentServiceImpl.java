@@ -194,7 +194,7 @@ public class InstrumentServiceImpl implements InstrumentService {
 
         Page<BaseInstrument> instruments;
 
-        // ✅ Tip bazlı doğrudan sorgu (NULL yok!)
+        // Tip bazlı doğrudan sorgu
         instruments = switch (type) {
             case STOCK -> instrumentRepository.findAllStocks(pageable);
             case FOREX -> instrumentRepository.findAllForex(pageable);
@@ -233,8 +233,6 @@ public class InstrumentServiceImpl implements InstrumentService {
     @Transactional(readOnly = true)
     @Cacheable(value = "instrumentPrices", key = "#instrumentId")
     public PriceDataDTO getCurrentPrice(Long instrumentId) {
-        log.info("🔍 Cache MISS - Fetching price from DB for instrument: {}", instrumentId);
-
         BaseInstrument instrument = instrumentRepository.findById(instrumentId)
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Instrument not found with id: " + instrumentId
