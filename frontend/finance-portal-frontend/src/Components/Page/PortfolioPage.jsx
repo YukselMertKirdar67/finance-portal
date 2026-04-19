@@ -161,7 +161,7 @@ export default function PortfolioPage() {
         try {
             setSubmitting(true);
 
-            await hardDeletePortfolio(PORTFOLIO_ID);  // ⭐ hardDeletePortfolio kullan
+            await hardDeletePortfolio(PORTFOLIO_ID);  // hardDeletePortfolio kullan
 
             alert('Portföy kalıcı olarak silindi!');
 
@@ -372,7 +372,7 @@ export default function PortfolioPage() {
                         Yenile
                     </Button>
 
-                    {/* ⭐ Düzenle Butonu */}
+                    {/* Düzenle Butonu */}
                     <Button
                         variant="outline"
                         onClick={() => {
@@ -387,7 +387,7 @@ export default function PortfolioPage() {
                         Düzenle
                     </Button>
 
-                    {/* ⭐ Sil Butonu */}
+                    {/* Sil Butonu */}
                     <Button
                         variant="outline"
                         className="text-red-600 hover:text-red-700 hover:bg-red-50"
@@ -502,12 +502,6 @@ export default function PortfolioPage() {
                                         strokeWidth={3}
                                         dot={{ fill: portfolio.unrealizedPnL >= 0 ? '#10B981' : '#EF4444', r: 4 }}
                                         activeDot={{ r: 6 }}
-                                    />
-                                    <ReferenceLine
-                                        y={portfolio.initialBalance}
-                                        stroke="#6B7280"
-                                        strokeDasharray="3 3"
-                                        label={{ value: 'Başlangıç', position: 'right', fill: '#6B7280' }}
                                     />
                                 </LineChart>
                             </ResponsiveContainer>
