@@ -2,6 +2,7 @@ package com.financeportal.backend.Portfolio.Controller;
 
 import com.financeportal.backend.Portfolio.DTO.AssetAllocationDTO;
 import com.financeportal.backend.Portfolio.DTO.HoldingDTO;
+import com.financeportal.backend.Portfolio.Repository.PortfolioRepository;
 import com.financeportal.backend.Portfolio.Service.PortfolioHoldingService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -22,6 +23,7 @@ import java.util.List;
 public class PortfolioHoldingController {
 
     private final PortfolioHoldingService holdingService;
+    private final PortfolioRepository portfolioRepository;
 
     /**
      * Get all holdings for a portfolio
@@ -96,13 +98,16 @@ public class PortfolioHoldingController {
      * GET /api/portfolios/{portfolioId}/holdings/asset-allocation
      */
     @GetMapping("/asset-allocation")
-    @Operation(summary = "Get asset allocation", description = "Get asset allocation grouped by instrument type")
+    @Operation(summary = "Get asset allocation")
     public ResponseEntity<List<AssetAllocationDTO>> getAssetAllocation(
-            @Parameter(description = "Portfolio ID")
             @PathVariable Long portfolioId) {
         log.info("API: Fetching asset allocation for portfolio: {}", portfolioId);
 
-        List<AssetAllocationDTO> allocation = holdingService.getAssetAllocation(portfolioId);
+        String currency = portfolioRepository.findById(portfolioId)
+                .map(p -> p.getCurrency() != null ? p.getCurrency() : "TRY")
+                .orElse("TRY");
+
+        List<AssetAllocationDTO> allocation = holdingService.getAssetAllocation(portfolioId, currency);
 
         return ResponseEntity.ok(allocation);
     }
