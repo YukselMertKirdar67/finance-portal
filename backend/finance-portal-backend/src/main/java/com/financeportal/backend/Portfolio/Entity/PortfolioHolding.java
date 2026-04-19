@@ -40,6 +40,12 @@ public class PortfolioHolding {
     @Column(name = "average_buy_price", precision = 18, scale = 6, nullable = false)
     private BigDecimal averageBuyPrice; // Ortalama alış fiyatı
 
+    @Column(name = "currency", length = 10)
+    private String currency; // TRY, USD, EUR, GBP
+
+    @Column(name = "exchange_rate", precision = 18, scale = 6)
+    private BigDecimal exchangeRate; // Alım anındaki kur (TRY karşılığı)
+
     @Column(name = "first_purchase_date", nullable = false)
     private LocalDateTime firstPurchaseDate; // İlk alım tarihi
 
