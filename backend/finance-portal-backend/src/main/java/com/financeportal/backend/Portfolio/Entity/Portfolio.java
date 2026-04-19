@@ -6,7 +6,6 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -34,9 +33,6 @@ public class Portfolio {
     @Enumerated(EnumType.STRING)
     @Column(name = "portfolio_type", nullable = false, length = 20)
     private PortfolioType portfolioType;
-
-    @Column(name = "initial_balance", precision = 18, scale = 2, nullable = false)
-    private BigDecimal initialBalance;
 
     @Column(name = "currency", length = 10, nullable = false)
     private String currency; // TRY, USD, EUR
