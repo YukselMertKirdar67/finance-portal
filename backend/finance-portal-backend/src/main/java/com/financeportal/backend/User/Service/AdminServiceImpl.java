@@ -1,17 +1,10 @@
 package com.financeportal.backend.User.Service;
 
-
-import com.financeportal.backend.Exception.ResourceNotFoundException;
-import com.financeportal.backend.Portfolio.DTO.PortfolioDTO;
 import com.financeportal.backend.Portfolio.Entity.Portfolio;
 import com.financeportal.backend.Portfolio.Enum.TransactionType;
-import com.financeportal.backend.Portfolio.Mapper.PortfolioMapper;
 import com.financeportal.backend.Portfolio.Repository.PortfolioRepository;
 import com.financeportal.backend.Portfolio.Repository.PortfolioTransactionRepository;
 import com.financeportal.backend.User.DTO.*;
-import com.financeportal.backend.User.Entity.User;
-import com.financeportal.backend.User.UserMapper;
-import com.financeportal.backend.User.Repository.UserRepository;
 import com.financeportal.backend.Watchlist.WatchlistRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -297,8 +290,10 @@ public class AdminServiceImpl implements AdminService {
             log.info("✅ Portfolio stats - Total: {}, Active: {}", totalPortfolios, activePortfolios);
 
             // Toplam portföy değeri
-            BigDecimal totalPortfolioValue = portfolioRepository.findAll().stream()
-                    .map(Portfolio::getInitialBalance)
+            BigDecimal totalPortfolioValue = transactionRepository.findAll().stream()
+                    .filter(tx -> tx.getTransactionType() == TransactionType.BUY
+                            && !tx.isDeleted())
+                    .map(tx -> tx.getTotalAmount() != null ? tx.getTotalAmount() : BigDecimal.ZERO)
                     .reduce(BigDecimal.ZERO, BigDecimal::add);
 
             //  İŞLEM İSTATİSTİKLERİ
