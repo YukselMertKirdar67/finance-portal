@@ -29,7 +29,7 @@ public interface InstrumentRepository extends JpaRepository<BaseInstrument, Long
 
     boolean existsBySymbol(String symbol);
 
-    // ✅ YENİ: Tip bazlı sorgular
+    //Tip bazlı sorgular
     @Query("SELECT i FROM StockInstrument i WHERE i.active = true")
     Page<BaseInstrument> findAllStocks(Pageable pageable);
 
