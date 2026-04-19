@@ -166,8 +166,8 @@ public interface PortfolioTransactionService {
     BigDecimal calculateRealizedPnL(Long portfolioId);
 
     /**
-     * Delete a transaction
-     * Note: This should also reverse the holding changes
+     * Soft delete a transaction (sets deleted = true)
+     * Transaction record is kept in database but hidden from user
      *
      * @param transactionId Transaction ID
      */
