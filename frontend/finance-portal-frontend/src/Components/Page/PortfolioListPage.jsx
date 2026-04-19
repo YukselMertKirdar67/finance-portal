@@ -21,7 +21,6 @@ export default function PortfolioListPage() {
         name: '',
         description: '',
         portfolioType: 'PERSONAL',
-        initialBalance: '',
         currency: 'TRY'
     });
     const [submitting, setSubmitting] = useState(false);
@@ -45,7 +44,7 @@ export default function PortfolioListPage() {
     };
 
     const handleCreatePortfolio = async () => {
-        if (!formData.name || !formData.initialBalance) {
+        if (!formData.name) {
             alert('Lütfen portföy adı ve başlangıç bakiyesi girin');
             return;
         }
@@ -57,7 +56,6 @@ export default function PortfolioListPage() {
                 name: formData.name,
                 description: formData.description || undefined,
                 portfolioType: formData.portfolioType,
-                initialBalance: parseFloat(formData.initialBalance),
                 currency: formData.currency
             };
 
@@ -68,7 +66,6 @@ export default function PortfolioListPage() {
                 name: '',
                 description: '',
                 portfolioType: 'PERSONAL',
-                initialBalance: '',
                 currency: 'TRY'
             });
             setShowCreateModal(false);
@@ -201,7 +198,7 @@ export default function PortfolioListPage() {
                                                 {getPortfolioTypeIcon(portfolio.portfolioType)}
                                             </div>
                                             <div>
-                                                {/* ⭐ Başlık + Badge */}
+                                                {/* Başlık + Badge */}
                                                 <div className="flex items-center gap-2 mb-1">
                                                     <CardTitle className="text-xl">{portfolio.name}</CardTitle>
                                                     {portfolio.active ? (
@@ -343,22 +340,6 @@ export default function PortfolioListPage() {
                                 </div>
                             </div>
 
-                            {/* Initial Balance */}
-                            <div>
-                                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                    Başlangıç Bakiyesi *
-                                </label>
-                                <input
-                                    type="number"
-                                    step="any"
-                                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0066FF] focus:border-transparent"
-                                    placeholder="Örn: 50000"
-                                    value={formData.initialBalance}
-                                    onChange={(e) => setFormData({ ...formData, initialBalance: e.target.value })}
-                                    disabled={submitting}
-                                />
-                            </div>
-
                             {/* Currency */}
                             <div>
                                 <label className="block text-sm font-semibold text-gray-700 mb-2">
@@ -395,7 +376,6 @@ export default function PortfolioListPage() {
                                         name: '',
                                         description: '',
                                         portfolioType: 'PERSONAL',
-                                        initialBalance: '',
                                         currency: 'TRY'
                                     });
                                 }}
@@ -406,7 +386,7 @@ export default function PortfolioListPage() {
                             <Button
                                 className="flex-1 h-12 font-semibold bg-[#0066FF] hover:bg-[#0052CC]"
                                 onClick={handleCreatePortfolio}
-                                disabled={!formData.name || !formData.initialBalance || submitting}
+                                disabled={!formData.name || submitting}
                             >
                                 {submitting ? 'Oluşturuluyor...' : 'Portföy Oluştur'}
                             </Button>
