@@ -4,6 +4,7 @@ import com.financeportal.backend.Exception.BusinessRuleException;
 import com.financeportal.backend.Exception.ResourceNotFoundException;
 import com.financeportal.backend.Instrument.Entity.BaseInstrument;
 import com.financeportal.backend.Instrument.Repository.InstrumentRepository;
+import com.financeportal.backend.Instrument.Service.TcmbService;
 import com.financeportal.backend.Portfolio.DTO.CreateTransactionRequestDTO;
 import com.financeportal.backend.Portfolio.DTO.TransactionDTO;
 import com.financeportal.backend.Portfolio.DTO.TransactionSummaryDTO;
@@ -40,6 +41,7 @@ public class PortfolioTransactionServiceImpl implements PortfolioTransactionServ
     private final InstrumentRepository instrumentRepository;
     private final PortfolioCalculationService calculationService;
     private final PortfolioMapper portfolioMapper;
+    private final TcmbService tcmbService;
 
     @Override
     @Transactional
@@ -68,23 +70,30 @@ public class PortfolioTransactionServiceImpl implements PortfolioTransactionServ
         BaseInstrument instrument = instrumentRepository.findById(request.getInstrumentId())
                 .orElseThrow(() -> new ResourceNotFoundException("Instrument not found with id: " + request.getInstrumentId()));
 
-        // 3. Create transaction entity
+        // 3. Döviz kuru al
+        String currency = instrument.getCurrency();
+        BigDecimal exchangeRate = tcmbService.getExchangeRate(currency);
+
+        // 4. Create transaction entity
         PortfolioTransaction transaction = portfolioMapper.toTransactionEntity(request);
         transaction.setPortfolio(portfolio);
         transaction.setInstrument(instrument);
+        transaction.setCurrency(currency);
+        transaction.setExchangeRate(exchangeRate);
 
         if (request.getTransactionDate() == null) {
             transaction.setTransactionDate(LocalDateTime.now());
         }
 
-        // 4. Save transaction
+        // 5. Save transaction
         PortfolioTransaction savedTransaction = transactionRepository.save(transaction);
         log.info("BUY transaction saved with ID: {}", savedTransaction.getId());
 
-        // 5. Update or create holding
-        updateHoldingForBuy(portfolio, instrument, request.getQuantity(), request.getPrice(), transaction.getTransactionDate());
+        // 6. Update or create holding
+        updateHoldingForBuy(portfolio, instrument, request.getQuantity(), request.getPrice(),
+                transaction.getTransactionDate(), currency, exchangeRate);
 
-        // 6. Map to DTO and return
+        // 7. Map to DTO and return
         return portfolioMapper.toTransactionDTO(savedTransaction);
     }
 
@@ -112,23 +121,29 @@ public class PortfolioTransactionServiceImpl implements PortfolioTransactionServ
             ));
         }
 
-        // 5. Create transaction entity
+        // 5. Döviz kuru al
+        String currency = instrument.getCurrency();
+        BigDecimal exchangeRate = tcmbService.getExchangeRate(currency);
+
+        // 6. Create transaction entity
         PortfolioTransaction transaction = portfolioMapper.toTransactionEntity(request);
         transaction.setPortfolio(portfolio);
         transaction.setInstrument(instrument);
+        transaction.setCurrency(currency);
+        transaction.setExchangeRate(exchangeRate);
 
         if (request.getTransactionDate() == null) {
             transaction.setTransactionDate(LocalDateTime.now());
         }
 
-        // 6. Save transaction
+        // 7. Save transaction
         PortfolioTransaction savedTransaction = transactionRepository.save(transaction);
         log.info("SELL transaction saved with ID: {}", savedTransaction.getId());
 
-        // 7. Update holding (reduce quantity)
+        // 8. Update holding (reduce quantity)
         updateHoldingForSell(holding, request.getQuantity());
 
-        // 8. Map to DTO and return
+        // 9. Map to DTO and return
         return portfolioMapper.toTransactionDTO(savedTransaction);
     }
 
@@ -340,7 +355,9 @@ public class PortfolioTransactionServiceImpl implements PortfolioTransactionServ
     }
 
     private void updateHoldingForBuy(Portfolio portfolio, BaseInstrument instrument,
-                                     BigDecimal quantity, BigDecimal price, LocalDateTime transactionDate) {
+                                     BigDecimal quantity, BigDecimal price,
+                                     LocalDateTime transactionDate,
+                                     String currency, BigDecimal exchangeRate) {
         Optional<PortfolioHolding> existingHolding = holdingRepository
                 .findByPortfolioIdAndInstrumentId(portfolio.getId(), instrument.getId());
 
@@ -360,11 +377,13 @@ public class PortfolioTransactionServiceImpl implements PortfolioTransactionServ
             holding.setQuantity(holding.getQuantity().add(quantity));
             holding.setAverageBuyPrice(newAverageBuyPrice);
             holding.setLastPurchaseDate(transactionDate);
+            holding.setCurrency(currency);
+            holding.setExchangeRate(exchangeRate);
 
             holdingRepository.save(holding);
 
-            log.info("Holding updated: new quantity: {}, new avg price: {}",
-                    holding.getQuantity(), holding.getAverageBuyPrice());
+            log.info("Holding updated: new quantity: {}, new avg price: {}, currency: {}, rate: {}",
+                    holding.getQuantity(), holding.getAverageBuyPrice(), currency, exchangeRate);
 
         } else {
             log.info("Creating new holding for instrument: {} in portfolio: {}", instrument.getSymbol(), portfolio.getId());
@@ -376,10 +395,13 @@ public class PortfolioTransactionServiceImpl implements PortfolioTransactionServ
             newHolding.setAverageBuyPrice(price);
             newHolding.setFirstPurchaseDate(transactionDate);
             newHolding.setLastPurchaseDate(transactionDate);
+            newHolding.setCurrency(currency);
+            newHolding.setExchangeRate(exchangeRate);
 
             holdingRepository.save(newHolding);
 
-            log.info("New holding created with quantity: {}, avg price: {}", quantity, price);
+            log.info("New holding created with quantity: {}, avg price: {}, currency: {}, rate: {}",
+                    quantity, price, currency, exchangeRate);
         }
     }
 
