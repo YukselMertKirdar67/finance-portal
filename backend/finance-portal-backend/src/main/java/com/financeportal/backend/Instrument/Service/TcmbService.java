@@ -44,18 +44,18 @@ public class TcmbService {
         List<InstrumentPrice> prices = new ArrayList<>();
 
         try {
-            // ✅ Bugünkü kurları çek
+            // Bugünkü kurları çek
             String todayXml = restTemplate.getForObject(TCMB_TODAY_URL, String.class);
             if (todayXml == null || todayXml.isEmpty()) {
                 log.error("TCMB XML is empty");
                 return prices;
             }
 
-            // ✅ Dünkü kurları çek (previousClose için)
+            // Dünkü kurları çek (previousClose için)
             Map<String, BigDecimal> yesterdayRates = fetchYesterdayRates();
             log.info("Yesterday rates fetched: {} currencies", yesterdayRates.size());
 
-            // ✅ XML parse
+            // XML parse
             DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
             DocumentBuilder docBuilder = factory.newDocumentBuilder();
             Document doc = docBuilder.parse(
@@ -85,7 +85,7 @@ public class TcmbService {
                 BigDecimal avgPrice  = buyPrice.add(sellPrice)
                         .divide(BigDecimal.valueOf(2), 6, RoundingMode.HALF_UP);
 
-                // ✅ previousClose: önce dünkü arşivden bak, yoksa DB'den al
+                // previousClose: önce dünkü arşivden bak, yoksa DB'den al
                 BigDecimal previousClose = yesterdayRates.getOrDefault(code, null);
 
                 if (previousClose == null) {
@@ -120,7 +120,43 @@ public class TcmbService {
         return prices;
     }
 
-    // ✅ Dünkü kurları TCMB arşivinden çek
+    public BigDecimal getExchangeRate(String currency) {
+        if (currency == null || currency.equals("TRY")) {
+            return BigDecimal.ONE;
+        }
+
+        // Kripto stablecoin'leri USD olarak kabul et
+        if (currency.equals("USDT") || currency.equals("USDC") || currency.equals("BUSD")) {
+            currency = "USD";
+        }
+
+        String symbol = currency + "/TRY";
+
+        BigDecimal rate = instrumentRepository.findBySymbol(symbol)
+                .flatMap(instrument -> priceRepository
+                        .findTopByInstrumentOrderByTimestampDesc(instrument))
+                .map(InstrumentPrice::getCurrentPrice)
+                .orElse(BigDecimal.ONE);
+
+        log.info("Exchange rate for {}: {} (symbol: {})", currency, rate, symbol);
+
+        return rate;
+    }
+
+    public BigDecimal convertFromTRY(BigDecimal amountInTRY, String targetCurrency) {
+        if (targetCurrency == null || targetCurrency.equals("TRY")) {
+            return amountInTRY;
+        }
+
+        BigDecimal exchangeRate = getExchangeRate(targetCurrency);
+        if (exchangeRate.compareTo(BigDecimal.ZERO) == 0) {
+            return amountInTRY;
+        }
+
+        return amountInTRY.divide(exchangeRate, 6, RoundingMode.HALF_UP);
+    }
+
+    // Dünkü kurları TCMB arşivinden çek
     private Map<String, BigDecimal> fetchYesterdayRates() {
         Map<String, BigDecimal> rates = new HashMap<>();
 
@@ -178,7 +214,7 @@ public class TcmbService {
         return rates;
     }
 
-    // ✅ TCMB arşiv URL'si oluştur
+    // TCMB arşiv URL'si oluştur
     private String buildArchiveUrl(LocalDate date) {
         // Format: /202602/17022026.xml
         String monthYear = date.format(DateTimeFormatter.ofPattern("yyyyMM"));
@@ -186,7 +222,7 @@ public class TcmbService {
         return String.format(TCMB_ARCHIVE_URL, monthYear, dateStr);
     }
 
-    // ✅ Hafta sonu kontrolü (Cumartesi/Pazar → Cuma'ya git)
+    // Hafta sonu kontrolü (Cumartesi/Pazar → Cuma'ya git)
     private LocalDate getPreviousBusinessDay(LocalDate date) {
         LocalDate previous = date.minusDays(1);
         while (previous.getDayOfWeek() == DayOfWeek.SATURDAY ||
@@ -196,7 +232,7 @@ public class TcmbService {
         return previous;
     }
 
-    // ✅ Arşiv çekilemediyse DB'den al
+    // Arşiv çekilemediyse DB'den al
     private BigDecimal getPreviousCloseFromDb(BaseInstrument instrument, BigDecimal fallback) {
         return priceRepository
                 .findTopByInstrumentOrderByTimestampDesc(instrument)
@@ -212,7 +248,7 @@ public class TcmbService {
                 .orElse(fallback);
     }
 
-    // ✅ Log için
+    // Log için
     private String calcChangePercent(BigDecimal current, BigDecimal previous) {
         if (previous == null || previous.compareTo(BigDecimal.ZERO) == 0) return "N/A";
         return current.subtract(previous)
