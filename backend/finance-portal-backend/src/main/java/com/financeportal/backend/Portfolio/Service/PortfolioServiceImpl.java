@@ -26,7 +26,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
-import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -60,7 +59,7 @@ public class PortfolioServiceImpl implements PortfolioService {
         PortfolioDTO dto = portfolioMapper.toDTO(saved);
 
         // Set initial calculated fields (empty portfolio)
-        dto.setTotalValue(saved.getInitialBalance());
+        dto.setTotalValue(BigDecimal.ZERO);
         dto.setTotalInvested(BigDecimal.ZERO);
         dto.setUnrealizedPnL(BigDecimal.ZERO);
         dto.setPnlPercent(BigDecimal.ZERO);
@@ -193,9 +192,8 @@ public class PortfolioServiceImpl implements PortfolioService {
                     .map(HoldingDTO::getCurrentValue)
                     .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-            // ⭐ Total Value = Cash + Holdings
-            BigDecimal cashBalance = portfolio.getInitialBalance().subtract(totalInvested);
-            BigDecimal totalValue = cashBalance.add(holdingsValue);
+
+            BigDecimal totalValue = holdingsValue;
 
             BigDecimal unrealizedPnL = holdingsValue.subtract(totalInvested);
 
@@ -209,10 +207,9 @@ public class PortfolioServiceImpl implements PortfolioService {
 
             // Set calculated fields
             dto.setTotalInvested(totalInvested);
-            dto.setCurrentValue(totalValue);  // ⭐ Nakit + Varlıklar
+            dto.setCurrentValue(totalValue);
             dto.setUnrealizedPnL(unrealizedPnL);
             dto.setPnlPercent(pnlPercent);
-            dto.setCashBalance(cashBalance);
             dto.setTotalHoldings(holdings.size());
             dto.setTotalTransactions(0);
 
@@ -243,7 +240,7 @@ public class PortfolioServiceImpl implements PortfolioService {
         String currentUserId = SecurityUtils.getCurrentUserKeycloakId();
         log.info("Fetching portfolio summary for user: {}", currentUserId);
 
-        List<Portfolio> portfolios = portfolioRepository.findByUserId(currentUserId);
+        List<Portfolio> portfolios = portfolioRepository.findByUserIdWithHoldings(currentUserId);
 
         BigDecimal totalValue = BigDecimal.ZERO;
         BigDecimal totalInvested = BigDecimal.ZERO;
@@ -260,7 +257,6 @@ public class PortfolioServiceImpl implements PortfolioService {
         }
 
         BigDecimal totalPnLPercent = BigDecimal.ZERO;
-
         if (totalInvested.compareTo(BigDecimal.ZERO) > 0) {
             totalPnLPercent = totalUnrealizedPnL
                     .divide(totalInvested, 4, RoundingMode.HALF_UP)
@@ -268,7 +264,6 @@ public class PortfolioServiceImpl implements PortfolioService {
                     .setScale(2, RoundingMode.HALF_UP);
         }
 
-        // Sort by P&L percent
         List<PortfolioDTO> sortedByPnL = allPortfolios.stream()
                 .sorted((p1, p2) -> p2.getPnlPercent().compareTo(p1.getPnlPercent()))
                 .collect(Collectors.toList());
@@ -278,7 +273,6 @@ public class PortfolioServiceImpl implements PortfolioService {
                 .skip(Math.max(0, sortedByPnL.size() - 3))
                 .collect(Collectors.toList());
 
-        // Asset allocation (aggregate across all portfolios)
         List<AssetAllocationDTO> assetAllocation = calculateAggregateAssetAllocation(portfolios);
 
         return PortfolioSummaryDTO.builder()
@@ -310,7 +304,7 @@ public class PortfolioServiceImpl implements PortfolioService {
                     .multiply(new BigDecimal("100"));
         }
 
-        // ⭐ Generate historical data points
+        // Generate historical data points
         List<PerformanceDataPointDTO> historicalData = generateHistoricalPerformanceData(
                 portfolio, startDate, endDate, totalInvested, currentValue
         );
@@ -335,6 +329,7 @@ public class PortfolioServiceImpl implements PortfolioService {
      * 2. Processing transactions chronologically
      * 3. Marking current holdings to market each day
      */
+
     private List<PerformanceDataPointDTO> generateHistoricalPerformanceData(
             Portfolio portfolio, LocalDate startDate, LocalDate endDate,
             BigDecimal totalInvested, BigDecimal currentValue) {
@@ -343,139 +338,77 @@ public class PortfolioServiceImpl implements PortfolioService {
 
         List<PerformanceDataPointDTO> dataPoints = new ArrayList<>();
 
-        // Get all transactions for this portfolio
         List<PortfolioTransaction> transactions = portfolio.getTransactions().stream()
                 .sorted(Comparator.comparing(PortfolioTransaction::getTransactionDate))
                 .collect(Collectors.toList());
 
         log.info("Found {} transactions for portfolio {}", transactions.size(), portfolio.getId());
 
-        // If no transactions, return flat line at initial balance
         if (transactions.isEmpty()) {
             LocalDate currentDate = startDate;
             while (!currentDate.isAfter(endDate)) {
-                BigDecimal initialBalance = portfolio.getInitialBalance();
-
-                PerformanceDataPointDTO dataPoint = PerformanceDataPointDTO.builder()
+                dataPoints.add(PerformanceDataPointDTO.builder()
                         .date(currentDate)
-                        .value(initialBalance.setScale(2, RoundingMode.HALF_UP))
+                        .value(BigDecimal.ZERO)
                         .returnPercent(BigDecimal.ZERO)
-                        .build();
-
-                dataPoints.add(dataPoint);
+                        .build());
                 currentDate = currentDate.plusDays(1);
             }
-
-            log.info("No transactions - generated {} data points at initial balance", dataPoints.size());
+            log.info("No transactions - generated {} data points", dataPoints.size());
             return dataPoints;
         }
 
-        // Track holdings over time (instrumentId -> quantity)
         Map<Long, BigDecimal> holdingsMap = new HashMap<>();
-
-        // Track cash balance
-        BigDecimal cashBalance = portfolio.getInitialBalance();
-
-        // Process each day
         LocalDate currentDate = startDate;
         int transactionIndex = 0;
 
         while (!currentDate.isAfter(endDate)) {
-            // Process all transactions for this day
             while (transactionIndex < transactions.size()) {
                 PortfolioTransaction tx = transactions.get(transactionIndex);
                 LocalDate txDate = tx.getTransactionDate().toLocalDate();
 
-                if (txDate.isAfter(currentDate)) {
-                    break; // Future transaction, stop
-                }
+                if (txDate.isAfter(currentDate)) break;
 
-                if (txDate.isBefore(startDate)) {
-                    // Past transaction before our window - still need to process for holdings
-                    processTransaction(tx, holdingsMap, cashBalance);
-                    transactionIndex++;
-                    continue;
-                }
-
-                // Transaction is on or before current date
-                if (!txDate.isAfter(currentDate)) {
-                    BigDecimal txCashImpact = processTransaction(tx, holdingsMap, cashBalance);
-                    cashBalance = cashBalance.add(txCashImpact);
-                    transactionIndex++;
-                } else {
-                    break;
-                }
+                processTransaction(tx, holdingsMap);
+                transactionIndex++;
             }
 
-            // Calculate total portfolio value for this date
             BigDecimal holdingsValue = calculateHoldingsValueAtDate(holdingsMap, currentDate);
-            BigDecimal totalValueAtDate = cashBalance.add(holdingsValue);
 
-            // Calculate return percentage
             BigDecimal returnPercent = BigDecimal.ZERO;
-            BigDecimal initialBalance = portfolio.getInitialBalance();
-            if (initialBalance.compareTo(BigDecimal.ZERO) > 0) {
-                returnPercent = totalValueAtDate.subtract(initialBalance)
-                        .divide(initialBalance, 4, RoundingMode.HALF_UP)
+            if (totalInvested.compareTo(BigDecimal.ZERO) > 0) {
+                returnPercent = holdingsValue.subtract(totalInvested)
+                        .divide(totalInvested, 4, RoundingMode.HALF_UP)
                         .multiply(new BigDecimal("100"))
                         .setScale(2, RoundingMode.HALF_UP);
             }
 
-            PerformanceDataPointDTO dataPoint = PerformanceDataPointDTO.builder()
+            dataPoints.add(PerformanceDataPointDTO.builder()
                     .date(currentDate)
-                    .value(totalValueAtDate.setScale(2, RoundingMode.HALF_UP))
+                    .value(holdingsValue.setScale(2, RoundingMode.HALF_UP))
                     .returnPercent(returnPercent)
-                    .build();
+                    .build());
 
-            dataPoints.add(dataPoint);
             currentDate = currentDate.plusDays(1);
         }
 
-        log.info("Generated {} historical data points based on transaction history", dataPoints.size());
-
+        log.info("Generated {} historical data points", dataPoints.size());
         return dataPoints;
     }
 
-    /**
-     * Process a transaction and update holdings map
-     * Returns cash impact (negative for buy, positive for sell)
-     */
-    private BigDecimal processTransaction(PortfolioTransaction tx,
-                                          Map<Long, BigDecimal> holdingsMap,
-                                          BigDecimal currentCashBalance) {
+    private void processTransaction(PortfolioTransaction tx,
+                                    Map<Long, BigDecimal> holdingsMap) {
         Long instrumentId = tx.getInstrument().getId();
         BigDecimal quantity = tx.getQuantity();
 
         if (tx.getTransactionType() == TransactionType.BUY) {
-            // Add to holdings
             holdingsMap.merge(instrumentId, quantity, BigDecimal::add);
-
-            // Cash out (negative)
-            BigDecimal cashImpact = tx.getTotalAmount().negate();
-            if (tx.getCommission() != null) {
-                cashImpact = cashImpact.subtract(tx.getCommission());
-            }
-            if (tx.getTax() != null) {
-                cashImpact = cashImpact.subtract(tx.getTax());
-            }
-            return cashImpact;
-
-        } else { // SELL
-            // Remove from holdings
+        } else {
             holdingsMap.merge(instrumentId, quantity.negate(), BigDecimal::add);
-            if (holdingsMap.get(instrumentId).compareTo(BigDecimal.ZERO) == 0) {
+            if (holdingsMap.getOrDefault(instrumentId, BigDecimal.ZERO)
+                    .compareTo(BigDecimal.ZERO) == 0) {
                 holdingsMap.remove(instrumentId);
             }
-
-            // Cash in (positive)
-            BigDecimal cashImpact = tx.getTotalAmount();
-            if (tx.getCommission() != null) {
-                cashImpact = cashImpact.subtract(tx.getCommission());
-            }
-            if (tx.getTax() != null) {
-                cashImpact = cashImpact.subtract(tx.getTax());
-            }
-            return cashImpact;
         }
     }
 
@@ -631,10 +564,6 @@ public class PortfolioServiceImpl implements PortfolioService {
         BigDecimal totalInvested = holdingService.calculateTotalInvestment(portfolio.getId());
         BigDecimal holdingsValue = holdingService.calculateCurrentValue(portfolio.getId());
 
-        // Total Value = Cash + Holdings
-        BigDecimal cashBalance = portfolio.getInitialBalance().subtract(totalInvested);
-        BigDecimal totalValue = cashBalance.add(holdingsValue);
-
         BigDecimal unrealizedPnL = holdingsValue.subtract(totalInvested);
 
         BigDecimal pnlPercent = BigDecimal.ZERO;
@@ -645,7 +574,7 @@ public class PortfolioServiceImpl implements PortfolioService {
                     .setScale(2, RoundingMode.HALF_UP);
         }
 
-        dto.setTotalValue(totalValue);
+        dto.setTotalValue(holdingsValue);
         dto.setTotalInvested(totalInvested);
         dto.setUnrealizedPnL(unrealizedPnL);
         dto.setPnlPercent(pnlPercent);
