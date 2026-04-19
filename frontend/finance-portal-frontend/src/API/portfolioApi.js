@@ -89,6 +89,15 @@ export const getTransactions = async (portfolioId, page = 0, size = 50) => {
     }
 };
 
+export const deleteTransaction = async (portfolioId, transactionId) => {
+    try {
+        await api.delete(`/portfolios/${portfolioId}/transactions/${transactionId}`);
+    } catch (error) {
+        console.error('Error deleting transaction:', error);
+        throw error;
+    }
+};
+
 // Holdings getir
 export const getHoldings = async (portfolioId) => {
     try {
