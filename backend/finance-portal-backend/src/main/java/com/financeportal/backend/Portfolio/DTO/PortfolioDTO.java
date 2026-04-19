@@ -19,7 +19,6 @@ public class PortfolioDTO {
     private String name;
     private String description;
     private PortfolioType portfolioType;
-    private BigDecimal initialBalance;
     private String currency;
     private Boolean active;
 
