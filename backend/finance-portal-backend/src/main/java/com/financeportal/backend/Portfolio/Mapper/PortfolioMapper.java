@@ -74,6 +74,8 @@ public interface PortfolioMapper {
     @Mapping(source = "holding.instrument.name", target = "instrumentName")
     @Mapping(target = "instrumentType", expression = "java(mapInstrumentType(holding.getInstrument()))")
     @Mapping(source = "currentPrice", target = "currentPrice")
+    @Mapping(source = "holding.currency", target = "currency")
+    @Mapping(source = "holding.exchangeRate", target = "exchangeRate")
     @Mapping(source = "holding.quantity", target = "quantity")
     @Mapping(source = "holding.averageBuyPrice", target = "averageBuyPrice")
     @Mapping(target = "totalInvestment", ignore = true)
