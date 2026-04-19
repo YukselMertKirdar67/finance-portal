@@ -19,12 +19,16 @@ public interface PortfolioTransactionRepository extends JpaRepository<PortfolioT
     /**
      * Find all transactions by portfolio ID (sorted by date DESC)
      */
-    List<PortfolioTransaction> findByPortfolioIdOrderByTransactionDateDesc(Long portfolioId);
+    List<PortfolioTransaction> findByPortfolioIdAndDeletedFalseOrderByTransactionDateDesc(
+            Long portfolioId
+    );
 
     /**
      * Find all transactions by portfolio ID (paginated, sorted by date DESC)
      */
-    Page<PortfolioTransaction> findByPortfolioIdOrderByTransactionDateDesc(Long portfolioId, Pageable pageable);
+    Page<PortfolioTransaction> findByPortfolioIdAndDeletedFalseOrderByTransactionDateDesc(
+            Long portfolioId, Pageable pageable
+    );
 
     /**
      * Find transactions by portfolio ID with instrument (eager fetch)
@@ -32,13 +36,14 @@ public interface PortfolioTransactionRepository extends JpaRepository<PortfolioT
     @Query("SELECT t FROM PortfolioTransaction t " +
             "LEFT JOIN FETCH t.instrument " +
             "WHERE t.portfolio.id = :portfolioId " +
+            "AND t.deleted = false " +
             "ORDER BY t.transactionDate DESC")
     List<PortfolioTransaction> findByPortfolioIdWithInstrument(@Param("portfolioId") Long portfolioId);
 
     /**
      * Find transactions by portfolio ID and transaction type
      */
-    List<PortfolioTransaction> findByPortfolioIdAndTransactionType(
+    List<PortfolioTransaction> findByPortfolioIdAndTransactionTypeAndDeletedFalse(
             Long portfolioId,
             TransactionType transactionType
     );
@@ -46,7 +51,7 @@ public interface PortfolioTransactionRepository extends JpaRepository<PortfolioT
     /**
      * Find transactions by portfolio ID and instrument ID
      */
-    List<PortfolioTransaction> findByPortfolioIdAndInstrumentIdOrderByTransactionDateDesc(
+    List<PortfolioTransaction> findByPortfolioIdAndInstrumentIdAndDeletedFalseOrderByTransactionDateDesc(
             Long portfolioId,
             Long instrumentId
     );
@@ -56,6 +61,7 @@ public interface PortfolioTransactionRepository extends JpaRepository<PortfolioT
      */
     @Query("SELECT t FROM PortfolioTransaction t " +
             "WHERE t.portfolio.id = :portfolioId " +
+            "AND t.deleted = false " +
             "AND t.transactionDate BETWEEN :startDate AND :endDate " +
             "ORDER BY t.transactionDate DESC")
     List<PortfolioTransaction> findByPortfolioIdAndDateBetween(
@@ -67,53 +73,59 @@ public interface PortfolioTransactionRepository extends JpaRepository<PortfolioT
     /**
      * Count transactions by portfolio ID
      */
-    long countByPortfolioId(Long portfolioId);
+    long countByPortfolioIdAndDeletedFalse(Long portfolioId);
 
     /**
      * Count transactions by portfolio ID and type
      */
-    long countByPortfolioIdAndTransactionType(Long portfolioId, TransactionType transactionType);
+    long countByPortfolioIdAndTransactionTypeAndDeletedFalse(
+            Long portfolioId,
+            TransactionType transactionType
+    );
 
     /**
-     * Custom query: Sum total buy amount for a portfolio
+     * Sum total buy amount for a portfolio
      */
     @Query("SELECT COALESCE(SUM(t.totalAmount), 0) FROM PortfolioTransaction t " +
             "WHERE t.portfolio.id = :portfolioId " +
-            "AND t.transactionType = 'BUY'")
+            "AND t.transactionType = 'BUY' " +
+            "AND t.deleted = false")
     BigDecimal sumBuyAmountByPortfolioId(@Param("portfolioId") Long portfolioId);
 
     /**
-     * Custom query: Sum total sell amount for a portfolio
+     * Sum total sell amount for a portfolio
      */
     @Query("SELECT COALESCE(SUM(t.totalAmount), 0) FROM PortfolioTransaction t " +
             "WHERE t.portfolio.id = :portfolioId " +
-            "AND t.transactionType = 'SELL'")
+            "AND t.transactionType = 'SELL' " +
+            "AND t.deleted = false")
     BigDecimal sumSellAmountByPortfolioId(@Param("portfolioId") Long portfolioId);
 
     /**
-     * Custom query: Sum total commission for a portfolio
+     * Sum total commission for a portfolio
      */
     @Query("SELECT COALESCE(SUM(t.commission), 0) FROM PortfolioTransaction t " +
-            "WHERE t.portfolio.id = :portfolioId")
+            "WHERE t.portfolio.id = :portfolioId " +
+            "AND t.deleted = false")
     BigDecimal sumCommissionByPortfolioId(@Param("portfolioId") Long portfolioId);
 
     /**
-     * Custom query: Sum total tax for a portfolio
+     * Sum total tax for a portfolio
      */
     @Query("SELECT COALESCE(SUM(t.tax), 0) FROM PortfolioTransaction t " +
-            "WHERE t.portfolio.id = :portfolioId")
+            "WHERE t.portfolio.id = :portfolioId " +
+            "AND t.deleted = false")
     BigDecimal sumTaxByPortfolioId(@Param("portfolioId") Long portfolioId);
 
     /**
-     * Custom query: Calculate realized P&L for a portfolio
-     * Realized P&L = Total Sell Amount - Total Buy Amount (for completed round-trips)
-     * Note: This is a simplified calculation. Actual realized P&L requires FIFO/LIFO tracking.
+     * Calculate realized P&L for a portfolio
      */
     @Query("SELECT " +
             "COALESCE(SUM(CASE WHEN t.transactionType = 'SELL' THEN t.totalAmount ELSE 0 END), 0) - " +
             "COALESCE(SUM(CASE WHEN t.transactionType = 'BUY' THEN t.totalAmount ELSE 0 END), 0) " +
             "FROM PortfolioTransaction t " +
-            "WHERE t.portfolio.id = :portfolioId")
+            "WHERE t.portfolio.id = :portfolioId " +
+            "AND t.deleted = false")
     BigDecimal calculateRealizedPnL(@Param("portfolioId") Long portfolioId);
 
     /**
@@ -121,6 +133,7 @@ public interface PortfolioTransactionRepository extends JpaRepository<PortfolioT
      */
     @Query("SELECT t FROM PortfolioTransaction t " +
             "WHERE t.portfolio.userId = :userId " +
+            "AND t.deleted = false " +
             "ORDER BY t.transactionDate DESC")
     List<PortfolioTransaction> findByUserId(@Param("userId") String userId);
 
@@ -129,6 +142,7 @@ public interface PortfolioTransactionRepository extends JpaRepository<PortfolioT
      */
     @Query("SELECT t FROM PortfolioTransaction t " +
             "WHERE t.portfolio.id = :portfolioId " +
+            "AND t.deleted = false " +
             "AND t.transactionDate >= :sinceDate " +
             "ORDER BY t.transactionDate DESC")
     List<PortfolioTransaction> findRecentTransactions(
@@ -139,11 +153,12 @@ public interface PortfolioTransactionRepository extends JpaRepository<PortfolioT
     /**
      * Find transactions by instrument ID across all portfolios
      */
-    List<PortfolioTransaction> findByInstrumentIdOrderByTransactionDateDesc(Long instrumentId);
+    List<PortfolioTransaction> findByInstrumentIdAndDeletedFalseOrderByTransactionDateDesc(
+            Long instrumentId
+    );
 
     /**
-     * Custom query: Get transaction statistics for a portfolio
-     * Returns: total count, buy count, sell count, total volume
+     * Get transaction statistics for a portfolio
      */
     @Query("SELECT " +
             "COUNT(t), " +
@@ -151,17 +166,17 @@ public interface PortfolioTransactionRepository extends JpaRepository<PortfolioT
             "SUM(CASE WHEN t.transactionType = 'SELL' THEN 1 ELSE 0 END), " +
             "COALESCE(SUM(t.totalAmount), 0) " +
             "FROM PortfolioTransaction t " +
-            "WHERE t.portfolio.id = :portfolioId")
+            "WHERE t.portfolio.id = :portfolioId " +
+            "AND t.deleted = false")
     Object[] getTransactionStatistics(@Param("portfolioId") Long portfolioId);
 
     /**
-     * Delete transactions by portfolio ID
+     * Delete transactions by portfolio ID (hard delete - admin only)
      */
     void deleteByPortfolioId(Long portfolioId);
 
     /**
      * Delete transactions older than a specific date
-     * (For archiving/cleanup purposes)
      */
     @Query("DELETE FROM PortfolioTransaction t " +
             "WHERE t.portfolio.id = :portfolioId " +
