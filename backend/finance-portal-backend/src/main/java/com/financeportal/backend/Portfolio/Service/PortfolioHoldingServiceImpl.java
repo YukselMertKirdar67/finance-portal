@@ -4,6 +4,7 @@ import com.financeportal.backend.Exception.ResourceNotFoundException;
 import com.financeportal.backend.Instrument.Entity.BaseInstrument;
 import com.financeportal.backend.Instrument.Entity.InstrumentPrice;
 import com.financeportal.backend.Instrument.Repository.InstrumentPriceRepository;
+import com.financeportal.backend.Instrument.Service.TcmbService;
 import com.financeportal.backend.Portfolio.DTO.AssetAllocationDTO;
 import com.financeportal.backend.Portfolio.DTO.HoldingDTO;
 import com.financeportal.backend.Portfolio.Entity.PortfolioHolding;
@@ -28,17 +29,73 @@ public class PortfolioHoldingServiceImpl implements PortfolioHoldingService {
     private final InstrumentPriceRepository priceRepository;
     private final PortfolioCalculationService calculationService;
     private final PortfolioMapper portfolioMapper;
+    private final TcmbService tcmbService;
 
+    // Currency parametreli — portföy para birimine göre hesapla
     @Override
     @Transactional(readOnly = true)
-    public List<HoldingDTO> getHoldingsByPortfolioId(Long portfolioId) {
-        log.info("Fetching holdings for portfolio ID: {}", portfolioId);
+    public List<HoldingDTO> getHoldingsByPortfolioId(Long portfolioId, String portfolioCurrency) {
+        log.info("Fetching holdings for portfolio ID: {} (currency: {})", portfolioId, portfolioCurrency);
 
         List<PortfolioHolding> holdings = holdingRepository.findByPortfolioIdWithInstrument(portfolioId);
 
         return holdings.stream()
-                .map(this::enrichHoldingDTO)
+                .map(h -> enrichHoldingDTO(h, portfolioCurrency))
                 .collect(Collectors.toList());
+    }
+
+    // Currency parametreli
+    @Override
+    @Transactional(readOnly = true)
+    public BigDecimal calculateTotalInvestment(Long portfolioId, String portfolioCurrency) {
+        log.debug("Calculating total investment for portfolio ID: {} (currency: {})", portfolioId, portfolioCurrency);
+
+        List<PortfolioHolding> holdings = holdingRepository.findByPortfolioId(portfolioId);
+
+        BigDecimal totalInTRY = holdings.stream()
+                .map(h -> {
+                    BigDecimal avgPriceInTRY = h.getAverageBuyPrice();
+                    String currency = h.getCurrency();
+                    BigDecimal exchangeRate = h.getExchangeRate();
+
+                    if (currency != null && !currency.equals("TRY")
+                            && exchangeRate != null
+                            && exchangeRate.compareTo(BigDecimal.ZERO) > 0) {
+                        avgPriceInTRY = h.getAverageBuyPrice()
+                                .multiply(exchangeRate)
+                                .setScale(6, RoundingMode.HALF_UP);
+                    }
+
+                    return calculationService.calculateTotalInvestment(h.getQuantity(), avgPriceInTRY);
+                })
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        return tcmbService.convertFromTRY(totalInTRY, portfolioCurrency);
+    }
+
+    // Currency parametreli
+    @Override
+    @Transactional(readOnly = true)
+    public BigDecimal calculateCurrentValue(Long portfolioId, String portfolioCurrency) {
+        log.debug("Calculating current value for portfolio ID: {} (currency: {})", portfolioId, portfolioCurrency);
+
+        List<PortfolioHolding> holdings = holdingRepository.findByPortfolioIdWithInstrument(portfolioId);
+
+        BigDecimal totalInTRY = holdings.stream()
+                .map(h -> {
+                    BigDecimal currentPrice = getCurrentPriceInTRY(h.getInstrument());
+                    return calculationService.calculateCurrentValue(h.getQuantity(), currentPrice);
+                })
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        return tcmbService.convertFromTRY(totalInTRY, portfolioCurrency);
+    }
+
+    // Eski metodlar — TRY döndürür (geriye uyumluluk)
+    @Override
+    @Transactional(readOnly = true)
+    public List<HoldingDTO> getHoldingsByPortfolioId(Long portfolioId) {
+        return getHoldingsByPortfolioId(portfolioId, "TRY");
     }
 
     @Override
@@ -49,7 +106,7 @@ public class PortfolioHoldingServiceImpl implements PortfolioHoldingService {
         PortfolioHolding holding = holdingRepository.findById(holdingId)
                 .orElseThrow(() -> new ResourceNotFoundException("Holding not found with id: " + holdingId));
 
-        return enrichHoldingDTO(holding);
+        return enrichHoldingDTO(holding, "TRY");
     }
 
     @Override
@@ -60,7 +117,7 @@ public class PortfolioHoldingServiceImpl implements PortfolioHoldingService {
         Optional<PortfolioHolding> holdingOpt = holdingRepository
                 .findByPortfolioIdAndInstrumentId(portfolioId, instrumentId);
 
-        return holdingOpt.map(this::enrichHoldingDTO).orElse(null);
+        return holdingOpt.map(h -> enrichHoldingDTO(h, "TRY")).orElse(null);
     }
 
     @Override
@@ -71,7 +128,7 @@ public class PortfolioHoldingServiceImpl implements PortfolioHoldingService {
         List<PortfolioHolding> holdings = holdingRepository.findActiveHoldingsByPortfolioId(portfolioId);
 
         return holdings.stream()
-                .map(this::enrichHoldingDTO)
+                .map(h -> enrichHoldingDTO(h, "TRY"))
                 .collect(Collectors.toList());
     }
 
@@ -90,12 +147,11 @@ public class PortfolioHoldingServiceImpl implements PortfolioHoldingService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<AssetAllocationDTO> getAssetAllocation(Long portfolioId) {
-        log.info("Calculating asset allocation for portfolio ID: {}", portfolioId);
+    public List<AssetAllocationDTO> getAssetAllocation(Long portfolioId, String portfolioCurrency) {
+        log.info("Calculating asset allocation for portfolio ID: {} (currency: {})", portfolioId, portfolioCurrency);
 
-        List<HoldingDTO> holdings = getHoldingsByPortfolioId(portfolioId);
+        List<HoldingDTO> holdings = getHoldingsByPortfolioId(portfolioId, portfolioCurrency);
 
-        // Group by instrument type
         Map<String, List<HoldingDTO>> groupedByType = holdings.stream()
                 .collect(Collectors.groupingBy(HoldingDTO::getInstrumentType));
 
@@ -129,37 +185,26 @@ public class PortfolioHoldingServiceImpl implements PortfolioHoldingService {
                     .build());
         }
 
-        // Sort by value descending
         allocation.sort(Comparator.comparing(AssetAllocationDTO::getTotalValue).reversed());
-
         return allocation;
     }
 
     @Override
     @Transactional(readOnly = true)
+    public List<AssetAllocationDTO> getAssetAllocation(Long portfolioId) {
+        return getAssetAllocation(portfolioId, "TRY");
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public BigDecimal calculateTotalInvestment(Long portfolioId) {
-        log.debug("Calculating total investment for portfolio ID: {}", portfolioId);
-
-        List<PortfolioHolding> holdings = holdingRepository.findByPortfolioId(portfolioId);
-
-        return holdings.stream()
-                .map(h -> calculationService.calculateTotalInvestment(h.getQuantity(), h.getAverageBuyPrice()))
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        return calculateTotalInvestment(portfolioId, "TRY");
     }
 
     @Override
     @Transactional(readOnly = true)
     public BigDecimal calculateCurrentValue(Long portfolioId) {
-        log.debug("Calculating current value for portfolio ID: {}", portfolioId);
-
-        List<PortfolioHolding> holdings = holdingRepository.findByPortfolioIdWithInstrument(portfolioId);
-
-        return holdings.stream()
-                .map(h -> {
-                    BigDecimal currentPrice = getCurrentPrice(h.getInstrument());
-                    return calculationService.calculateCurrentValue(h.getQuantity(), currentPrice);
-                })
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        return calculateCurrentValue(portfolioId, "TRY");
     }
 
     @Override
@@ -181,7 +226,7 @@ public class PortfolioHoldingServiceImpl implements PortfolioHoldingService {
         PortfolioHolding holding = holdingRepository.findById(holdingId)
                 .orElseThrow(() -> new ResourceNotFoundException("Holding not found with id: " + holdingId));
 
-        BigDecimal currentPrice = getCurrentPrice(holding.getInstrument());
+        BigDecimal currentPrice = getCurrentPriceInTRY(holding.getInstrument());
 
         return calculationService.calculateUnrealizedPnL(
                 holding.getQuantity(),
@@ -230,37 +275,37 @@ public class PortfolioHoldingServiceImpl implements PortfolioHoldingService {
 
     // ========== PRIVATE HELPER METHODS ==========
 
-    /**
-     * Enrich HoldingDTO with current price and calculated fields
-     */
-    private HoldingDTO enrichHoldingDTO(PortfolioHolding holding) {
-        BigDecimal currentPrice = getCurrentPrice(holding.getInstrument());
+    private HoldingDTO enrichHoldingDTO(PortfolioHolding holding, String portfolioCurrency) {
+        // 1. Önce TRY cinsinden hesapla
+        BigDecimal currentPriceInTRY = getCurrentPriceInTRY(holding.getInstrument());
+        BigDecimal avgPriceInTRY = holding.getAverageBuyPrice();
+        String holdingCurrency = holding.getCurrency();
+        BigDecimal exchangeRate = holding.getExchangeRate();
+
+        log.info("DEBUG enrichHoldingDTO - symbol: {}, currency: {}, avgBuyPrice: {}, exchangeRate: {}, currentPriceInTRY: {}, portfolioCurrency: {}",
+                holding.getInstrument().getSymbol(), holdingCurrency,
+                holding.getAverageBuyPrice(), exchangeRate,
+                currentPriceInTRY, portfolioCurrency);
+
+        if (holdingCurrency != null && !holdingCurrency.equals("TRY")
+                && exchangeRate != null
+                && exchangeRate.compareTo(BigDecimal.ZERO) > 0) {
+            avgPriceInTRY = holding.getAverageBuyPrice()
+                    .multiply(exchangeRate)
+                    .setScale(6, RoundingMode.HALF_UP);
+        }
+
+        // 2. Portföy currency'sine çevir
+        BigDecimal currentPrice = tcmbService.convertFromTRY(currentPriceInTRY, portfolioCurrency);
+        BigDecimal avgPrice = tcmbService.convertFromTRY(avgPriceInTRY, portfolioCurrency);
 
         HoldingDTO dto = portfolioMapper.toHoldingDTO(holding, currentPrice);
 
-        // Calculate fields
-        BigDecimal totalInvestment = calculationService.calculateTotalInvestment(
-                holding.getQuantity(),
-                holding.getAverageBuyPrice()
-        );
+        BigDecimal totalInvestment = calculationService.calculateTotalInvestment(holding.getQuantity(), avgPrice);
+        BigDecimal currentValue = calculationService.calculateCurrentValue(holding.getQuantity(), currentPrice);
+        BigDecimal unrealizedPnL = calculationService.calculateUnrealizedPnL(holding.getQuantity(), avgPrice, currentPrice);
+        BigDecimal pnlPercent = calculationService.calculatePnLPercent(avgPrice, currentPrice);
 
-        BigDecimal currentValue = calculationService.calculateCurrentValue(
-                holding.getQuantity(),
-                currentPrice
-        );
-
-        BigDecimal unrealizedPnL = calculationService.calculateUnrealizedPnL(
-                holding.getQuantity(),
-                holding.getAverageBuyPrice(),
-                currentPrice
-        );
-
-        BigDecimal pnlPercent = calculationService.calculatePnLPercent(
-                holding.getAverageBuyPrice(),
-                currentPrice
-        );
-
-        // Set calculated fields
         dto.setTotalInvestment(totalInvestment);
         dto.setCurrentValue(currentValue);
         dto.setUnrealizedPnL(unrealizedPnL);
@@ -269,12 +314,20 @@ public class PortfolioHoldingServiceImpl implements PortfolioHoldingService {
         return dto;
     }
 
-    /**
-     * Get current price for an instrument
-     */
-    private BigDecimal getCurrentPrice(BaseInstrument instrument) {
-        return priceRepository.findTopByInstrumentOrderByTimestampDesc(instrument)
+    private BigDecimal getCurrentPriceInTRY(BaseInstrument instrument) {
+        BigDecimal price = priceRepository
+                .findTopByInstrumentOrderByTimestampDesc(instrument)
                 .map(InstrumentPrice::getCurrentPrice)
                 .orElse(BigDecimal.ZERO);
+
+        String currency = instrument.getCurrency();
+        if (currency != null && !currency.equals("TRY")) {
+            BigDecimal rate = tcmbService.getExchangeRate(currency);
+            price = price.multiply(rate).setScale(6, RoundingMode.HALF_UP);
+            log.debug("Price converted: {} {} → {} TRY (rate: {})",
+                    instrument.getSymbol(), currency, price, rate);
+        }
+
+        return price;
     }
 }
