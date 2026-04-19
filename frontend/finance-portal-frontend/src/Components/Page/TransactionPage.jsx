@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowUpRight, ArrowDownLeft, Calendar, Download, Search } from 'lucide-react';
+import { ArrowUpRight, ArrowDownLeft, Calendar, Download, Search, Trash2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '../UI/Card';
 import { Button } from '../UI/Button';
 import { useParams, useNavigate } from 'react-router-dom';
 
 import {
     getTransactions,
-    getPortfolioDetail
+    getPortfolioDetail,
+    deleteTransaction
 } from '../../API/portfolioApi';
 
 export default function TransactionPage() {
@@ -124,6 +125,17 @@ export default function TransactionPage() {
             hour: '2-digit',
             minute: '2-digit'
         });
+    };
+
+    const handleDelete = async (transactionId) => {
+        if (!window.confirm('Bu işlemi silmek istediğinize emin misiniz?')) return;
+
+        try {
+            await deleteTransaction(PORTFOLIO_ID, transactionId);
+            setTransactions(prev => prev.filter(tx => tx.id !== transactionId));
+        } catch {
+            alert('İşlem silinirken hata oluştu.');
+        }
     };
 
     if (loading) {
@@ -308,12 +320,13 @@ export default function TransactionPage() {
                                 <th className="text-right py-3 px-4 text-sm font-semibold text-gray-600">Vergi</th>
                                 <th className="text-right py-3 px-4 text-sm font-semibold text-gray-600">Toplam</th>
                                 <th className="text-left py-3 px-4 text-sm font-semibold text-gray-600">Not</th>
+                                <th className="text-center py-3 px-4 text-sm font-semibold text-gray-600">İşlem</th>
                             </tr>
                             </thead>
                             <tbody>
                             {filteredTransactions.length === 0 ? (
                                 <tr>
-                                    <td colSpan={9} className="text-center py-12">
+                                    <td colSpan={10} className="text-center py-12">
                                         <div className="text-gray-400 text-6xl mb-4">📋</div>
                                         <p className="text-gray-500 text-lg font-medium">İşlem bulunamadı</p>
                                         <p className="text-gray-400 text-sm mt-2">Filtreleri değiştirerek tekrar deneyin</p>
@@ -373,6 +386,15 @@ export default function TransactionPage() {
                                             <p className="text-xs text-gray-500 max-w-[150px] truncate" title={tx.notes}>
                                                 {tx.notes || '-'}
                                             </p>
+                                        </td>
+                                        <td className="py-4 px-4 text-center">
+                                            <button
+                                                onClick={() => handleDelete(tx.id)}
+                                                className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors"
+                                                title="İşlemi Sil"
+                                            >
+                                                <Trash2 className="w-4 h-4" />
+                                            </button>
                                         </td>
                                     </tr>
                                 ))
