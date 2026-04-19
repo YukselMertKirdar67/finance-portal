@@ -66,7 +66,8 @@ public interface PortfolioRepository extends JpaRepository<Portfolio, Long> {
      * (Useful for dashboard/summary)
      */
     @Query("SELECT p FROM Portfolio p " +
-            "LEFT JOIN FETCH p.holdings " +
+            "LEFT JOIN FETCH p.holdings h " +
+            "LEFT JOIN FETCH h.instrument " +
             "WHERE p.userId = :userId")
     List<Portfolio> findByUserIdWithHoldings(@Param("userId") String userId);
 
