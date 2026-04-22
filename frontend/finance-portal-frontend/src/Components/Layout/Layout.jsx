@@ -32,7 +32,7 @@ export default function Layout({
     }, [isLoggedIn, user?.email]);
 
     return (
-        <div className="flex h-screen bg-gray-50">
+        <div className="flex h-screen bg-gray-50 dark:bg-gray-950">
 
             {/* SIDEBAR */}
             <Sidebar
