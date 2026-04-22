@@ -1,8 +1,5 @@
 import api from './instrumentsApi';
 
-/**
- * Get update status
- */
 export const getUpdateStatus = async () => {
     try {
         const response = await api.get('/admin/instruments/update-status');
@@ -13,9 +10,6 @@ export const getUpdateStatus = async () => {
     }
 };
 
-/**
- * Update all instruments
- */
 export const updateAllInstruments = async () => {
     try {
         const response = await api.post('/admin/instruments/update-all');
@@ -26,9 +20,6 @@ export const updateAllInstruments = async () => {
     }
 };
 
-/**
- * Update TCMB rates
- */
 export const updateTcmb = async () => {
     try {
         const response = await api.post('/admin/instruments/update-tcmb');
@@ -39,25 +30,21 @@ export const updateTcmb = async () => {
     }
 };
 
-/**
- * Update Finnhub prices
- */
-export const updateFinnhub = async () => {
+// Yahoo US Stocks
+export const updateUsStocks = async () => {
     try {
-        const response = await api.post('/admin/instruments/update-finnhub');
+        const response = await api.post('/admin/instruments/update-us-stocks');
         return response.data;
     } catch (error) {
-        console.error('Error updating Finnhub:', error);
+        console.error('Error updating US stocks:', error);
         throw error;
     }
 };
 
-/**
- * Update BIST stocks
- */
+//  Yahoo BIST
 export const updateBist = async () => {
     try {
-        const response = await api.post('/admin/instruments/update-bist-twelvedata');
+        const response = await api.post('/admin/instruments/update-bist');
         return response.data;
     } catch (error) {
         console.error('Error updating BIST:', error);
@@ -65,9 +52,18 @@ export const updateBist = async () => {
     }
 };
 
-/**
- * Update precious metals
- */
+//  Yahoo Kripto
+export const updateCrypto = async () => {
+    try {
+        const response = await api.post('/admin/instruments/update-crypto');
+        return response.data;
+    } catch (error) {
+        console.error('Error updating crypto:', error);
+        throw error;
+    }
+};
+
+// Yahoo Precious
 export const updatePrecious = async () => {
     try {
         const response = await api.post('/admin/instruments/update-precious');
@@ -78,9 +74,6 @@ export const updatePrecious = async () => {
     }
 };
 
-/**
- * Update bonds
- */
 export const updateBonds = async () => {
     try {
         const response = await api.post('/admin/instruments/update-bonds');
@@ -91,9 +84,17 @@ export const updateBonds = async () => {
     }
 };
 
-/**
- * Get API stats
- */
+// Geçmiş veri
+export const fetchAllHistoricalData = async () => {
+    try {
+        const response = await api.post('/admin/instruments/fetch-all-historical');
+        return response.data;
+    } catch (error) {
+        console.error('Error fetching historical data:', error);
+        throw error;
+    }
+};
+
 export const getApiStats = async () => {
     try {
         const response = await api.get('/admin/instruments/stats');
