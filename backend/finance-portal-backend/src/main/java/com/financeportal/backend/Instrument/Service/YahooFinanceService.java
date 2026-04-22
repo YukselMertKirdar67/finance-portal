@@ -88,6 +88,16 @@ public class YahooFinanceService {
             Map.of("yahoo", "PL=F", "db", "XPT/USD", "name", "Platin (Ons)",  "metalType", "PLATINUM",  "unit", "oz"),
             Map.of("yahoo", "PA=F", "db", "XPD/USD", "name", "Paladyum (Ons)","metalType", "PALLADIUM", "unit", "oz")
     );
+    private static final List<Map<String, String>> FOREX_PAIRS = List.of(
+            Map.of("yahoo", "USDTRY=X", "db", "USD/TRY"),
+            Map.of("yahoo", "EURTRY=X", "db", "EUR/TRY"),
+            Map.of("yahoo", "GBPTRY=X", "db", "GBP/TRY"),
+            Map.of("yahoo", "CHFTRY=X", "db", "CHF/TRY"),
+            Map.of("yahoo", "JPYTRY=X", "db", "JPY/TRY"),
+            Map.of("yahoo", "AUDTRY=X", "db", "AUD/TRY"),
+            Map.of("yahoo", "CADTRY=X", "db", "CAD/TRY"),
+            Map.of("yahoo", "AEDTRY=X", "db", "AED/TRY")
+    );
 
 
     public InstrumentPrice fetchQuote(String yahooSymbol, String dbSymbol) {
@@ -199,6 +209,7 @@ public class YahooFinanceService {
 
         try {
             String url = String.format(YAHOO_HISTORY_URL, yahooSymbol, interval, range);
+            log.info("DEBUG - URL: {}", url);
 
             HttpHeaders headers = new HttpHeaders();
             headers.set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
@@ -222,6 +233,8 @@ public class YahooFinanceService {
                     dbSymbol, timestamps.size(), quotes == null);
             log.info("DEBUG - raw result keys: {}", result.fieldNames());
             log.info("DEBUG - full result: {}", result.toString().substring(0, Math.min(500, result.toString().length())));
+            log.info("DEBUG - timestamp node type: {}", timestamps.getNodeType());
+            log.info("DEBUG - first timestamp: {}", timestamps.isArray() ? timestamps.get(0) : timestamps);
 
             if (timestamps == null || quotes == null) return historyList;
 
@@ -365,6 +378,7 @@ public class YahooFinanceService {
         all.addAll(BIST_STOCKS);
         all.addAll(CRYPTOS);
         all.addAll(PRECIOUS_METALS);
+        all.addAll(FOREX_PAIRS);
 
         for (Map<String, String> instrument : all) {
             try {
