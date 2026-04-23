@@ -1,8 +1,8 @@
 import api from './instrumentsApi';
 
-export const compareInstruments = async (id1, id2, startDate, endDate) => {
+export const compareInstruments = async (id1, id2, period = '1A') => {
     const response = await api.get('/comparison', {
-        params: { id1, id2, startDate, endDate }
+        params: { id1, id2, period }
     });
     return response.data;
 };
