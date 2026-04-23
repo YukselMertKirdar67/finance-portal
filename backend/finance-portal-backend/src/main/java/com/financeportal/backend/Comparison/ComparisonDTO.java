@@ -16,6 +16,7 @@ public class ComparisonDTO {
     private InstrumentInfo instrument2;
     private List<ComparisonDataPoint> historicalData;
     private PerformanceMetrics metrics;
+    private String period;
 
     @Data
     @Builder
@@ -54,9 +55,7 @@ public class ComparisonDTO {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class MetricData {
-        private BigDecimal dailyChange;        // %
-        private BigDecimal weeklyChange;       // %
-        private BigDecimal monthlyChange;      // %
+        private BigDecimal periodChange;       // Seçilen dönem için %
         private BigDecimal volatility;         // %
         private BigDecimal highestPrice;
         private BigDecimal lowestPrice;
