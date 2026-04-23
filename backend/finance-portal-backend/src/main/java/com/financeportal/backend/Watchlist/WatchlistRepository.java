@@ -22,4 +22,6 @@ public interface WatchlistRepository extends JpaRepository<Watchlist, Long> {
     void deleteByUserIdAndInstrument(String userId, BaseInstrument instrument);
 
     long countByUserId(String userId);
+
+    void deleteAllByUserId(String userId);
 }
