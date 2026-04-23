@@ -15,25 +15,19 @@ import org.springframework.web.bind.annotation.*;
 @Tag(name = "Watchlist API", description = "Takip listesi yönetimi")
 public class WatchlistController {
 
-    private final WatchlistServiceImpl watchlistServiceImpl;
+    private final WatchlistService watchlistService;
 
-    @Qualifier("objectMapper")  // ✅ EKLE - Primary ObjectMapper
+    @Qualifier("objectMapper")
     private final ObjectMapper cleanMapper;
 
-    /**
-     * Watchlist'i getir (Paginated)
-     */
     @GetMapping
     @Operation(summary = "Takip listesini getir")
-    public ResponseEntity<String> getWatchlist(  // ✅ String döndür
-                                                 @RequestParam(defaultValue = "0") int page,
-                                                 @RequestParam(defaultValue = "20") int size
-    ) throws Exception {  // ✅ Exception ekle
-        WatchlistPageDTO result = watchlistServiceImpl.getWatchlist(page, size);
-
-        // ✅ @class field'larını temizle
+    public ResponseEntity<String> getWatchlist(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size
+    ) throws Exception {
+        WatchlistPageDTO result = watchlistService.getWatchlist(page, size);
         String cleanJson = cleanMapper.writeValueAsString(result);
-
         return ResponseEntity.ok()
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(cleanJson);
@@ -44,7 +38,7 @@ public class WatchlistController {
     public ResponseEntity<WatchlistDTO.WatchlistResponse> addToWatchlist(
             @PathVariable Long instrumentId
     ) {
-        return ResponseEntity.ok(watchlistServiceImpl.addToWatchlist(instrumentId));
+        return ResponseEntity.ok(watchlistService.addToWatchlist(instrumentId));
     }
 
     @DeleteMapping("/{instrumentId}")
@@ -52,12 +46,12 @@ public class WatchlistController {
     public ResponseEntity<WatchlistDTO.WatchlistResponse> removeFromWatchlist(
             @PathVariable Long instrumentId
     ) {
-        return ResponseEntity.ok(watchlistServiceImpl.removeFromWatchlist(instrumentId));
+        return ResponseEntity.ok(watchlistService.removeFromWatchlist(instrumentId));
     }
 
     @GetMapping("/check/{instrumentId}")
     @Operation(summary = "Takip listesinde mi kontrol et")
     public ResponseEntity<Boolean> isInWatchlist(@PathVariable Long instrumentId) {
-        return ResponseEntity.ok(watchlistServiceImpl.isInWatchlist(instrumentId));
+        return ResponseEntity.ok(watchlistService.isInWatchlist(instrumentId));
     }
 }
