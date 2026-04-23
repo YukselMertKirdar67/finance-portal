@@ -21,30 +21,16 @@ public class ComparisonController {
     private final ComparisonService comparisonService;
 
     /**
-     * İki enstrümanı karşılaştır
+     * İki enstrümanı karşılaştır (Period bazlı)
      */
     @GetMapping
     @Operation(summary = "İki enstrümanı karşılaştır")
     public ResponseEntity<ComparisonDTO> compareInstruments(
             @RequestParam Long id1,
             @RequestParam Long id2,
-            @RequestParam(required = false)
-            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
-            @RequestParam(required = false)
-            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate
+            @RequestParam(defaultValue = "1A") String period
     ) {
-        // Default: Son 30 gün
-        if (startDate == null) {
-            startDate = LocalDate.now().minusDays(30);
-        }
-        if (endDate == null) {
-            endDate = LocalDate.now();
-        }
-
-        ComparisonDTO comparison = comparisonService.compareInstruments(
-                id1, id2, startDate, endDate
-        );
-
+        ComparisonDTO comparison = comparisonService.compareInstruments(id1, id2, period);
         return ResponseEntity.ok(comparison);
     }
 }
