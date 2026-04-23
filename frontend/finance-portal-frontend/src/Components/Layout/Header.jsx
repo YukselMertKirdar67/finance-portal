@@ -1,12 +1,12 @@
 import React from 'react';
-import { LayoutDashboard, Newspaper, Home, GitCompare, Bell } from 'lucide-react';
+import { LayoutDashboard, Newspaper, Home, GitCompare, Bell, LogOut } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
 import { Button } from '../UI/Button';
 
 export default function Header({
                                    isLoggedIn = false,
-                                   onLogin,
-                                   onRegister
+                                   onLogout,
+                                   user = null
                                }) {
 
     const tabClass = ({ isActive }) =>
@@ -37,7 +37,7 @@ export default function Header({
                         <span>Finansal Enstrümanlar</span>
                     </NavLink>
 
-                    <NavLink to="/compare" className={tabClass}>
+                    <NavLink to="/comparison" className={tabClass}>
                         <GitCompare className="w-4 h-4" />
                         <span>Karşılaştır</span>
                     </NavLink>
@@ -49,25 +49,32 @@ export default function Header({
                         <Bell className="w-5 h-5 text-gray-600" />
                     </Button>
 
-                    {isLoggedIn ? (
-                        <div className="flex items-center gap-2 text-sm">
-                            <span className="text-gray-600">Hoş geldin,</span>
-                            <span className="font-medium text-gray-900">Kullanıcı</span>
-                        </div>
-                    ) : (
-                        <div className="flex items-center gap-2">
-                            <Button onClick={onLogin} variant="outline" size="sm">
-                                Giriş Yap
-                            </Button>
+                    {isLoggedIn && user ? (
+                        <div className="flex items-center gap-3">
+                            {/* User Info */}
+                            <div className="flex flex-col items-end">
+                                <span className="text-sm font-medium text-gray-900">
+                                    {user.username}
+                                </span>
+                                {user.isAdmin && (
+                                    <span className="text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded">
+                                        ADMIN
+                                    </span>
+                                )}
+                            </div>
+
+                            {/* Logout Button */}
                             <Button
-                                onClick={onRegister}
+                                onClick={onLogout}
+                                variant="outline"
                                 size="sm"
-                                className="bg-blue-600 hover:bg-blue-700 text-white"
+                                className="flex items-center gap-2"
                             >
-                                Kayıt Ol
+                                <LogOut className="w-4 h-4" />
+                                Çıkış
                             </Button>
                         </div>
-                    )}
+                    ) : null}
                 </div>
             </div>
         </header>
