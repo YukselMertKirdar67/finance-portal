@@ -41,3 +41,18 @@ export const getPasswordLastChanged = async () => {
     const response = await api.get('/me/password-last-changed');
     return response.data;
 };
+
+export const updatePreferences = async (theme, currency) => {
+    const response = await api.put('/me/preferences', { theme, currency });
+    return response.data;
+};
+
+export const exportUserData = async () => {
+    const response = await api.get('/me/export', { responseType: 'blob' });
+    return response.data;
+};
+
+export const deleteAccount = async () => {
+    const response = await api.delete('/me/account');
+    return response.data;
+};
