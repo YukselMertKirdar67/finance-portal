@@ -33,6 +33,9 @@ public class User {
     @Column(name = "password_last_changed")
     private LocalDateTime passwordLastChanged;
 
+    @Column(name = "theme", length = 10)
+    private String theme;  // "light", "dark", "system"
+
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
@@ -44,6 +47,10 @@ public class User {
         this.createdAt = LocalDateTime.now();
         this.updatedAt = LocalDateTime.now();
         this.enabled = true;
+
+        if (this.theme == null) {
+            this.theme = "light";
+        }
     }
 
     @PreUpdate
