@@ -66,6 +66,7 @@ public class UserController {
                 .emailVerified(emailVerified != null ? emailVerified : false)
                 .roles(roles)
                 .createdAt(user.getCreatedAt())
+                .theme(user.getTheme())
                 .build();
     }
 
@@ -145,6 +146,68 @@ public class UserController {
         return ResponseEntity.ok(PasswordLastChangedDTO.builder()
                 .lastChanged(lastChanged)
                 .build());
+    }
+
+    /**
+     * Update user preferences (theme)
+     */
+    @PutMapping("/preferences")
+    public ResponseEntity<?> updatePreferences(
+            @AuthenticationPrincipal Jwt jwt,
+            @Valid @RequestBody UpdatePreferencesRequestDTO request) {
+
+        try {
+            User user = userService.getOrCreateUser(jwt);
+            String userId = user.getKeycloakId();
+
+            userService.updatePreferences(userId, request.getTheme());
+
+            return ResponseEntity.ok(Map.of(
+                    "success", true,
+                    "message", "Tercihleriniz başarıyla güncellendi"
+            ));
+
+        } catch (RuntimeException e) {
+            log.error("Preferences update failed: {}", e.getMessage());
+            return ResponseEntity.badRequest().body(Map.of(
+                    "success", false,
+                    "message", e.getMessage()
+            ));
+        }
+    }
+
+    @GetMapping("/export")
+    public ResponseEntity<byte[]> exportUserData(@AuthenticationPrincipal Jwt jwt) {
+        try {
+            User user = userService.getOrCreateUser(jwt);
+            byte[] data = userService.exportUserData(user.getKeycloakId());
+
+            return ResponseEntity.ok()
+                    .header("Content-Disposition", "attachment; filename=finance-portal-data.json")
+                    .header("Content-Type", "application/json")
+                    .body(data);
+        } catch (Exception e) {
+            log.error("Export failed: {}", e.getMessage(), e);
+            return ResponseEntity.status(500).build();
+        }
+    }
+
+    @DeleteMapping("/account")
+    public ResponseEntity<?> deleteAccount(@AuthenticationPrincipal Jwt jwt) {
+        try {
+            User user = userService.getOrCreateUser(jwt);
+            userService.deleteAccount(user.getKeycloakId());
+
+            return ResponseEntity.ok(Map.of(
+                    "success", true,
+                    "message", "Hesabınız başarıyla silindi"
+            ));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of(
+                    "success", false,
+                    "message", e.getMessage()
+            ));
+        }
     }
 
     @GetMapping("/has-otp")
