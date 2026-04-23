@@ -2,6 +2,10 @@ import React, { useState } from 'react';
 import { User, Lock, Bell, Eye, Database, HelpCircle } from 'lucide-react';
 import { Card } from '../UI/Card';
 import AccountSettings from './AccountSettings';
+import AppearanceSettings from './AppearanceSettings';
+import HelpSettings from './HelpSettings';
+import DataPrivacySettings from './DataPrivacySettings';
+
 
 export default function SettingsPage() {
     const [activeTab, setActiveTab] = useState('account');
@@ -16,13 +20,13 @@ export default function SettingsPage() {
     ];
 
     return (
-        <div className="min-h-screen bg-gray-50 p-8">
+        <div className="min-h-screen bg-gray-50 dark:bg-gray-950 p-8">
             <div className="max-w-7xl mx-auto">
 
                 {/* Header */}
                 <div className="mb-8">
-                    <h1 className="text-3xl font-bold text-gray-900 mb-2">Ayarlar</h1>
-                    <p className="text-gray-600">Hesabınızı ve tercihlerinizi yönetin</p>
+                    <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">Ayarlar</h1>
+                    <p className="text-gray-600 dark:text-gray-400">Hesabınızı ve tercihlerinizi yönetin</p>
                 </div>
 
                 <div className="grid lg:grid-cols-4 gap-6">
@@ -36,8 +40,8 @@ export default function SettingsPage() {
                                     onClick={() => setActiveTab(tab.id)}
                                     className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors mb-1 ${
                                         activeTab === tab.id
-                                            ? 'bg-blue-50 text-blue-600'
-                                            : 'text-gray-700 hover:bg-gray-50'
+                                            ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
+                                            : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800'
                                     }`}
                                 >
                                     {tab.icon}
@@ -50,11 +54,11 @@ export default function SettingsPage() {
                     {/* Content */}
                     <div className="lg:col-span-3">
                         {activeTab === 'account' && <AccountSettings />}
-                        {activeTab === 'security' && <div className="text-gray-500">Güvenlik ayarları yakında...</div>}
-                        {activeTab === 'notifications' && <div className="text-gray-500">Bildirim ayarları yakında...</div>}
-                        {activeTab === 'appearance' && <div className="text-gray-500">Görünüm ayarları yakında...</div>}
-                        {activeTab === 'data' && <div className="text-gray-500">Veri ayarları yakında...</div>}
-                        {activeTab === 'help' && <div className="text-gray-500">Yardım bölümü yakında...</div>}
+                        {activeTab === 'security' && <div className="text-gray-500 dark:text-gray-400">Güvenlik ayarları yakında...</div>}
+                        {activeTab === 'notifications' && <div className="text-gray-500 dark:text-gray-400">Bildirim ayarları yakında...</div>}
+                        {activeTab === 'appearance' && <AppearanceSettings />}
+                        {activeTab === 'data' && <DataPrivacySettings />}
+                        {activeTab === 'help' && <HelpSettings />}
                     </div>
                 </div>
             </div>
