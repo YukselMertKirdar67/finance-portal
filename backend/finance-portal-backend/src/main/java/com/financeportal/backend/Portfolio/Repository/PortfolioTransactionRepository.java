@@ -185,4 +185,6 @@ public interface PortfolioTransactionRepository extends JpaRepository<PortfolioT
             @Param("portfolioId") Long portfolioId,
             @Param("beforeDate") LocalDateTime beforeDate
     );
+
+    void deleteAllByPortfolioId(Long portfolioId);
 }
