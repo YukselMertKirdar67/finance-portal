@@ -26,15 +26,25 @@ public class ComparisonService {
     private final InstrumentPriceRepository priceRepository;
     private final PriceHistoryRepository historyRepository;
 
-    public ComparisonDTO compareInstruments(Long id1, Long id2, LocalDate startDate, LocalDate endDate) {
+    /**
+     * İki enstrümanı karşılaştır (Period bazlı)
+     */
+    public ComparisonDTO compareInstruments(Long id1, Long id2, String period) {
 
-        // ✅ Enstrümanları getir
+        // Period'a göre tarih aralığını hesapla
+        LocalDate endDate = LocalDate.now();
+        LocalDate startDate = calculateStartDate(period);
+
+        log.info("Comparing instruments {} vs {} for period: {} ({} to {})",
+                id1, id2, period, startDate, endDate);
+
+        // Enstrümanları getir
         BaseInstrument inst1 = instrumentRepository.findById(id1)
                 .orElseThrow(() -> new ResourceNotFoundException("Instrument not found: " + id1));
         BaseInstrument inst2 = instrumentRepository.findById(id2)
                 .orElseThrow(() -> new ResourceNotFoundException("Instrument not found: " + id2));
 
-        // ✅ Anlık fiyatları getir
+        // Anlık fiyatları getir
         InstrumentPrice price1 = priceRepository
                 .findTopByInstrumentOrderByTimestampDesc(inst1)
                 .orElse(null);
@@ -42,16 +52,19 @@ public class ComparisonService {
                 .findTopByInstrumentOrderByTimestampDesc(inst2)
                 .orElse(null);
 
-        // ✅ Tarihsel verileri getir
+        // Tarihsel verileri getir
         List<PriceHistory> history1 = historyRepository
                 .findByInstrumentAndDateBetweenOrderByDateAsc(inst1, startDate, endDate);
         List<PriceHistory> history2 = historyRepository
                 .findByInstrumentAndDateBetweenOrderByDateAsc(inst2, startDate, endDate);
 
-        // ✅ Tarihleri birleştir (her iki enstrüman için ortak tarihler)
+        log.info("Found {} data points for inst1, {} for inst2",
+                history1.size(), history2.size());
+
+        // Tarihleri birleştir (her iki enstrüman için ortak tarihler)
         List<ComparisonDTO.ComparisonDataPoint> dataPoints = mergeHistoricalData(history1, history2);
 
-        // ✅ Performans metrikleri hesapla
+        // Performans metrikleri hesapla
         ComparisonDTO.PerformanceMetrics metrics = ComparisonDTO.PerformanceMetrics.builder()
                 .instrument1Metrics(calculateMetrics(history1, price1))
                 .instrument2Metrics(calculateMetrics(history2, price2))
@@ -62,10 +75,29 @@ public class ComparisonService {
                 .instrument2(buildInstrumentInfo(inst2, price2))
                 .historicalData(dataPoints)
                 .metrics(metrics)
+                .period(period)
                 .build();
     }
 
-    // ✅ İki enstrümanın tarihsel verilerini birleştir
+    /**
+     * Period'a göre başlangıç tarihini hesapla
+     */
+    private LocalDate calculateStartDate(String period) {
+        LocalDate now = LocalDate.now();
+
+        return switch (period.toUpperCase()) {
+            case "1H" -> now.minusWeeks(1);
+            case "1A" -> now.minusMonths(1);
+            case "3A" -> now.minusMonths(3);
+            case "6A" -> now.minusMonths(6);
+            case "1Y" -> now.minusYears(1);
+            default -> now.minusMonths(1);
+        };
+    }
+
+    /**
+     * İki enstrümanın tarihsel verilerini birleştir
+     */
     private List<ComparisonDTO.ComparisonDataPoint> mergeHistoricalData(
             List<PriceHistory> history1,
             List<PriceHistory> history2) {
@@ -91,69 +123,53 @@ public class ComparisonService {
         return result;
     }
 
-    // ✅ Performans metrikleri hesapla
+    /**
+     * Performans metrikleri hesapla (Dönem bazlı)
+     */
     private ComparisonDTO.MetricData calculateMetrics(
             List<PriceHistory> history,
             InstrumentPrice currentPrice) {
 
-        if (history.isEmpty()) {
-            return ComparisonDTO.MetricData.builder()
-                    .dailyChange(BigDecimal.ZERO)
-                    .weeklyChange(BigDecimal.ZERO)
-                    .monthlyChange(BigDecimal.ZERO)
-                    .volatility(BigDecimal.ZERO)
-                    .highestPrice(BigDecimal.ZERO)
-                    .lowestPrice(BigDecimal.ZERO)
-                    .priceRange(BigDecimal.ZERO)
-                    .build();
-        }
-
-        // ✅ En son fiyat
-        BigDecimal latestPrice = currentPrice != null
-                ? currentPrice.getCurrentPrice()
-                : history.get(history.size() - 1).getClose();
-
-        // ✅ Günlük değişim (son 1 gün)
-        BigDecimal dailyChange = BigDecimal.ZERO;
-        if (history.size() >= 2) {
-            BigDecimal yesterday = history.get(history.size() - 2).getClose();
-            dailyChange = calculatePercentChange(yesterday, latestPrice);
-        }
-
-        // ✅ Haftalık değişim (son 7 gün)
-        BigDecimal weeklyChange = BigDecimal.ZERO;
-        if (history.size() >= 7) {
-            BigDecimal weekAgo = history.get(history.size() - 7).getClose();
-            weeklyChange = calculatePercentChange(weekAgo, latestPrice);
-        }
-
-        // ✅ Aylık değişim (son 30 gün veya tüm veri)
-        BigDecimal monthlyChange = BigDecimal.ZERO;
+        // Dönem değişimi (ilk fiyat → son fiyat)
+        BigDecimal periodChange = BigDecimal.ZERO;
         if (!history.isEmpty()) {
-            BigDecimal firstPrice = history.get(0).getClose();
-            monthlyChange = calculatePercentChange(firstPrice, latestPrice);
+            BigDecimal firstPrice = history.get(0).getClose();  // Dönem başı
+            BigDecimal latestPrice = currentPrice != null
+                    ? currentPrice.getCurrentPrice()
+                    : history.get(history.size() - 1).getClose();  // Dönem sonu
+            periodChange = calculatePercentChange(firstPrice, latestPrice);
         }
 
-        // ✅ Volatilite (standart sapma)
+        // Volatilite
         BigDecimal volatility = calculateVolatility(history);
 
-        // ✅ En yüksek/düşük
+        // En yüksek/düşük (currentPrice'ı da dahil et)
         BigDecimal highest = history.stream()
                 .map(PriceHistory::getHigh)
                 .max(BigDecimal::compareTo)
                 .orElse(BigDecimal.ZERO);
+
+        if (currentPrice != null && currentPrice.getHighPrice() != null) {
+            highest = highest.max(currentPrice.getHighPrice());
+        }
 
         BigDecimal lowest = history.stream()
                 .map(PriceHistory::getLow)
                 .min(BigDecimal::compareTo)
                 .orElse(BigDecimal.ZERO);
 
+        if (currentPrice != null && currentPrice.getLowPrice() != null) {
+            if (lowest.compareTo(BigDecimal.ZERO) == 0) {
+                lowest = currentPrice.getLowPrice();
+            } else {
+                lowest = lowest.min(currentPrice.getLowPrice());
+            }
+        }
+
         BigDecimal priceRange = highest.subtract(lowest);
 
         return ComparisonDTO.MetricData.builder()
-                .dailyChange(dailyChange)
-                .weeklyChange(weeklyChange)
-                .monthlyChange(monthlyChange)
+                .periodChange(periodChange)
                 .volatility(volatility)
                 .highestPrice(highest)
                 .lowestPrice(lowest)
@@ -161,7 +177,9 @@ public class ComparisonService {
                 .build();
     }
 
-    // ✅ Yüzde değişim hesapla
+    /**
+     * Yüzde değişim hesapla
+     */
     private BigDecimal calculatePercentChange(BigDecimal oldPrice, BigDecimal newPrice) {
         if (oldPrice.compareTo(BigDecimal.ZERO) == 0) return BigDecimal.ZERO;
 
@@ -171,7 +189,9 @@ public class ComparisonService {
                 .setScale(2, RoundingMode.HALF_UP);
     }
 
-    // ✅ Volatilite hesapla (standart sapma)
+    /**
+     * Volatilite hesapla (standart sapma)
+     */
     private BigDecimal calculateVolatility(List<PriceHistory> history) {
         if (history.size() < 2) return BigDecimal.ZERO;
 
@@ -200,7 +220,9 @@ public class ComparisonService {
         return BigDecimal.valueOf(volatilityValue).setScale(2, RoundingMode.HALF_UP);
     }
 
-    // ✅ InstrumentInfo oluştur
+    /**
+     * InstrumentInfo oluştur
+     */
     private ComparisonDTO.InstrumentInfo buildInstrumentInfo(
             BaseInstrument instrument,
             InstrumentPrice price) {
