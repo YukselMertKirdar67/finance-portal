@@ -20,4 +20,5 @@ public class UserProfileDTO {
     private Boolean emailVerified;
     private List<String> roles;
     private LocalDateTime createdAt;
+    private String theme;      // "light", "dark", "system"
 }
