@@ -1,9 +1,16 @@
 package com.financeportal.backend.User.Service;
 
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.financeportal.backend.Exception.ResourceNotFoundException;
+import com.financeportal.backend.Portfolio.Entity.Portfolio;
+import com.financeportal.backend.Portfolio.Repository.PortfolioHoldingRepository;
+import com.financeportal.backend.Portfolio.Repository.PortfolioRepository;
+import com.financeportal.backend.Portfolio.Repository.PortfolioTransactionRepository;
+import com.financeportal.backend.Portfolio.Entity.PortfolioTransaction;
 import com.financeportal.backend.User.Entity.User;
 import com.financeportal.backend.User.Repository.UserRepository;
+import com.financeportal.backend.Watchlist.WatchlistRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.keycloak.admin.client.Keycloak;
@@ -19,7 +26,10 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -28,6 +38,10 @@ public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
     private final Keycloak keycloak;
+    private final PortfolioRepository portfolioRepository;
+    private final WatchlistRepository watchlistRepository;
+    private final PortfolioTransactionRepository transactionRepository;
+    private final PortfolioHoldingRepository holdingRepository;
 
     @Value("${keycloak.realm}")
     private String realm;
@@ -130,7 +144,7 @@ public class UserServiceImpl implements UserService {
 
             UserRepresentation keycloakUser = userResource.toRepresentation();
             keycloakUser.setEmail(newEmail);
-            keycloakUser.setEmailVerified(false);  // ⚠️ Doğrulama gerekli
+            keycloakUser.setEmailVerified(false);
             userResource.update(keycloakUser);
 
             // Doğrulama e-postası gönder
@@ -182,6 +196,102 @@ public class UserServiceImpl implements UserService {
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         return user.getPasswordLastChanged();
+    }
+
+    /**
+     * Kullanıcı tercihlerini güncelle (Theme)
+     */
+    @Override
+    @Transactional
+    public void updatePreferences(String userId, String theme) {
+        log.info("Updating preferences for user: {}", userId);
+
+        User user = userRepository.findByKeycloakId(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        if (theme != null && !theme.isEmpty()) {
+            user.setTheme(theme);
+            log.info("Theme updated to: {}", theme);
+        }
+
+        userRepository.save(user);
+        log.info("✅ Preferences updated successfully");
+    }
+
+    @Override
+    public byte[] exportUserData(String userId) throws Exception {
+        User user = userRepository.findByKeycloakId(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        // Portföyleri çek
+        List<Portfolio> portfolios = portfolioRepository.findByUserId(userId);
+
+        // JSON oluştur
+        Map<String, Object> exportData = new HashMap<>();
+        exportData.put("username", user.getUsername());
+        exportData.put("email", user.getEmail());
+        exportData.put("exportDate", LocalDateTime.now().toString());
+        exportData.put("portfolios", portfolios.stream().map(p -> {
+            Map<String, Object> portfolioMap = new HashMap<>();
+            portfolioMap.put("name", p.getName());
+            portfolioMap.put("currency", p.getCurrency());
+            portfolioMap.put("type", p.getPortfolioType());
+            portfolioMap.put("createdAt", p.getCreatedAt().toString());
+
+            // İşlemleri ekle
+            List<PortfolioTransaction> transactions = transactionRepository
+                    .findByPortfolioIdAndDeletedFalseOrderByTransactionDateDesc(p.getId());
+
+            portfolioMap.put("transactions", transactions.stream().map(t -> {
+                Map<String, Object> txMap = new HashMap<>();
+                txMap.put("instrument", t.getInstrument().getSymbol());
+                txMap.put("type", t.getTransactionType());
+                txMap.put("quantity", t.getQuantity());
+                txMap.put("price", t.getPrice());
+                txMap.put("currency", t.getCurrency());
+                txMap.put("date", t.getTransactionDate().toString());
+                return txMap;
+            }).collect(Collectors.toList()));
+
+            return portfolioMap;
+        }).collect(Collectors.toList()));
+
+        ObjectMapper mapper = new ObjectMapper();
+        mapper.registerModule(new com.fasterxml.jackson.datatype.jsr310.JavaTimeModule());
+        mapper.disable(com.fasterxml.jackson.databind.SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+        return mapper.writerWithDefaultPrettyPrinter().writeValueAsBytes(exportData);
+    }
+
+    @Override
+    @Transactional
+    public void deleteAccount(String userId) {
+        User user = userRepository.findByKeycloakId(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        // Portföyleri ve bağlı verileri sil
+        List<Portfolio> portfolios = portfolioRepository.findByUserId(userId);
+        for (Portfolio portfolio : portfolios) {
+            transactionRepository.deleteAllByPortfolioId(portfolio.getId());
+            holdingRepository.deleteAllByPortfolioId(portfolio.getId());
+            portfolioRepository.delete(portfolio);
+        }
+
+        // Watchlist sil
+        watchlistRepository.deleteAllByUserId(userId);
+
+        // Keycloak'tan sil
+        try {
+            keycloak.realm(realm).users().get(userId).remove();
+            log.info("✅ User deleted from Keycloak: {}", userId);
+        } catch (Exception e) {
+            log.error("❌ Failed to delete user from Keycloak: {}", e.getMessage());
+            throw new RuntimeException("Keycloak'tan kullanıcı silinemedi: " + e.getMessage());
+        }
+
+        // Local DB'den sil
+        userRepository.delete(user);
+
+        log.info("✅ Account deleted for user: {}", userId);
     }
 }
 
