@@ -121,4 +121,6 @@ public interface PortfolioHoldingRepository extends JpaRepository<PortfolioHoldi
      * Delete all holdings for a portfolio
      */
     void deleteByPortfolioId(Long portfolioId);
+
+    void deleteAllByPortfolioId(Long portfolioId);
 }
