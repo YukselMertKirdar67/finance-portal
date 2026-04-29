@@ -16,7 +16,7 @@ export default function ComparisonPage() {
     const [searchResults2, setSearchResults2] = useState([]);
     const [comparing, setComparing] = useState(false);
     const [comparisonData, setComparisonData] = useState(null);
-    const [timeframe, setTimeframe] = useState('1M');
+    const [timeframe, setTimeframe] = useState('1A');
 
     // Enstrüman ara (debounced)
     useEffect(() => {
@@ -314,10 +314,10 @@ export default function ComparisonPage() {
                                             : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200'
                                     }`}
                                 >
-                                    {tf === '1W' ? '1 Hafta' :
-                                        tf === '1M' ? '1 Ay' :
-                                            tf === '3M' ? '3 Ay' :
-                                                tf === '6M' ? '6 Ay' : '1 Yıl'}
+                                    {tf === '1H' ? '1 Hafta' :
+                                        tf === '1A' ? '1 Ay' :
+                                            tf === '3A' ? '3 Ay' :
+                                                tf === '6A' ? '6 Ay' : '1 Yıl'}
                                 </button>
                             ))}
                         </div>
