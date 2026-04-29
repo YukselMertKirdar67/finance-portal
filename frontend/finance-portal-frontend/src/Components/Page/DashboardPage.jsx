@@ -35,15 +35,10 @@ export default function DashboardPage() {
         try {
             setLoading(true);
             setError(null);
-
-            // Tek bir API call - Backend summary endpoint
             const summaryData = await getPortfolioSummary();
             setSummary(summaryData);
-
-            // Portfolios for bar chart (optional - eğer summary'de portfolios listesi yoksa)
             const portfoliosData = await getAllPortfolios();
             setPortfolios(portfoliosData || []);
-
         } catch (err) {
             console.error('Error loading dashboard:', err);
             setError(err.response?.data?.message || 'Dashboard yüklenirken hata oluştu');
@@ -58,32 +53,24 @@ export default function DashboardPage() {
         setRefreshing(false);
     };
 
+    // Para birimi sembolü
+    const getCurrencySymbol = (currency) => {
+        const symbols = { 'TRY': '₺', 'USD': '$', 'EUR': '€', 'GBP': '£' };
+        return symbols[currency] || currency || '₺';
+    };
+
     const typeColors = {
-        'FOREX': '#3B82F6',
-        'STOCK': '#8B5CF6',
-        'FUND': '#10B981',
-        'PRECIOUS': '#F59E0B',
-        'CRYPTO': '#EC4899',
-        'BOND': '#6366F1',
-        'EUROBOND': '#14B8A6',
-        'PERSONAL': '#3B82F6',
-        'BUSINESS': '#8B5CF6',
-        'RETIREMENT': '#10B981',
-        'SAVINGS': '#F59E0B'
+        'FOREX': '#3B82F6', 'STOCK': '#8B5CF6', 'FUND': '#10B981',
+        'PRECIOUS': '#F59E0B', 'CRYPTO': '#EC4899', 'BOND': '#6366F1',
+        'EUROBOND': '#14B8A6', 'PERSONAL': '#3B82F6', 'BUSINESS': '#8B5CF6',
+        'RETIREMENT': '#10B981', 'SAVINGS': '#F59E0B'
     };
 
     const typeLabels = {
-        'PERSONAL': 'Bireysel',
-        'BUSINESS': 'İş',
-        'RETIREMENT': 'Emeklilik',
-        'SAVINGS': 'Tasarruf',
-        'FOREX': 'Döviz',
-        'STOCK': 'Hisse',
-        'FUND': 'Fon',
-        'PRECIOUS': 'Kıymetli Maden',
-        'CRYPTO': 'Kripto',
-        'BOND': 'Tahvil',
-        'EUROBOND': 'Eurobond'
+        'PERSONAL': 'Bireysel', 'BUSINESS': 'İş', 'RETIREMENT': 'Emeklilik',
+        'SAVINGS': 'Tasarruf', 'FOREX': 'Döviz', 'STOCK': 'Hisse',
+        'FUND': 'Fon', 'PRECIOUS': 'Kıymetli Maden', 'CRYPTO': 'Kripto',
+        'BOND': 'Tahvil', 'EUROBOND': 'Eurobond'
     };
 
     if (loading) {
@@ -104,15 +91,12 @@ export default function DashboardPage() {
                     <div className="text-red-600 text-5xl mb-4">⚠️</div>
                     <p className="text-red-800 font-semibold text-xl mb-2">Hata Oluştu</p>
                     <p className="text-red-600 mb-6">{error}</p>
-                    <Button className="bg-red-600 hover:bg-red-700" onClick={loadDashboardData}>
-                        Tekrar Dene
-                    </Button>
+                    <Button className="bg-red-600 hover:bg-red-700" onClick={loadDashboardData}>Tekrar Dene</Button>
                 </div>
             </div>
         );
     }
 
-    // Empty state
     if (!summary || summary.totalPortfolios === 0) {
         return (
             <div className="p-8">
@@ -122,7 +106,6 @@ export default function DashboardPage() {
                         <p className="text-gray-600">Portföylerinizin genel görünümü</p>
                     </div>
                 </div>
-
                 <div className="text-center py-16">
                     <div className="inline-flex items-center justify-center w-20 h-20 bg-blue-100 rounded-full mb-6">
                         <Wallet className="w-10 h-10 text-blue-600" />
@@ -131,11 +114,7 @@ export default function DashboardPage() {
                     <p className="text-gray-600 mb-6 max-w-md mx-auto">
                         İlk portföyünüzü oluşturarak yatırımlarınızı takip etmeye başlayın
                     </p>
-                    <Button
-                        onClick={() => navigate('/portfolios')}
-                        size="lg"
-                        className="bg-[#0066FF] hover:bg-[#0052CC]"
-                    >
+                    <Button onClick={() => navigate('/portfolios')} size="lg" className="bg-[#0066FF] hover:bg-[#0052CC]">
                         <Plus className="w-5 h-5 mr-2" />
                         İlk Portföyünüzü Oluşturun
                     </Button>
@@ -144,7 +123,6 @@ export default function DashboardPage() {
         );
     }
 
-    // Prepare chart data
     const pieChartData = (summary.assetAllocation || []).map(item => ({
         name: typeLabels[item.instrumentType] || item.instrumentType,
         value: item.totalValue || 0,
@@ -153,11 +131,11 @@ export default function DashboardPage() {
 
     const barChartData = portfolios.map(p => ({
         name: p.name.substring(0, 15) + (p.name.length > 15 ? '...' : ''),
+        fullName: p.name,
         value: p.totalValue || 0,
-        pnl: p.unrealizedPnL || 0
+        currency: p.currency || 'TRY'
     }));
 
-    // Count active portfolios from all portfolios
     const activePortfolios = portfolios.filter(p => p.active).length;
 
     return (
@@ -169,25 +147,18 @@ export default function DashboardPage() {
                     <p className="text-gray-600">Portföylerinizin genel görünümü</p>
                 </div>
                 <div className="flex gap-3">
-                    <Button
-                        variant="outline"
-                        onClick={handleRefresh}
-                        disabled={refreshing}
-                    >
+                    <Button variant="outline" onClick={handleRefresh} disabled={refreshing}>
                         <RefreshCw className={`w-5 h-5 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
                         Yenile
                     </Button>
-                    <Button
-                        onClick={() => navigate('/portfolios')}
-                        className="bg-[#0066FF] hover:bg-[#0052CC]"
-                    >
+                    <Button onClick={() => navigate('/portfolios')} className="bg-[#0066FF] hover:bg-[#0052CC]">
                         <Plus className="w-5 h-5 mr-2" />
                         Yeni Portföy
                     </Button>
                 </div>
             </div>
 
-            {/* Main Stats */}
+            {/* Main Stats — TRY cinsinden toplam */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
                 <Card>
                     <CardHeader className="pb-2">
@@ -200,9 +171,7 @@ export default function DashboardPage() {
                         <p className="text-3xl font-bold text-gray-900">
                             ₺{(summary.totalValue || 0).toLocaleString('tr-TR', { minimumFractionDigits: 2 })}
                         </p>
-                        <p className="text-xs text-gray-500 mt-1">
-                            {summary.totalPortfolios || 0} portföy
-                        </p>
+                        <p className="text-xs text-gray-500 mt-1">{summary.totalPortfolios || 0} portföy • TRY bazlı</p>
                     </CardContent>
                 </Card>
 
@@ -238,7 +207,7 @@ export default function DashboardPage() {
                             ₺{(summary.totalInvested || 0).toLocaleString('tr-TR', { minimumFractionDigits: 2 })}
                         </p>
                         <p className="text-xs text-gray-500 mt-1">
-                            {summary.assetAllocation?.reduce((sum, item) => sum + (item.count || 0), 0) || 0} varlık
+                            {summary.assetAllocation?.reduce((sum, item) => sum + (item.count || 0), 0) || 0} varlık • TRY bazlı
                         </p>
                     </CardContent>
                 </Card>
@@ -251,19 +220,14 @@ export default function DashboardPage() {
                         </CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <p className="text-3xl font-bold text-gray-900">
-                            {activePortfolios}
-                        </p>
-                        <p className="text-xs text-gray-500 mt-1">
-                            / {summary.totalPortfolios || 0} toplam
-                        </p>
+                        <p className="text-3xl font-bold text-gray-900">{activePortfolios}</p>
+                        <p className="text-xs text-gray-500 mt-1">/ {summary.totalPortfolios || 0} toplam</p>
                     </CardContent>
                 </Card>
             </div>
 
             {/* Charts Row */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-                {/* Portfolio Values Bar Chart */}
                 <Card>
                     <CardHeader>
                         <CardTitle>Portföy Değerleri</CardTitle>
@@ -273,18 +237,23 @@ export default function DashboardPage() {
                             <ResponsiveContainer width="100%" height="100%">
                                 <BarChart data={barChartData}>
                                     <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                                    <XAxis
-                                        dataKey="name"
-                                        stroke="#9ca3af"
-                                        style={{ fontSize: '12px' }}
-                                    />
-                                    <YAxis
-                                        stroke="#9ca3af"
-                                        style={{ fontSize: '12px' }}
-                                        tickFormatter={(value) => `₺${(value / 1000).toFixed(0)}k`}
-                                    />
+                                    <XAxis dataKey="name" stroke="#9ca3af" style={{ fontSize: '12px' }} />
+                                    <YAxis stroke="#9ca3af" style={{ fontSize: '12px' }}
+                                           tickFormatter={(value) => {
+                                               if (value >= 1000000) return `${(value / 1000000).toFixed(1)}M`;
+                                               if (value >= 1000) return `${(value / 1000).toFixed(0)}k`;
+                                               return value.toFixed(0);
+                                           }}
+                                           />
                                     <RechartsTooltip
-                                        formatter={(value) => [`₺${value.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}`, 'Değer']}
+                                        formatter={(value, name, props) => {
+                                            const sym = getCurrencySymbol(props.payload.currency);
+                                            return [`${sym}${value.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}`, 'Değer'];
+                                        }}
+                                        labelFormatter={(label, payload) => {
+                                            if (payload && payload[0]) return payload[0].payload.fullName;
+                                            return label;
+                                        }}
                                     />
                                     <Bar dataKey="value" fill="#0066FF" radius={[8, 8, 0, 0]} />
                                 </BarChart>
@@ -293,30 +262,20 @@ export default function DashboardPage() {
                     </CardContent>
                 </Card>
 
-                {/* Asset Allocation Pie Chart */}
                 <Card>
                     <CardHeader>
                         <CardTitle>Varlık Dağılımı</CardTitle>
                     </CardHeader>
                     <CardContent>
                         {pieChartData.length === 0 ? (
-                            <div className="h-[300px] flex items-center justify-center text-gray-500">
-                                Henüz varlık yok
-                            </div>
+                            <div className="h-[300px] flex items-center justify-center text-gray-500">Henüz varlık yok</div>
                         ) : (
                             <div className="h-[300px]">
                                 <ResponsiveContainer width="100%" height="100%">
                                     <PieChart>
-                                        <Pie
-                                            data={pieChartData}
-                                            cx="50%"
-                                            cy="50%"
-                                            labelLine={false}
-                                            label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                                            outerRadius={100}
-                                            fill="#8884d8"
-                                            dataKey="value"
-                                        >
+                                        <Pie data={pieChartData} cx="50%" cy="50%" labelLine={false}
+                                             label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                                             outerRadius={100} fill="#8884d8" dataKey="value">
                                             {pieChartData.map((entry, index) => (
                                                 <Cell key={`cell-${index}`} fill={entry.color} />
                                             ))}
@@ -332,9 +291,8 @@ export default function DashboardPage() {
                 </Card>
             </div>
 
-            {/* Performance & Quick Links Row */}
+            {/* Portfolio List & Quick Actions */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* ALL PORTFOLIOS */}
                 <Card>
                     <CardHeader>
                         <CardTitle>Tüm Portföyler ({portfolios.length})</CardTitle>
@@ -346,92 +304,76 @@ export default function DashboardPage() {
                             </div>
                         ) : (
                             portfolios
-                                .sort((a, b) => (b.pnlPercent || 0) - (a.pnlPercent || 0)) // En iyiden en kötüye sırala
-                                .map((portfolio, index) => (
-                                    <div
-                                        key={portfolio.id}
-                                        className={`p-4 border rounded-lg cursor-pointer transition-colors ${
-                                            (portfolio.pnlPercent || 0) >= 0
-                                                ? 'bg-green-50 border-green-200 hover:bg-green-100'
-                                                : 'bg-red-50 border-red-200 hover:bg-red-100'
-                                        }`}
-                                        onClick={() => navigate(`/portfolios/${portfolio.id}`)}
-                                    >
-                                        <div className="flex items-center justify-between mb-2">
-                                            <div className="flex items-center gap-2">
-                                                {index === 0 && (portfolio.pnlPercent || 0) > 0 && (
-                                                    <span className="text-lg">🏆</span>
-                                                )}
-                                                {index === portfolios.length - 1 && (portfolio.pnlPercent || 0) < 0 && (
-                                                    <span className="text-lg">📉</span>
-                                                )}
-                                                <p className="text-sm font-medium text-gray-600">
-                                                    {portfolio.name}
+                                .sort((a, b) => (b.pnlPercent || 0) - (a.pnlPercent || 0))
+                                .map((portfolio, index) => {
+                                    const sym = getCurrencySymbol(portfolio.currency);
+                                    return (
+                                        <div
+                                            key={portfolio.id}
+                                            className={`p-4 border rounded-lg cursor-pointer transition-colors ${
+                                                (portfolio.pnlPercent || 0) >= 0
+                                                    ? 'bg-green-50 border-green-200 hover:bg-green-100'
+                                                    : 'bg-red-50 border-red-200 hover:bg-red-100'
+                                            }`}
+                                            onClick={() => navigate(`/portfolios/${portfolio.id}`)}
+                                        >
+                                            <div className="flex items-center justify-between mb-2">
+                                                <div className="flex items-center gap-2">
+                                                    {index === 0 && (portfolio.pnlPercent || 0) > 0 && <span className="text-lg">🏆</span>}
+                                                    {index === portfolios.length - 1 && (portfolio.pnlPercent || 0) < 0 && <span className="text-lg">📉</span>}
+                                                    <p className="text-sm font-medium text-gray-600">{portfolio.name}</p>
+                                                    {/* ✅ Para birimi badge */}
+                                                    <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
+                                                        {portfolio.currency || 'TRY'}
+                                                    </span>
+                                                </div>
+                                                {(portfolio.pnlPercent || 0) >= 0
+                                                    ? <TrendingUp className="w-5 h-5 text-green-600" />
+                                                    : <TrendingDown className="w-5 h-5 text-red-600" />
+                                                }
+                                            </div>
+                                            <div className="flex items-center justify-between">
+                                                {/* ✅ Portföy currency'siyle göster */}
+                                                <p className="text-sm text-gray-600">
+                                                    {sym}{(portfolio.totalValue || 0).toLocaleString('tr-TR', { minimumFractionDigits: 2 })}
+                                                </p>
+                                                <p className={`text-sm font-semibold ${
+                                                    (portfolio.pnlPercent || 0) >= 0 ? 'text-green-600' : 'text-red-600'
+                                                }`}>
+                                                    {(portfolio.pnlPercent || 0) >= 0 ? '+' : ''}{(portfolio.pnlPercent || 0).toFixed(2)}%
                                                 </p>
                                             </div>
-                                            {(portfolio.pnlPercent || 0) >= 0 ? (
-                                                <TrendingUp className="w-5 h-5 text-green-600" />
-                                            ) : (
-                                                <TrendingDown className="w-5 h-5 text-red-600" />
-                                            )}
+                                            <div className="mt-2 pt-2 border-t border-gray-200">
+                                                <p className="text-xs text-gray-500">
+                                                    {portfolio.holdingCount || 0} varlık • Yatırım: {sym}{(portfolio.totalInvested || 0).toLocaleString('tr-TR', { maximumFractionDigits: 0 })}
+                                                </p>
+                                            </div>
                                         </div>
-                                        <div className="flex items-center justify-between">
-                                            <p className="text-sm text-gray-600">
-                                                ₺{(portfolio.totalValue || 0).toLocaleString('tr-TR', { minimumFractionDigits: 2 })}
-                                            </p>
-                                            <p className={`text-sm font-semibold ${
-                                                (portfolio.pnlPercent || 0) >= 0 ? 'text-green-600' : 'text-red-600'
-                                            }`}>
-                                                {(portfolio.pnlPercent || 0) >= 0 ? '+' : ''}{(portfolio.pnlPercent || 0).toFixed(2)}%
-                                            </p>
-                                        </div>
-                                        <div className="mt-2 pt-2 border-t border-gray-200">
-                                            <p className="text-xs text-gray-500">
-                                                {portfolio.holdingCount || 0} varlık • Yatırım: ₺{(portfolio.totalInvested || 0).toLocaleString('tr-TR', { maximumFractionDigits: 0 })}
-                                            </p>
-                                        </div>
-                                    </div>
-                                ))
+                                    );
+                                })
                         )}
 
-                        <Button
-                            variant="outline"
-                            className="w-full mt-3"
-                            onClick={() => navigate('/portfolios')}
-                        >
+                        <Button variant="outline" className="w-full mt-3" onClick={() => navigate('/portfolios')}>
                             Portföy Yönetimi
                             <ArrowRight className="w-4 h-4 ml-2" />
                         </Button>
                     </CardContent>
                 </Card>
 
-                {/* Quick Actions */}
                 <Card>
                     <CardHeader>
                         <CardTitle>Hızlı Erişim</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-3">
-                        <Button
-                            variant="outline"
-                            className="w-full justify-start"
-                            onClick={() => navigate('/portfolios')}
-                        >
+                        <Button variant="outline" className="w-full justify-start" onClick={() => navigate('/portfolios')}>
                             <Wallet className="w-5 h-5 mr-3" />
                             Portföy Listesi
                         </Button>
-                        <Button
-                            variant="outline"
-                            className="w-full justify-start"
-                            onClick={() => navigate('/instruments')}
-                        >
+                        <Button variant="outline" className="w-full justify-start" onClick={() => navigate('/instruments')}>
                             <Activity className="w-5 h-5 mr-3" />
                             Enstrümanlar
                         </Button>
-                        <Button
-                            variant="outline"
-                            className="w-full justify-start"
-                            onClick={() => navigate('/watchlist')}
-                        >
+                        <Button variant="outline" className="w-full justify-start" onClick={() => navigate('/watchlist')}>
                             <TrendingUp className="w-5 h-5 mr-3" />
                             Watchlist
                         </Button>
