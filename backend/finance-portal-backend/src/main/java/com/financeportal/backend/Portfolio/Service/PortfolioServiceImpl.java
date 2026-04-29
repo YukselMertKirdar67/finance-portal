@@ -227,9 +227,26 @@ public class PortfolioServiceImpl implements PortfolioService {
             PortfolioDTO dto = enrichPortfolioDTO(portfolioMapper.toDTO(portfolio), portfolio);
             allPortfolios.add(dto);
 
-            totalValue = totalValue.add(dto.getTotalValue());
-            totalInvested = totalInvested.add(dto.getTotalInvested());
-            totalUnrealizedPnL = totalUnrealizedPnL.add(dto.getUnrealizedPnL());
+            String currency = portfolio.getCurrency() != null ? portfolio.getCurrency() : "TRY";
+
+            // Her portföyün değerini TRY'ye çevir
+            BigDecimal exchangeRate = tcmbService.getExchangeRate(currency);
+
+            BigDecimal valueInTRY = currency.equals("TRY")
+                    ? dto.getTotalValue()
+                    : dto.getTotalValue().multiply(exchangeRate).setScale(2, RoundingMode.HALF_UP);
+
+            BigDecimal investedInTRY = currency.equals("TRY")
+                    ? dto.getTotalInvested()
+                    : dto.getTotalInvested().multiply(exchangeRate).setScale(2, RoundingMode.HALF_UP);
+
+            BigDecimal pnlInTRY = currency.equals("TRY")
+                    ? dto.getUnrealizedPnL()
+                    : dto.getUnrealizedPnL().multiply(exchangeRate).setScale(2, RoundingMode.HALF_UP);
+
+            totalValue = totalValue.add(valueInTRY);
+            totalInvested = totalInvested.add(investedInTRY);
+            totalUnrealizedPnL = totalUnrealizedPnL.add(pnlInTRY);
         }
 
         BigDecimal totalPnLPercent = BigDecimal.ZERO;
