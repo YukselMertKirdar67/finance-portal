@@ -17,7 +17,6 @@ import java.time.format.DateTimeFormatter;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.nio.charset.StandardCharsets;
 
 @Service
 @Slf4j
@@ -51,12 +50,11 @@ public class ExternalNewsService {
         int totalFetched = 0;
         int totalSkipped = 0;
 
-        // NewsAPI — keyword bazlı kategori mapping
+        // Daha spesifik keyword'ler
         Map<String, String> categories = new LinkedHashMap<>();
-        categories.put("borsa OR hisse senedi OR ekonomi", "FINANS");
-        categories.put("döviz OR forex OR kur", "DOVIZ");
-        categories.put("kripto OR bitcoin OR ethereum", "KRIPTO");
-        categories.put("şirket birleşme OR satın alma", "BIRLESME");
+        categories.put("borsa hisse piyasa", "FINANS");
+        categories.put("dolar euro kur", "DOVIZ");
+        categories.put("bitcoin ethereum kripto", "KRIPTO");
 
         log.info("Starting to fetch news from NewsAPI...");
 
@@ -94,17 +92,12 @@ public class ExternalNewsService {
 
                 for (ExternalNewsResponse.Article article : articles) {
 
-                    log.info("RAW CONTENT: {}", article.getContent());
-                    log.info("RAW DESCRIPTION: {}", article.getDescription());
-
-
                     // 1. BAŞLIK KONTROLÜ
                     if (article.getTitle() == null || article.getTitle().trim().isEmpty()) {
                         skippedCount++;
                         log.debug("Skipped: No title");
                         continue;
                     }
-
 
                     if (article.getTitle().equalsIgnoreCase("[Removed]")) {
                         skippedCount++;
@@ -119,7 +112,14 @@ public class ExternalNewsService {
                         continue;
                     }
 
-                    // 3. DUPLICATE KONTROLÜ
+                    // 3. İLGİLİLİK KONTROLÜ
+                    if (!isRelevantFinanceNews(displayCategory, article)) {
+                        skippedCount++;
+                        log.debug("Skipped: Not relevant - {}", article.getTitle());
+                        continue;
+                    }
+
+                    // 4. DUPLICATE KONTROLÜ
                     String sourceName = article.getSource() != null
                             ? article.getSource().getName()
                             : "Unknown";
@@ -130,7 +130,7 @@ public class ExternalNewsService {
                         continue;
                     }
 
-                    // 4. KAYIT
+                    // 5. KAYIT
                     News news = new News();
                     news.setTitle(article.getTitle());
                     news.setContent(getContent(article));
@@ -138,7 +138,6 @@ public class ExternalNewsService {
                     news.setCategory(displayCategory);
                     news.setImageUrl(imageService.getImageUrl(article.getUrlToImage(), displayCategory));
 
-                    // ISO string → LocalDateTime
                     if (article.getPublishedAt() != null) {
                         news.setPublishDate(LocalDateTime.parse(
                                 article.getPublishedAt(),
@@ -166,7 +165,6 @@ public class ExternalNewsService {
                 log.info("Category {}: Saved={}, Skipped={}",
                         displayCategory, savedCount, skippedCount);
 
-                // API rate limit için kısa bekleme
                 Thread.sleep(500);
 
             } catch (InterruptedException e) {
@@ -193,11 +191,29 @@ public class ExternalNewsService {
         );
     }
 
-    /**
-     * content yoksa description'a düş, NewsAPI'nin [+N chars] suffix'ini temizle
-     */
-    private String getContent(ExternalNewsResponse.Article article) {
+    //İçerik filtreleme
+    private boolean isRelevantFinanceNews(String category, ExternalNewsResponse.Article article) {
+        String text = ((article.getTitle() != null ? article.getTitle() : "") + " " +
+                (article.getDescription() != null ? article.getDescription() : "")).toLowerCase();
 
+        return switch (category) {
+            case "FINANS" -> text.contains("borsa") || text.contains("hisse") ||
+                    text.contains("bist") || text.contains("ekonomi") ||
+                    text.contains("piyasa") || text.contains("yatırım") ||
+                    text.contains("faiz") || text.contains("enflasyon");
+            case "DOVIZ" -> text.contains("döviz") || text.contains("kur") ||
+                    text.contains("dolar") || text.contains("euro") ||
+                    text.contains("merkez bankası") || text.contains("tcmb") ||
+                    text.contains("sterlin") || text.contains("forex");
+            case "KRIPTO" -> text.contains("bitcoin") || text.contains("kripto") ||
+                    text.contains("ethereum") || text.contains("blockchain") ||
+                    text.contains("btc") || text.contains("eth") ||
+                    text.contains("altcoin") || text.contains("token");
+            default -> true;
+        };
+    }
+
+    private String getContent(ExternalNewsResponse.Article article) {
         String content = article.getDescription() != null
                 ? article.getDescription()
                 : article.getContent();
@@ -208,7 +224,6 @@ public class ExternalNewsService {
     }
 
     private boolean hasValidContent(ExternalNewsResponse.Article article) {
-
         String content = article.getDescription() != null
                 ? article.getDescription()
                 : article.getContent();
