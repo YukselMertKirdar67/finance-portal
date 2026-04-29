@@ -24,7 +24,6 @@ export default function NewsPage() {
         { id: 'FINANS',   name: 'Finans' },
         { id: 'DOVIZ',    name: 'Döviz' },
         { id: 'KRIPTO',   name: 'Kripto' },
-        { id: 'BIRLESME', name: 'Birleşme' },
     ];
 
     useEffect(() => {
