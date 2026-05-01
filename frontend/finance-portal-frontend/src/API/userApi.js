@@ -42,8 +42,14 @@ export const getPasswordLastChanged = async () => {
     return response.data;
 };
 
-export const updatePreferences = async (theme, currency) => {
-    const response = await api.put('/me/preferences', { theme, currency });
+export const updatePreferences = async (theme, notifyTransaction, notifyPortfolioChange, notifyPriceAlert, notifyNews) => {
+    const response = await api.put('/me/preferences', {
+        theme,
+        notifyTransaction,
+        notifyPortfolioChange,
+        notifyPriceAlert,
+        notifyNews
+    });
     return response.data;
 };
 
