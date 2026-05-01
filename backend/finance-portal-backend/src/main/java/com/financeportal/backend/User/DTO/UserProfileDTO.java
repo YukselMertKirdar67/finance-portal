@@ -21,4 +21,9 @@ public class UserProfileDTO {
     private List<String> roles;
     private LocalDateTime createdAt;
     private String theme;      // "light", "dark", "system"
+
+    private boolean notifyTransaction;
+    private boolean notifyPortfolioChange;
+    private boolean notifyPriceAlert;
+    private boolean notifyNews;
 }
