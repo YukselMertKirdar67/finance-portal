@@ -199,20 +199,21 @@ public class UserServiceImpl implements UserService {
     }
 
     /**
-     * Kullanıcı tercihlerini güncelle (Theme)
+     * Kullanıcı tercihlerini güncelle
      */
     @Override
     @Transactional
-    public void updatePreferences(String userId, String theme) {
-        log.info("Updating preferences for user: {}", userId);
-
+    public void updatePreferences(String userId, String theme, Boolean notifyTransaction,
+                                  Boolean notifyPortfolioChange, Boolean notifyPriceAlert,
+                                  Boolean notifyNews) {
         User user = userRepository.findByKeycloakId(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
-        if (theme != null && !theme.isEmpty()) {
-            user.setTheme(theme);
-            log.info("Theme updated to: {}", theme);
-        }
+        if (theme != null && !theme.isEmpty()) user.setTheme(theme);
+        if (notifyTransaction != null) user.setNotifyTransaction(notifyTransaction);
+        if (notifyPortfolioChange != null) user.setNotifyPortfolioChange(notifyPortfolioChange);
+        if (notifyPriceAlert != null) user.setNotifyPriceAlert(notifyPriceAlert);
+        if (notifyNews != null) user.setNotifyNews(notifyNews);
 
         userRepository.save(user);
         log.info("✅ Preferences updated successfully");
