@@ -42,6 +42,18 @@ public class User {
     @Column(nullable = false)
     private LocalDateTime updatedAt;
 
+    @Column(nullable = false)
+    private boolean notifyTransaction = true;
+
+    @Column(nullable = false)
+    private boolean notifyPortfolioChange = true;
+
+    @Column(nullable = false)
+    private boolean notifyPriceAlert = true;
+
+    @Column(nullable = false)
+    private boolean notifyNews = true;
+
     @PrePersist
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();
