@@ -26,6 +26,7 @@ import AdminInstrumentUpdatePage from './Components/Page/AdminInstrumentUpdatePa
 import LandingPage from './Components/Page/LandingPage';
 import SettingsPage from './Components/Page/SettingsPage';
 import NotificationsPage from './Components/Page/NotificationsPage';
+import PriceAlertsPage from './Components/Page/PriceAlertsPage';
 
 // Protected Route Component
 const ProtectedRoute = ({ children, adminOnly = false }) => {
@@ -112,6 +113,7 @@ function App() {
                                 <Route path="/profile" element={<UserProfilePage />} />
                                 <Route path="/settings" element={<SettingsPage />} />
                                 <Route path="/notifications" element={<NotificationsPage />} />
+                                <Route path="/price-alerts" element={<PriceAlertsPage />} />
 
                                 {/* ADMIN ROUTES */}
                                 <Route
