@@ -5,6 +5,7 @@ import AccountSettings from './AccountSettings';
 import AppearanceSettings from './AppearanceSettings';
 import HelpSettings from './HelpSettings';
 import DataPrivacySettings from './DataPrivacySettings';
+import NotificationSettings from './NotificationSettings';
 
 
 export default function SettingsPage() {
@@ -55,7 +56,7 @@ export default function SettingsPage() {
                     <div className="lg:col-span-3">
                         {activeTab === 'account' && <AccountSettings />}
                         {activeTab === 'security' && <div className="text-gray-500 dark:text-gray-400">Güvenlik ayarları yakında...</div>}
-                        {activeTab === 'notifications' && <div className="text-gray-500 dark:text-gray-400">Bildirim ayarları yakında...</div>}
+                        {activeTab === 'notifications' && <NotificationSettings />}
                         {activeTab === 'appearance' && <AppearanceSettings />}
                         {activeTab === 'data' && <DataPrivacySettings />}
                         {activeTab === 'help' && <HelpSettings />}
