@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
     TrendingUp, TrendingDown, Star, ArrowLeft, Loader2,
-    RefreshCw, Building2, Globe, Coins, Activity
+    RefreshCw, Building2, Globe, Coins, Activity, Bell, Trash2
 } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '../UI/Card';
@@ -12,6 +12,7 @@ import {
 } from 'recharts';
 import { getInstrumentById, getHistoricalPrices } from '../../API/instrumentsApi';
 import { addToWatchlist, removeFromWatchlist, isInWatchlist } from '../../API/watchlistApi';
+import { createPriceAlert, getActiveUserAlerts, deletePriceAlert } from '../../API/priceAlertApi';
 
 const TYPE_COLORS = {
     FOREX: '#3B82F6',
@@ -44,13 +45,23 @@ export default function InstrumentDetailPage() {
     const [watchlistLoading, setWatchlistLoading] = useState(false);
     const [timeframe, setTimeframe] = useState('1H');
 
+    // Fiyat Alarmı State'leri
+    const [showAlertModal, setShowAlertModal] = useState(false);
+    const [alertTargetPrice, setAlertTargetPrice] = useState('');
+    const [alertCondition, setAlertCondition] = useState('ABOVE');
+    const [alertLoading, setAlertLoading] = useState(false);
+    const [activeAlerts, setActiveAlerts] = useState([]);
+
     useEffect(() => {
         fetchInstrument();
     }, [id]);
 
     useEffect(() => {
-        checkWatchlistStatus();
-        fetchHistory();
+        if (instrument) {
+            checkWatchlistStatus();
+            fetchHistory();
+            fetchActiveAlerts();
+        }
     }, [instrument, timeframe]);
 
     const fetchInstrument = async () => {
@@ -73,6 +84,15 @@ export default function InstrumentDetailPage() {
             setInWatchlist(status);
         } catch (error) {
             console.error('Watchlist check error:', error);
+        }
+    };
+
+    const fetchActiveAlerts = async () => {
+        try {
+            const data = await getActiveUserAlerts();
+            setActiveAlerts(data.filter(a => a.instrumentSymbol === instrument?.symbol));
+        } catch (e) {
+            console.error('Alert fetch error:', e);
         }
     };
 
@@ -123,6 +143,31 @@ export default function InstrumentDetailPage() {
         setRefreshing(true);
         await fetchInstrument();
         setRefreshing(false);
+    };
+
+    const handleCreateAlert = async () => {
+        if (!alertTargetPrice) return;
+        setAlertLoading(true);
+        try {
+            await createPriceAlert(parseInt(id), parseFloat(alertTargetPrice), alertCondition);
+            setShowAlertModal(false);
+            setAlertTargetPrice('');
+            await fetchActiveAlerts();
+        } catch (e) {
+            console.error('Alert create error:', e);
+            alert('Alarm oluşturulamadı');
+        } finally {
+            setAlertLoading(false);
+        }
+    };
+
+    const handleDeleteAlert = async (alertId) => {
+        try {
+            await deletePriceAlert(alertId);
+            await fetchActiveAlerts();
+        } catch (e) {
+            console.error('Alert delete error:', e);
+        }
     };
 
     const formatPrice = (price) => {
@@ -197,14 +242,14 @@ export default function InstrumentDetailPage() {
                             Geri
                         </Button>
                         <div className="flex gap-2">
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={handleRefresh}
-                                disabled={refreshing}
-                            >
+                            <Button variant="outline" size="sm" onClick={handleRefresh} disabled={refreshing}>
                                 <RefreshCw className={`w-4 h-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
                                 Yenile
+                            </Button>
+                            {/* ✅ Fiyat Alarmı Butonu */}
+                            <Button variant="outline" size="sm" onClick={() => setShowAlertModal(true)}>
+                                <Bell className="w-4 h-4 mr-2" />
+                                Fiyat Alarmı
                             </Button>
                             <Button
                                 variant={inWatchlist ? 'default' : 'outline'}
@@ -222,18 +267,13 @@ export default function InstrumentDetailPage() {
                     <div className="flex items-start justify-between">
                         <div>
                             <div className="flex items-center gap-3 mb-2">
-                                <span
-                                    className="text-xs font-bold px-3 py-1 rounded-full text-white"
-                                    style={{ backgroundColor: accentColor }}
-                                >
+                                <span className="text-xs font-bold px-3 py-1 rounded-full text-white" style={{ backgroundColor: accentColor }}>
                                     {TYPE_LABELS[instrument.type] || instrument.type}
                                 </span>
                                 <span className="text-xs text-gray-400 font-mono bg-gray-100 px-2 py-1 rounded">
                                     {instrument.exchange}
                                 </span>
-                                <span className={`text-xs font-semibold px-2 py-1 rounded-full ${
-                                    instrument.active ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-500'
-                                }`}>
+                                <span className={`text-xs font-semibold px-2 py-1 rounded-full ${instrument.active ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-500'}`}>
                                     {instrument.active ? 'Aktif' : 'Pasif'}
                                 </span>
                             </div>
@@ -247,17 +287,13 @@ export default function InstrumentDetailPage() {
                                     {formatPrice(price.current)}
                                     <span className="text-lg text-gray-400 ml-2">{instrument.currency}</span>
                                 </p>
-                                <div className={`flex items-center justify-end gap-2 text-lg font-semibold ${
-                                    isPositive ? 'text-emerald-600' : 'text-red-500'
-                                }`}>
+                                <div className={`flex items-center justify-end gap-2 text-lg font-semibold ${isPositive ? 'text-emerald-600' : 'text-red-500'}`}>
                                     {isPositive ? <TrendingUp className="w-5 h-5" /> : <TrendingDown className="w-5 h-5" />}
                                     <span>
                                         {isPositive ? '+' : ''}{formatPrice(price.changeAmount)} ({Math.abs(price.changePercent).toFixed(2)}%)
                                     </span>
                                 </div>
-                                <p className="text-xs text-gray-400 mt-2">
-                                    {formatDate(price.timestamp)}
-                                </p>
+                                <p className="text-xs text-gray-400 mt-2">{formatDate(price.timestamp)}</p>
                             </div>
                         )}
                     </div>
@@ -304,14 +340,12 @@ export default function InstrumentDetailPage() {
                                 <div className="flex items-center justify-between">
                                     <CardTitle className="text-lg font-bold text-gray-900">Fiyat Grafiği</CardTitle>
                                     <div className="flex gap-1">
-                                        {['1H', '1A', '3A','6A','1Y'].map(tf => (
+                                        {['1H', '1A', '3A', '6A', '1Y'].map(tf => (
                                             <button
                                                 key={tf}
                                                 onClick={() => setTimeframe(tf)}
                                                 className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all ${
-                                                    timeframe === tf
-                                                        ? 'text-white'
-                                                        : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                                                    timeframe === tf ? 'text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
                                                 }`}
                                                 style={timeframe === tf ? { backgroundColor: accentColor } : {}}
                                             >
@@ -342,11 +376,7 @@ export default function InstrumentDetailPage() {
                                                 />
                                                 <Tooltip
                                                     formatter={(value) => [formatPrice(value), 'Fiyat']}
-                                                    contentStyle={{
-                                                        borderRadius: '8px',
-                                                        border: 'none',
-                                                        boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
-                                                    }}
+                                                    contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
                                                 />
                                                 <Area
                                                     type="monotone"
@@ -394,6 +424,46 @@ export default function InstrumentDetailPage() {
                             </CardContent>
                         </Card>
 
+                        {/* Aktif Alarmlar Kartı */}
+                        <Card className="border-0 shadow-sm">
+                            <CardHeader className="pb-3">
+                                <CardTitle className="text-sm font-semibold text-gray-500 uppercase tracking-wide flex items-center gap-2">
+                                    <Bell className="w-4 h-4" />
+                                    Fiyat Alarmları
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent className="pt-0">
+                                {activeAlerts.length === 0 ? (
+                                    <p className="text-sm text-gray-400 mb-3">Aktif alarm yok</p>
+                                ) : (
+                                    <div className="space-y-2 mb-3">
+                                        {activeAlerts.map(alert => (
+                                            <div key={alert.id} className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0">
+                                                <div>
+                                                    <p className="text-sm font-medium text-gray-900">
+                                                        {alert.condition === 'ABOVE' ? '↑' : '↓'} {formatPrice(alert.targetPrice)} {instrument.currency}
+                                                    </p>
+                                                    <p className="text-xs text-gray-400">
+                                                        {alert.condition === 'ABOVE' ? 'Üzerine çıkınca' : 'Altına düşünce'}
+                                                    </p>
+                                                </div>
+                                                <button
+                                                    onClick={() => handleDeleteAlert(alert.id)}
+                                                    className="text-red-400 hover:text-red-600"
+                                                >
+                                                    <Trash2 className="w-4 h-4" />
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                                <Button variant="outline" size="sm" className="w-full" onClick={() => setShowAlertModal(true)}>
+                                    <Bell className="w-4 h-4 mr-2" />
+                                    Alarm Ekle
+                                </Button>
+                            </CardContent>
+                        </Card>
+
                         {typeFields.length > 0 && (
                             <Card className="border-0 shadow-sm">
                                 <CardHeader className="pb-3">
@@ -418,9 +488,7 @@ export default function InstrumentDetailPage() {
                         {instrument.description && (
                             <Card className="border-0 shadow-sm">
                                 <CardHeader className="pb-3">
-                                    <CardTitle className="text-sm font-semibold text-gray-500 uppercase tracking-wide">
-                                        Açıklama
-                                    </CardTitle>
+                                    <CardTitle className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Açıklama</CardTitle>
                                 </CardHeader>
                                 <CardContent className="pt-0">
                                     <p className="text-sm text-gray-600 leading-relaxed">{instrument.description}</p>
@@ -430,6 +498,81 @@ export default function InstrumentDetailPage() {
                     </div>
                 </div>
             </div>
+
+            {/* Fiyat Alarmı Modal */}
+            {showAlertModal && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6">
+                        <h3 className="text-xl font-bold text-gray-900 mb-4">Fiyat Alarmı Oluştur</h3>
+
+                        <div className="mb-4">
+                            <p className="text-sm text-gray-500 mb-4">
+                                Güncel Fiyat: <span className="font-semibold text-gray-900">
+                                    {formatPrice(price?.current)} {instrument.currency}
+                                </span>
+                            </p>
+
+                            <label className="block text-sm font-medium text-gray-700 mb-2">Alarm Koşulu</label>
+                            <div className="flex gap-2 mb-4">
+                                <button
+                                    onClick={() => setAlertCondition('ABOVE')}
+                                    className={`flex-1 py-2 rounded-lg text-sm font-medium border transition-colors ${
+                                        alertCondition === 'ABOVE'
+                                            ? 'bg-green-50 border-green-500 text-green-700'
+                                            : 'border-gray-200 text-gray-600'
+                                    }`}
+                                >
+                                    ↑ Üzerine Çıkınca
+                                </button>
+                                <button
+                                    onClick={() => setAlertCondition('BELOW')}
+                                    className={`flex-1 py-2 rounded-lg text-sm font-medium border transition-colors ${
+                                        alertCondition === 'BELOW'
+                                            ? 'bg-red-50 border-red-500 text-red-700'
+                                            : 'border-gray-200 text-gray-600'
+                                    }`}
+                                >
+                                    ↓ Altına Düşünce
+                                </button>
+                            </div>
+
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                Hedef Fiyat ({instrument.currency})
+                            </label>
+                            <input
+                                type="number"
+                                value={alertTargetPrice}
+                                onChange={(e) => setAlertTargetPrice(e.target.value)}
+                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                placeholder="0.00"
+                                step="0.01"
+                            />
+                        </div>
+
+                        <div className="flex gap-3">
+                            <Button
+                                variant="outline"
+                                className="flex-1"
+                                onClick={() => { setShowAlertModal(false); setAlertTargetPrice(''); }}
+                                disabled={alertLoading}
+                            >
+                                İptal
+                            </Button>
+                            <Button
+                                className="flex-1"
+                                onClick={handleCreateAlert}
+                                disabled={!alertTargetPrice || alertLoading}
+                            >
+                                {alertLoading ? (
+                                    <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Oluşturuluyor...</>
+                                ) : (
+                                    <><Bell className="w-4 h-4 mr-2" />Alarm Oluştur</>
+                                )}
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
