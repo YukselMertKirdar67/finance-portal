@@ -3,6 +3,8 @@ package com.financeportal.backend.News.Service;
 import com.financeportal.backend.News.DTO.External.ExternalNewsResponse;
 import com.financeportal.backend.News.Entity.News;
 import com.financeportal.backend.News.Repository.NewsRepository;
+import com.financeportal.backend.Notification.NotificationService;
+import com.financeportal.backend.User.Repository.UserRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.CacheEvict;
@@ -31,11 +33,15 @@ public class ExternalNewsService {
     private final RestTemplate restTemplate;
     private final NewsRepository newsRepository;
     private final ImageService imageService;
+    private final NotificationService notificationService;
+    private final UserRepository userRepository;
 
-    public ExternalNewsService(RestTemplate restTemplate, NewsRepository newsRepository, ImageService imageService) {
+    public ExternalNewsService(RestTemplate restTemplate, NewsRepository newsRepository, ImageService imageService, NotificationService notificationService, UserRepository userRepository) {
         this.restTemplate = restTemplate;
         this.newsRepository = newsRepository;
         this.imageService = imageService;
+        this.notificationService = notificationService;
+        this.userRepository = userRepository;
     }
 
     @Caching(evict = {
@@ -151,6 +157,13 @@ public class ExternalNewsService {
                         newsRepository.save(news);
                         savedCount++;
                         log.debug("Saved: {} - {}", displayCategory, article.getTitle());
+
+                        if (savedCount == 1) {
+                            List<String> allUserIds = userRepository.findAllKeycloakIds();
+                            for (String userId : allUserIds) {
+                                notificationService.notifyNews(userId, news.getTitle(), news.getId());
+                            }
+                        }
                     } catch (Exception e) {
                         skippedCount++;
                         log.error("Error saving article: {}", article.getTitle(), e);
