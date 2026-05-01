@@ -1,6 +1,6 @@
 import React from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider, useAuth } from './context/AuthContext';
+import { Routes, Route, Navigate } from 'react-router-dom';
+import { useAuth } from './context/AuthContext';
 import Layout from './Components/Layout/Layout';
 import LoginPage from './Components/Page/LoginPage';
 import RegisterPage from './Components/Page/RegisterPage';
@@ -25,6 +25,7 @@ import AuthCallbackPage from './Components/Page/AuthCallbackPage';
 import AdminInstrumentUpdatePage from './Components/Page/AdminInstrumentUpdatePage';
 import LandingPage from './Components/Page/LandingPage';
 import SettingsPage from './Components/Page/SettingsPage';
+import NotificationsPage from './Components/Page/NotificationsPage';
 
 // Protected Route Component
 const ProtectedRoute = ({ children, adminOnly = false }) => {
@@ -52,8 +53,8 @@ const ProtectedRoute = ({ children, adminOnly = false }) => {
     return children;
 };
 
-// App Routes Component
-const AppRoutes = () => {
+// Main App Component
+function App() {
     const { authenticated, loading, logout, user } = useAuth();
 
     if (loading) {
@@ -68,7 +69,6 @@ const AppRoutes = () => {
     return (
         <Routes>
             {/* PUBLIC ROUTES */}
-
             <Route path="/" element={<LandingPage />} />
 
             <Route
@@ -111,6 +111,7 @@ const AppRoutes = () => {
                                 <Route path="/portfolios/:id/transactions" element={<TransactionPage />} />
                                 <Route path="/profile" element={<UserProfilePage />} />
                                 <Route path="/settings" element={<SettingsPage />} />
+                                <Route path="/notifications" element={<NotificationsPage />} />
 
                                 {/* ADMIN ROUTES */}
                                 <Route
@@ -134,7 +135,7 @@ const AppRoutes = () => {
                                     path="/admin/users/:id"
                                     element={
                                         <ProtectedRoute adminOnly>
-                                                <AdminUserDetailPage />
+                                            <AdminUserDetailPage />
                                         </ProtectedRoute>
                                     }
                                 />
@@ -156,17 +157,6 @@ const AppRoutes = () => {
                 }
             />
         </Routes>
-    );
-};
-
-// Main App Component
-function App() {
-    return (
-        <AuthProvider>
-            <BrowserRouter>
-                <AppRoutes />
-            </BrowserRouter>
-        </AuthProvider>
     );
 }
 
