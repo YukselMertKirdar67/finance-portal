@@ -9,7 +9,8 @@ import {
     Users,
     User,
     Home,
-    RefreshCw
+    RefreshCw,
+    AlarmClock
 } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
 import { Button } from '../UI/Button';
@@ -71,6 +72,12 @@ export default function Sidebar({
                         <NavLink to="/watchlist" className={navClass}>
                             <Star className="w-5 h-5" />
                             <span>Takip Listesi</span>
+                        </NavLink>
+                    </li>
+                    <li>
+                        <NavLink to="/price-alerts" className={navClass}>
+                            <AlarmClock className="w-5 h-5" />
+                            <span>Fiyat Alarmları</span>
                         </NavLink>
                     </li>
                     <li>
