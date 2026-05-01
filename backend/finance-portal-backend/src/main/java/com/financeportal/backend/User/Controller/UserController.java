@@ -67,6 +67,10 @@ public class UserController {
                 .roles(roles)
                 .createdAt(user.getCreatedAt())
                 .theme(user.getTheme())
+                .notifyTransaction(user.isNotifyTransaction())
+                .notifyPortfolioChange(user.isNotifyPortfolioChange())
+                .notifyPriceAlert(user.isNotifyPriceAlert())
+                .notifyNews(user.isNotifyNews())
                 .build();
     }
 
@@ -149,7 +153,7 @@ public class UserController {
     }
 
     /**
-     * Update user preferences (theme)
+     * Update user preferences
      */
     @PutMapping("/preferences")
     public ResponseEntity<?> updatePreferences(
@@ -160,19 +164,20 @@ public class UserController {
             User user = userService.getOrCreateUser(jwt);
             String userId = user.getKeycloakId();
 
-            userService.updatePreferences(userId, request.getTheme());
+            userService.updatePreferences(
+                    userId,
+                    request.getTheme(),
+                    request.getNotifyTransaction(),
+                    request.getNotifyPortfolioChange(),
+                    request.getNotifyPriceAlert(),
+                    request.getNotifyNews()
+            );
 
-            return ResponseEntity.ok(Map.of(
-                    "success", true,
-                    "message", "Tercihleriniz başarıyla güncellendi"
-            ));
+            return ResponseEntity.ok(Map.of("success", true, "message", "Tercihleriniz başarıyla güncellendi"));
 
         } catch (RuntimeException e) {
             log.error("Preferences update failed: {}", e.getMessage());
-            return ResponseEntity.badRequest().body(Map.of(
-                    "success", false,
-                    "message", e.getMessage()
-            ));
+            return ResponseEntity.badRequest().body(Map.of("success", false, "message", e.getMessage()));
         }
     }
 
