@@ -5,6 +5,7 @@ import com.financeportal.backend.Exception.ResourceNotFoundException;
 import com.financeportal.backend.Instrument.Entity.BaseInstrument;
 import com.financeportal.backend.Instrument.Repository.InstrumentRepository;
 import com.financeportal.backend.Instrument.Service.TcmbService;
+import com.financeportal.backend.Notification.NotificationService;
 import com.financeportal.backend.Portfolio.DTO.CreateTransactionRequestDTO;
 import com.financeportal.backend.Portfolio.DTO.TransactionDTO;
 import com.financeportal.backend.Portfolio.DTO.TransactionSummaryDTO;
@@ -42,6 +43,7 @@ public class PortfolioTransactionServiceImpl implements PortfolioTransactionServ
     private final PortfolioCalculationService calculationService;
     private final PortfolioMapper portfolioMapper;
     private final TcmbService tcmbService;
+    private final NotificationService notificationService;
 
     @Override
     @Transactional
@@ -93,7 +95,16 @@ public class PortfolioTransactionServiceImpl implements PortfolioTransactionServ
         updateHoldingForBuy(portfolio, instrument, request.getQuantity(), request.getPrice(),
                 transaction.getTransactionDate(), currency, exchangeRate);
 
-        // 7. Map to DTO and return
+        // 7. İşlem bildirimi
+        notificationService.notifyTransaction(
+                portfolio.getUserId(),
+                instrument.getSymbol(),
+                "BUY",
+                request.getQuantity().doubleValue(),
+                portfolioId
+        );
+
+        // 8. Map to DTO and return
         return portfolioMapper.toTransactionDTO(savedTransaction);
     }
 
@@ -143,7 +154,17 @@ public class PortfolioTransactionServiceImpl implements PortfolioTransactionServ
         // 8. Update holding (reduce quantity)
         updateHoldingForSell(holding, request.getQuantity());
 
-        // 9. Map to DTO and return
+
+        //  9. İşlem bildirimi
+        notificationService.notifyTransaction(
+                portfolio.getUserId(),
+                instrument.getSymbol(),
+                "SELL",
+                request.getQuantity().doubleValue(),
+                portfolioId
+        );
+
+        // 10. Map to DTO and return
         return portfolioMapper.toTransactionDTO(savedTransaction);
     }
 
