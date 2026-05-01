@@ -15,7 +15,9 @@ public interface UserService {
     void updateUsername(String userId, String newUsername);
     void updateEmail(String userId, String newEmail, String password);
     LocalDateTime getPasswordLastChanged(String userId);
-    void updatePreferences(String userId, String theme);
+    void updatePreferences(String userId, String theme, Boolean notifyTransaction,
+                           Boolean notifyPortfolioChange, Boolean notifyPriceAlert,
+                           Boolean notifyNews);
     byte[] exportUserData(String userId) throws Exception;
     void deleteAccount(String userId);
 }
