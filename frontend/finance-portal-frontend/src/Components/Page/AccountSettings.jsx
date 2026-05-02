@@ -5,7 +5,7 @@ import { Card, CardHeader, CardTitle, CardContent } from '../UI/Card';
 import { Button } from '../UI/Button';
 import { updateUsername, updateEmail, getPasswordLastChanged } from '../../API/userApi';
 
-export default function AccountSettings() {
+export default function AccountSettings({ onNavigateToSecurity }) {
     const { user, refreshUser } = useAuth();
     const [passwordLastChanged, setPasswordLastChanged] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -205,11 +205,7 @@ export default function AccountSettings() {
                                 <p className="font-semibold text-gray-900 dark:text-white">{formatDate(passwordLastChanged)}</p>
                             </div>
                         </div>
-                        <Button
-                            onClick={() => {
-                                window.alert('Şifre değiştirme özelliği için Profil sayfasına gidin');
-                            }}
-                        >
+                        <Button onClick={onNavigateToSecurity}>
                             Şifre Değiştir
                         </Button>
                     </div>
