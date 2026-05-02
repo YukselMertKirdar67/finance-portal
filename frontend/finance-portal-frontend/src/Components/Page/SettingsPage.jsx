@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import { User, Lock, Bell, Eye, Database, HelpCircle } from 'lucide-react';
 import { Card } from '../UI/Card';
 import AccountSettings from './AccountSettings';
@@ -6,10 +7,13 @@ import AppearanceSettings from './AppearanceSettings';
 import HelpSettings from './HelpSettings';
 import DataPrivacySettings from './DataPrivacySettings';
 import NotificationSettings from './NotificationSettings';
+import SecuritySettings from './SecuritySettings';
 
 
 export default function SettingsPage() {
-    const [activeTab, setActiveTab] = useState('account');
+    const location = useLocation()
+    const [activeTab, setActiveTab] = useState(location.state?.tab || 'account');
+
 
     const tabs = [
         { id: 'account', label: 'Hesap', icon: <User className="w-5 h-5" /> },
@@ -54,8 +58,8 @@ export default function SettingsPage() {
 
                     {/* Content */}
                     <div className="lg:col-span-3">
-                        {activeTab === 'account' && <AccountSettings />}
-                        {activeTab === 'security' && <div className="text-gray-500 dark:text-gray-400">Güvenlik ayarları yakında...</div>}
+                        {activeTab === 'account' && <AccountSettings onNavigateToSecurity={() => setActiveTab('security')} />}
+                        {activeTab === 'security' && <SecuritySettings />}
                         {activeTab === 'notifications' && <NotificationSettings />}
                         {activeTab === 'appearance' && <AppearanceSettings />}
                         {activeTab === 'data' && <DataPrivacySettings />}
