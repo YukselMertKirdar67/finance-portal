@@ -8,9 +8,7 @@ import {
     CheckCircle,
     AlertCircle,
     Send,
-    Lock
 } from 'lucide-react';
-import { changePassword } from '../../API/userApi';
 import api from '../../API/instrumentsApi';
 
 const UserProfilePage = () => {
@@ -22,21 +20,6 @@ const UserProfilePage = () => {
     const [emailSent, setEmailSent] = useState(false);
     const [error, setError] = useState('');
 
-    // Password Change States
-    const [showPasswordModal, setShowPasswordModal] = useState(false);
-    const [passwordForm, setPasswordForm] = useState({
-        currentPassword: '',
-        newPassword: '',
-        confirmPassword: ''
-    });
-    const [passwordErrors, setPasswordErrors] = useState({});
-    const [passwordLoading, setPasswordLoading] = useState(false);
-    const [passwordSuccess, setPasswordSuccess] = useState('');
-
-    // OTP States
-    const [showOTPInput, setShowOTPInput] = useState(false);
-    const [otpCode, setOtpCode] = useState('');
-
     useEffect(() => {
         fetchProfile();
     }, []);
@@ -44,7 +27,6 @@ const UserProfilePage = () => {
     const fetchProfile = async () => {
         setLoading(true);
         setError('');
-
         try {
             const response = await api.get('/me/profile');
             setProfileData(response.data);
@@ -58,125 +40,18 @@ const UserProfilePage = () => {
 
     const handleResendVerificationEmail = async () => {
         if (!profileData?.email) return;
-
         setSendingEmail(true);
         setEmailSent(false);
         setError('');
-
         try {
-            await api.post('/auth/send-verification-email', {
-                email: profileData.email
-            });
-
+            await api.post('/auth/send-verification-email', { email: profileData.email });
             setEmailSent(true);
             setTimeout(() => setEmailSent(false), 5000);
-
         } catch (err) {
             setError('Email gönderilemedi. Lütfen tekrar deneyin.');
             console.error('Error sending verification email:', err);
         } finally {
             setSendingEmail(false);
-        }
-    };
-
-    const handlePasswordChange = (e) => {
-        const { name, value } = e.target;
-        setPasswordForm(prev => ({
-            ...prev,
-            [name]: value
-        }));
-        if (passwordErrors[name]) {
-            setPasswordErrors(prev => ({
-                ...prev,
-                [name]: ''
-            }));
-        }
-    };
-
-    const validatePasswordForm = () => {
-        const errors = {};
-
-        if (!passwordForm.currentPassword) {
-            errors.currentPassword = 'Mevcut şifre gerekli';
-        }
-
-        if (!passwordForm.newPassword) {
-            errors.newPassword = 'Yeni şifre gerekli';
-        } else if (passwordForm.newPassword.length < 6) {
-            errors.newPassword = 'Yeni şifre en az 6 karakter olmalı';
-        }
-
-        if (passwordForm.newPassword !== passwordForm.confirmPassword) {
-            errors.confirmPassword = 'Şifreler eşleşmiyor';
-        }
-
-        // OTP validation
-        if (showOTPInput && (!otpCode || otpCode.length !== 6)) {
-            errors.otpCode = '6 haneli OTP kodu gerekli';
-        }
-
-        setPasswordErrors(errors);
-        return Object.keys(errors).length === 0;
-    };
-
-    const handlePasswordSubmit = async (e) => {
-        e.preventDefault();
-
-        if (!validatePasswordForm()) {
-            return;
-        }
-
-        setPasswordLoading(true);
-        setPasswordSuccess('');
-        setPasswordErrors({});
-
-        try {
-            // OTP ile birlikte gönder
-            const response = await changePassword({
-                currentPassword: passwordForm.currentPassword,
-                newPassword: passwordForm.newPassword,
-                confirmPassword: passwordForm.confirmPassword,
-                otpCode: showOTPInput ? otpCode : null
-            });
-
-            if (response.success) {
-                setPasswordSuccess(response.message);
-
-                // Form'u temizle
-                setPasswordForm({
-                    currentPassword: '',
-                    newPassword: '',
-                    confirmPassword: ''
-                });
-                setOtpCode('');
-                setShowOTPInput(false);
-
-                // 2 saniye sonra modal'ı kapat
-                setTimeout(() => {
-                    setShowPasswordModal(false);
-                    setPasswordSuccess('');
-                }, 2000);
-
-            } else if (response.message === 'OTP_REQUIRED') {
-                setShowOTPInput(true);
-                setPasswordErrors({});
-
-            } else {
-                setPasswordErrors({ submit: response.message || 'Şifre değiştirme başarısız' });
-            }
-
-        } catch (error) {
-            const errorMsg = error.response?.data?.message || 'Şifre değiştirme başarısız';
-
-            // OTP_REQUIRED kontrolü
-            if (errorMsg === 'OTP_REQUIRED') {
-                setShowOTPInput(true);
-                setPasswordErrors({});
-            } else {
-                setPasswordErrors({ submit: errorMsg });
-            }
-        } finally {
-            setPasswordLoading(false);
         }
     };
 
@@ -343,208 +218,8 @@ const UserProfilePage = () => {
                             </div>
                         </div>
                     </div>
-
-                    {/* Password Change Card */}
-                    <div className="mt-6 bg-white rounded-xl shadow-md p-6 border border-gray-100">
-                        <h3 className="text-xl font-bold text-gray-800 mb-4">Güvenlik</h3>
-                        <button
-                            onClick={() => setShowPasswordModal(true)}
-                            className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition"
-                        >
-                            <Lock className="w-4 h-4" />
-                            Şifre Değiştir
-                        </button>
-                    </div>
-
-                    {/* Security Notice */}
-                    <div className="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
-                        <p className="text-sm text-blue-800">
-                            <strong>Güvenlik Notu:</strong> Hesap bilgilerinizi korumak için güçlü bir şifre kullanın
-                            ve şifrenizi düzenli olarak değiştirin.
-                        </p>
-                    </div>
                 </div>
             </div>
-
-            {/* ⭐ Password Change Modal - OTP DESTEKLİ */}
-            {showPasswordModal && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6">
-                        <div className="flex items-center justify-between mb-6">
-                            <h2 className="text-2xl font-bold text-gray-800">Şifre Değiştir</h2>
-                            <button
-                                onClick={() => {
-                                    setShowPasswordModal(false);
-                                    setPasswordForm({
-                                        currentPassword: '',
-                                        newPassword: '',
-                                        confirmPassword: ''
-                                    });
-                                    setPasswordErrors({});
-                                    setPasswordSuccess('');
-                                    setShowOTPInput(false);
-                                    setOtpCode('');
-                                }}
-                                className="text-gray-400 hover:text-gray-600"
-                            >
-                                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                </svg>
-                            </button>
-                        </div>
-
-                        {passwordSuccess && (
-                            <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg flex items-start gap-3">
-                                <CheckCircle className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
-                                <p className="text-green-800">{passwordSuccess}</p>
-                            </div>
-                        )}
-
-                        {passwordErrors.submit && (
-                            <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3">
-                                <AlertCircle className="w-5 h-5 text-red-600 mt-0.5 flex-shrink-0" />
-                                <p className="text-red-800">{passwordErrors.submit}</p>
-                            </div>
-                        )}
-
-                        <form onSubmit={handlePasswordSubmit} className="space-y-4">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Mevcut Şifre
-                                </label>
-                                <div className="relative">
-                                    <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                                    <input
-                                        type="password"
-                                        name="currentPassword"
-                                        value={passwordForm.currentPassword}
-                                        onChange={handlePasswordChange}
-                                        disabled={showOTPInput}
-                                        className={`w-full pl-11 pr-4 py-3 border rounded-lg focus:outline-none focus:ring-2 transition disabled:bg-gray-100 ${
-                                            passwordErrors.currentPassword
-                                                ? 'border-red-300 focus:ring-red-500'
-                                                : 'border-gray-300 focus:ring-blue-500'
-                                        }`}
-                                        placeholder="••••••••"
-                                    />
-                                </div>
-                                {passwordErrors.currentPassword && (
-                                    <p className="text-red-600 text-sm mt-1">{passwordErrors.currentPassword}</p>
-                                )}
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Yeni Şifre
-                                </label>
-                                <div className="relative">
-                                    <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                                    <input
-                                        type="password"
-                                        name="newPassword"
-                                        value={passwordForm.newPassword}
-                                        onChange={handlePasswordChange}
-                                        disabled={showOTPInput}
-                                        className={`w-full pl-11 pr-4 py-3 border rounded-lg focus:outline-none focus:ring-2 transition disabled:bg-gray-100 ${
-                                            passwordErrors.newPassword
-                                                ? 'border-red-300 focus:ring-red-500'
-                                                : 'border-gray-300 focus:ring-blue-500'
-                                        }`}
-                                        placeholder="••••••••"
-                                    />
-                                </div>
-                                {passwordErrors.newPassword && (
-                                    <p className="text-red-600 text-sm mt-1">{passwordErrors.newPassword}</p>
-                                )}
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Yeni Şifre Tekrar
-                                </label>
-                                <div className="relative">
-                                    <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                                    <input
-                                        type="password"
-                                        name="confirmPassword"
-                                        value={passwordForm.confirmPassword}
-                                        onChange={handlePasswordChange}
-                                        disabled={showOTPInput}
-                                        className={`w-full pl-11 pr-4 py-3 border rounded-lg focus:outline-none focus:ring-2 transition disabled:bg-gray-100 ${
-                                            passwordErrors.confirmPassword
-                                                ? 'border-red-300 focus:ring-red-500'
-                                                : 'border-gray-300 focus:ring-blue-500'
-                                        }`}
-                                        placeholder="••••••••"
-                                    />
-                                </div>
-                                {passwordErrors.confirmPassword && (
-                                    <p className="text-red-600 text-sm mt-1">{passwordErrors.confirmPassword}</p>
-                                )}
-                            </div>
-
-                            {/* OTP INPUT (CONDITIONAL) */}
-                            {showOTPInput && (
-                                <div className="border-t pt-4">
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        2FA Kod
-                                    </label>
-                                    <input
-                                        type="text"
-                                        value={otpCode}
-                                        onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-center text-2xl tracking-widest"
-                                        placeholder="000000"
-                                        maxLength={6}
-                                        autoFocus
-                                    />
-                                    <p className="text-sm text-gray-500 mt-2 text-center">
-                                        Authenticator uygulamanızdan 6 haneli kodu girin
-                                    </p>
-                                    {passwordErrors.otpCode && (
-                                        <p className="text-red-600 text-sm mt-1 text-center">{passwordErrors.otpCode}</p>
-                                    )}
-                                </div>
-                            )}
-
-                            <div className="flex gap-3 mt-6">
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        setShowPasswordModal(false);
-                                        setPasswordForm({
-                                            currentPassword: '',
-                                            newPassword: '',
-                                            confirmPassword: ''
-                                        });
-                                        setPasswordErrors({});
-                                        setPasswordSuccess('');
-                                        setShowOTPInput(false);
-                                        setOtpCode('');
-                                    }}
-                                    className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 font-semibold rounded-lg hover:bg-gray-50 transition"
-                                >
-                                    İptal
-                                </button>
-                                <button
-                                    type="submit"
-                                    disabled={passwordLoading}
-                                    className="flex-1 px-4 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-semibold rounded-lg transition flex items-center justify-center gap-2"
-                                >
-                                    {passwordLoading ? (
-                                        <>
-                                            <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                                            {showOTPInput ? 'Doğrulanıyor...' : 'Değiştiriliyor...'}
-                                        </>
-                                    ) : (
-                                        showOTPInput ? '2FA Doğrula' : 'Şifreyi Değiştir'
-                                    )}
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            )}
         </div>
     );
 };
