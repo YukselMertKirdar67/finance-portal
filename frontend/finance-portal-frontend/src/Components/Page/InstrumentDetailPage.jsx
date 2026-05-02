@@ -415,7 +415,7 @@ export default function InstrumentDetailPage() {
                         <div className="flex items-center justify-between">
                             <div className="flex items-center gap-3">
                                 <CardTitle className="text-lg font-bold text-gray-900">Fiyat Grafiği</CardTitle>
-                                {/* ✅ Chart Type Toggle */}
+                                {/* Chart Type Toggle */}
                                 <div className="flex items-center bg-gray-100 rounded-lg p-1">
                                     <button
                                         onClick={() => setChartType('candlestick')}
