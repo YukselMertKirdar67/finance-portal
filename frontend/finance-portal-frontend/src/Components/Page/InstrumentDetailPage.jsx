@@ -1,11 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
     TrendingUp, TrendingDown, Star, ArrowLeft, Loader2,
-    RefreshCw, Building2, Globe, Coins, Activity, Bell, Trash2
+    RefreshCw, Building2, Globe, Activity, Bell, Trash2
 } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '../UI/Card';
 import { Button } from '../UI/Button';
+import { createChart, CandlestickSeries } from 'lightweight-charts';
 import {
     AreaChart, Area, XAxis, YAxis, Tooltip,
     CartesianGrid, ResponsiveContainer
@@ -32,6 +33,80 @@ const TYPE_LABELS = {
     CRYPTO: 'Kripto Para',
 };
 
+function CandlestickChart({ data }) {
+    const chartContainerRef = useRef(null);
+    const chartRef = useRef(null);
+
+    useEffect(() => {
+        if (!chartContainerRef.current || !data || data.length === 0) return;
+
+        if (chartRef.current) {
+            chartRef.current.remove();
+            chartRef.current = null;
+        }
+
+        const chart = createChart(chartContainerRef.current, {
+            width: chartContainerRef.current.clientWidth,
+            height: 450,
+            layout: {
+                background: { color: 'transparent' },
+                textColor: '#9ca3af',
+            },
+            grid: {
+                vertLines: { color: '#f0f0f0' },
+                horzLines: { color: '#f0f0f0' },
+            },
+            crosshair: { mode: 1 },
+            rightPriceScale: { borderColor: '#e5e7eb' },
+            timeScale: { borderColor: '#e5e7eb', timeVisible: true },
+        });
+
+        chartRef.current = chart;
+
+        const candleSeries = chart.addSeries(CandlestickSeries, {
+            upColor: '#10b981',
+            downColor: '#ef4444',
+            borderUpColor: '#10b981',
+            borderDownColor: '#ef4444',
+            wickUpColor: '#10b981',
+            wickDownColor: '#ef4444',
+        });
+
+        const chartData = data
+            .filter(h => h.open && h.high && h.low && h.close)
+            .map(h => ({
+                time: h.date,
+                open: parseFloat(h.open),
+                high: parseFloat(h.high),
+                low: parseFloat(h.low),
+                close: parseFloat(h.close),
+            }))
+            .sort((a, b) => a.time.localeCompare(b.time));
+
+        candleSeries.setData(chartData);
+        chart.timeScale().fitContent();
+
+        const handleResize = () => {
+            if (chartContainerRef.current && chartRef.current) {
+                chartRef.current.applyOptions({
+                    width: chartContainerRef.current.clientWidth
+                });
+            }
+        };
+        window.addEventListener('resize', handleResize);
+
+        return () => {
+            window.removeEventListener('resize', handleResize);
+            if (chartRef.current) {
+                chartRef.current.remove();
+                chartRef.current = null;
+            }
+        };
+    }, [data]);
+
+    return <div ref={chartContainerRef} className="w-full" style={{ height: '450px' }} />;
+}
+
 export default function InstrumentDetailPage() {
     const navigate = useNavigate();
     const { id } = useParams();
@@ -44,8 +119,8 @@ export default function InstrumentDetailPage() {
     const [inWatchlist, setInWatchlist] = useState(false);
     const [watchlistLoading, setWatchlistLoading] = useState(false);
     const [timeframe, setTimeframe] = useState('1H');
+    const [chartType, setChartType] = useState('candlestick');
 
-    // Fiyat Alarmı State'leri
     const [showAlertModal, setShowAlertModal] = useState(false);
     const [alertTargetPrice, setAlertTargetPrice] = useState('');
     const [alertCondition, setAlertCondition] = useState('ABOVE');
@@ -205,9 +280,10 @@ export default function InstrumentDetailPage() {
     const isPositive = (price?.changePercent || 0) >= 0;
     const accentColor = TYPE_COLORS[instrument.type] || '#3B82F6';
 
-    const chartData = history.length > 0
-        ? history.map(h => ({ time: h.date, value: h.close }))
-        : [];
+    const areaChartData = history.map(h => ({
+        time: h.date,
+        value: h.close,
+    }));
 
     const getTypeSpecificFields = () => {
         const fields = [];
@@ -246,7 +322,6 @@ export default function InstrumentDetailPage() {
                                 <RefreshCw className={`w-4 h-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
                                 Yenile
                             </Button>
-                            {/* ✅ Fiyat Alarmı Butonu */}
                             <Button variant="outline" size="sm" onClick={() => setShowAlertModal(true)}>
                                 <Bell className="w-4 h-4 mr-2" />
                                 Fiyat Alarmı
@@ -301,6 +376,7 @@ export default function InstrumentDetailPage() {
             </div>
 
             <div className="max-w-7xl mx-auto p-8">
+
                 {price && (
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
                         {[
@@ -333,88 +409,172 @@ export default function InstrumentDetailPage() {
                     </Card>
                 )}
 
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    <div className="lg:col-span-2">
-                        <Card className="border-0 shadow-sm">
-                            <CardHeader className="pb-4">
-                                <div className="flex items-center justify-between">
-                                    <CardTitle className="text-lg font-bold text-gray-900">Fiyat Grafiği</CardTitle>
-                                    <div className="flex gap-1">
-                                        {['1H', '1A', '3A', '6A', '1Y'].map(tf => (
-                                            <button
-                                                key={tf}
-                                                onClick={() => setTimeframe(tf)}
-                                                className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all ${
-                                                    timeframe === tf ? 'text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
-                                                }`}
-                                                style={timeframe === tf ? { backgroundColor: accentColor } : {}}
-                                            >
-                                                {tf}
-                                            </button>
-                                        ))}
-                                    </div>
+                {/* Grafik */}
+                <Card className="border-0 shadow-sm mb-6">
+                    <CardHeader className="pb-4">
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                                <CardTitle className="text-lg font-bold text-gray-900">Fiyat Grafiği</CardTitle>
+                                {/* ✅ Chart Type Toggle */}
+                                <div className="flex items-center bg-gray-100 rounded-lg p-1">
+                                    <button
+                                        onClick={() => setChartType('candlestick')}
+                                        className={`px-3 py-1 text-xs font-semibold rounded-md transition-all ${
+                                            chartType === 'candlestick'
+                                                ? 'bg-white text-gray-900 shadow-sm'
+                                                : 'text-gray-500 hover:text-gray-700'
+                                        }`}
+                                    >
+                                        Mum
+                                    </button>
+                                    <button
+                                        onClick={() => setChartType('area')}
+                                        className={`px-3 py-1 text-xs font-semibold rounded-md transition-all ${
+                                            chartType === 'area'
+                                                ? 'bg-white text-gray-900 shadow-sm'
+                                                : 'text-gray-500 hover:text-gray-700'
+                                        }`}
+                                    >
+                                        Alan
+                                    </button>
                                 </div>
-                            </CardHeader>
-                            <CardContent>
-                                {chartData.length > 0 ? (
-                                    <div className="h-[300px]">
-                                        <ResponsiveContainer width="100%" height="100%">
-                                            <AreaChart data={chartData}>
-                                                <defs>
-                                                    <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
-                                                        <stop offset="5%" stopColor={accentColor} stopOpacity={0.2} />
-                                                        <stop offset="95%" stopColor={accentColor} stopOpacity={0} />
-                                                    </linearGradient>
-                                                </defs>
-                                                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                                                <XAxis dataKey="time" stroke="#9ca3af" tick={{ fontSize: 11 }} />
-                                                <YAxis
-                                                    stroke="#9ca3af"
-                                                    tick={{ fontSize: 11 }}
-                                                    domain={['dataMin - 0.1', 'dataMax + 0.1']}
-                                                    tickFormatter={(v) => v.toFixed(2)}
-                                                />
-                                                <Tooltip
-                                                    formatter={(value) => [formatPrice(value), 'Fiyat']}
-                                                    contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                                                />
-                                                <Area
-                                                    type="monotone"
-                                                    dataKey="value"
-                                                    stroke={accentColor}
-                                                    strokeWidth={2}
-                                                    fill="url(#colorValue)"
-                                                />
-                                            </AreaChart>
-                                        </ResponsiveContainer>
-                                    </div>
-                                ) : (
-                                    <div className="h-[300px] flex items-center justify-center text-gray-400">
-                                        <div className="text-center">
-                                            <Activity className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                                            <p className="text-sm">Tarihsel veri bulunamadı</p>
-                                        </div>
-                                    </div>
-                                )}
-                            </CardContent>
-                        </Card>
-                    </div>
+                            </div>
+                            <div className="flex gap-1">
+                                {['1H', '1A', '3A', '6A', '1Y'].map(tf => (
+                                    <button
+                                        key={tf}
+                                        onClick={() => setTimeframe(tf)}
+                                        className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all ${
+                                            timeframe === tf ? 'text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                                        }`}
+                                        style={timeframe === tf ? { backgroundColor: accentColor } : {}}
+                                    >
+                                        {tf}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    </CardHeader>
+                    <CardContent>
+                        {history.length > 0 ? (
+                            chartType === 'candlestick' ? (
+                                <CandlestickChart data={history} />
+                            ) : (
+                                <div className="h-[450px]">
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <AreaChart data={areaChartData}>
+                                            <defs>
+                                                <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
+                                                    <stop offset="5%" stopColor={accentColor} stopOpacity={0.2} />
+                                                    <stop offset="95%" stopColor={accentColor} stopOpacity={0} />
+                                                </linearGradient>
+                                            </defs>
+                                            <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                                            <XAxis dataKey="time" stroke="#9ca3af" tick={{ fontSize: 11 }} />
+                                            <YAxis
+                                                stroke="#9ca3af"
+                                                tick={{ fontSize: 11 }}
+                                                domain={['dataMin - 0.1', 'dataMax + 0.1']}
+                                                tickFormatter={(v) => v.toFixed(2)}
+                                            />
+                                            <Tooltip
+                                                formatter={(value) => [formatPrice(value), 'Fiyat']}
+                                                contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                                            />
+                                            <Area
+                                                type="monotone"
+                                                dataKey="value"
+                                                stroke={accentColor}
+                                                strokeWidth={2}
+                                                fill="url(#colorValue)"
+                                            />
+                                        </AreaChart>
+                                    </ResponsiveContainer>
+                                </div>
+                            )
+                        ) : (
+                            <div className="h-[450px] flex items-center justify-center text-gray-400">
+                                <div className="text-center">
+                                    <Activity className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                                    <p className="text-sm">Tarihsel veri bulunamadı</p>
+                                </div>
+                            </div>
+                        )}
+                    </CardContent>
+                </Card>
 
-                    <div className="flex flex-col gap-4">
+                {/* Bilgiler */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <Card className="border-0 shadow-sm">
+                        <CardHeader className="pb-3">
+                            <CardTitle className="text-sm font-semibold text-gray-500 uppercase tracking-wide flex items-center gap-2">
+                                <Globe className="w-4 h-4" />
+                                Genel Bilgiler
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent className="pt-0">
+                            <div className="space-y-3">
+                                {[
+                                    { label: 'Tür', value: TYPE_LABELS[instrument.type] || instrument.type },
+                                    { label: 'Borsa', value: instrument.exchange },
+                                    { label: 'Para Birimi', value: instrument.currency },
+                                ].map(field => (
+                                    <div key={field.label} className="flex justify-between items-center py-2 border-b border-gray-50 last:border-0">
+                                        <span className="text-sm text-gray-500">{field.label}</span>
+                                        <span className="text-sm font-semibold text-gray-900">{field.value}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    <Card className="border-0 shadow-sm">
+                        <CardHeader className="pb-3">
+                            <CardTitle className="text-sm font-semibold text-gray-500 uppercase tracking-wide flex items-center gap-2">
+                                <Bell className="w-4 h-4" />
+                                Fiyat Alarmları
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent className="pt-0">
+                            {activeAlerts.length === 0 ? (
+                                <p className="text-sm text-gray-400 mb-3">Aktif alarm yok</p>
+                            ) : (
+                                <div className="space-y-2 mb-3">
+                                    {activeAlerts.map(alert => (
+                                        <div key={alert.id} className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0">
+                                            <div>
+                                                <p className="text-sm font-medium text-gray-900">
+                                                    {alert.condition === 'ABOVE' ? '↑' : '↓'} {formatPrice(alert.targetPrice)} {instrument.currency}
+                                                </p>
+                                                <p className="text-xs text-gray-400">
+                                                    {alert.condition === 'ABOVE' ? 'Üzerine çıkınca' : 'Altına düşünce'}
+                                                </p>
+                                            </div>
+                                            <button onClick={() => handleDeleteAlert(alert.id)} className="text-red-400 hover:text-red-600">
+                                                <Trash2 className="w-4 h-4" />
+                                            </button>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                            <Button variant="outline" size="sm" className="w-full" onClick={() => setShowAlertModal(true)}>
+                                <Bell className="w-4 h-4 mr-2" />
+                                Alarm Ekle
+                            </Button>
+                        </CardContent>
+                    </Card>
+
+                    {typeFields.length > 0 && (
                         <Card className="border-0 shadow-sm">
                             <CardHeader className="pb-3">
                                 <CardTitle className="text-sm font-semibold text-gray-500 uppercase tracking-wide flex items-center gap-2">
-                                    <Globe className="w-4 h-4" />
-                                    Genel Bilgiler
+                                    <Building2 className="w-4 h-4" />
+                                    {TYPE_LABELS[instrument.type]} Bilgileri
                                 </CardTitle>
                             </CardHeader>
                             <CardContent className="pt-0">
                                 <div className="space-y-3">
-                                    {[
-                                        { label: 'Tür', value: TYPE_LABELS[instrument.type] || instrument.type },
-                                        { label: 'Borsa', value: instrument.exchange },
-                                        { label: 'Para Birimi', value: instrument.currency },
-                                    ].map(field => (
+                                    {typeFields.map(field => (
                                         <div key={field.label} className="flex justify-between items-center py-2 border-b border-gray-50 last:border-0">
                                             <span className="text-sm text-gray-500">{field.label}</span>
                                             <span className="text-sm font-semibold text-gray-900">{field.value}</span>
@@ -423,103 +583,37 @@ export default function InstrumentDetailPage() {
                                 </div>
                             </CardContent>
                         </Card>
-
-                        {/* Aktif Alarmlar Kartı */}
-                        <Card className="border-0 shadow-sm">
-                            <CardHeader className="pb-3">
-                                <CardTitle className="text-sm font-semibold text-gray-500 uppercase tracking-wide flex items-center gap-2">
-                                    <Bell className="w-4 h-4" />
-                                    Fiyat Alarmları
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent className="pt-0">
-                                {activeAlerts.length === 0 ? (
-                                    <p className="text-sm text-gray-400 mb-3">Aktif alarm yok</p>
-                                ) : (
-                                    <div className="space-y-2 mb-3">
-                                        {activeAlerts.map(alert => (
-                                            <div key={alert.id} className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0">
-                                                <div>
-                                                    <p className="text-sm font-medium text-gray-900">
-                                                        {alert.condition === 'ABOVE' ? '↑' : '↓'} {formatPrice(alert.targetPrice)} {instrument.currency}
-                                                    </p>
-                                                    <p className="text-xs text-gray-400">
-                                                        {alert.condition === 'ABOVE' ? 'Üzerine çıkınca' : 'Altına düşünce'}
-                                                    </p>
-                                                </div>
-                                                <button
-                                                    onClick={() => handleDeleteAlert(alert.id)}
-                                                    className="text-red-400 hover:text-red-600"
-                                                >
-                                                    <Trash2 className="w-4 h-4" />
-                                                </button>
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
-                                <Button variant="outline" size="sm" className="w-full" onClick={() => setShowAlertModal(true)}>
-                                    <Bell className="w-4 h-4 mr-2" />
-                                    Alarm Ekle
-                                </Button>
-                            </CardContent>
-                        </Card>
-
-                        {typeFields.length > 0 && (
-                            <Card className="border-0 shadow-sm">
-                                <CardHeader className="pb-3">
-                                    <CardTitle className="text-sm font-semibold text-gray-500 uppercase tracking-wide flex items-center gap-2">
-                                        <Building2 className="w-4 h-4" />
-                                        {TYPE_LABELS[instrument.type]} Bilgileri
-                                    </CardTitle>
-                                </CardHeader>
-                                <CardContent className="pt-0">
-                                    <div className="space-y-3">
-                                        {typeFields.map(field => (
-                                            <div key={field.label} className="flex justify-between items-center py-2 border-b border-gray-50 last:border-0">
-                                                <span className="text-sm text-gray-500">{field.label}</span>
-                                                <span className="text-sm font-semibold text-gray-900">{field.value}</span>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </CardContent>
-                            </Card>
-                        )}
-
-                        {instrument.description && (
-                            <Card className="border-0 shadow-sm">
-                                <CardHeader className="pb-3">
-                                    <CardTitle className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Açıklama</CardTitle>
-                                </CardHeader>
-                                <CardContent className="pt-0">
-                                    <p className="text-sm text-gray-600 leading-relaxed">{instrument.description}</p>
-                                </CardContent>
-                            </Card>
-                        )}
-                    </div>
+                    )}
                 </div>
+
+                {instrument.description && (
+                    <Card className="border-0 shadow-sm mt-6">
+                        <CardHeader className="pb-3">
+                            <CardTitle className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Açıklama</CardTitle>
+                        </CardHeader>
+                        <CardContent className="pt-0">
+                            <p className="text-sm text-gray-600 leading-relaxed">{instrument.description}</p>
+                        </CardContent>
+                    </Card>
+                )}
             </div>
 
-            {/* Fiyat Alarmı Modal */}
             {showAlertModal && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
                     <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6">
                         <h3 className="text-xl font-bold text-gray-900 mb-4">Fiyat Alarmı Oluştur</h3>
-
                         <div className="mb-4">
                             <p className="text-sm text-gray-500 mb-4">
                                 Güncel Fiyat: <span className="font-semibold text-gray-900">
                                     {formatPrice(price?.current)} {instrument.currency}
                                 </span>
                             </p>
-
                             <label className="block text-sm font-medium text-gray-700 mb-2">Alarm Koşulu</label>
                             <div className="flex gap-2 mb-4">
                                 <button
                                     onClick={() => setAlertCondition('ABOVE')}
                                     className={`flex-1 py-2 rounded-lg text-sm font-medium border transition-colors ${
-                                        alertCondition === 'ABOVE'
-                                            ? 'bg-green-50 border-green-500 text-green-700'
-                                            : 'border-gray-200 text-gray-600'
+                                        alertCondition === 'ABOVE' ? 'bg-green-50 border-green-500 text-green-700' : 'border-gray-200 text-gray-600'
                                     }`}
                                 >
                                     ↑ Üzerine Çıkınca
@@ -527,15 +621,12 @@ export default function InstrumentDetailPage() {
                                 <button
                                     onClick={() => setAlertCondition('BELOW')}
                                     className={`flex-1 py-2 rounded-lg text-sm font-medium border transition-colors ${
-                                        alertCondition === 'BELOW'
-                                            ? 'bg-red-50 border-red-500 text-red-700'
-                                            : 'border-gray-200 text-gray-600'
+                                        alertCondition === 'BELOW' ? 'bg-red-50 border-red-500 text-red-700' : 'border-gray-200 text-gray-600'
                                     }`}
                                 >
                                     ↓ Altına Düşünce
                                 </button>
                             </div>
-
                             <label className="block text-sm font-medium text-gray-700 mb-2">
                                 Hedef Fiyat ({instrument.currency})
                             </label>
@@ -548,7 +639,6 @@ export default function InstrumentDetailPage() {
                                 step="0.01"
                             />
                         </div>
-
                         <div className="flex gap-3">
                             <Button
                                 variant="outline"
