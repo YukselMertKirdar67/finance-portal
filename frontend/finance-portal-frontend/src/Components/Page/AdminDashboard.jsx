@@ -10,7 +10,8 @@ import {
     ArrowUpRight,
     ArrowDownRight,
     Eye,
-    RefreshCw
+    RefreshCw,
+    Newspaper
 } from 'lucide-react';
 import { getAdminStats } from '../../API/adminApi';
 import { useAuth } from '../../context/AuthContext';
@@ -171,56 +172,52 @@ const AdminDashboard = () => {
                 </div>
             </div>
 
-            {/* Quick Actions */}
-            <div className="bg-white rounded-xl shadow-md p-6 border border-gray-100">
-                <h3 className="text-lg font-semibold text-gray-800 mb-4">Hızlı İşlemler</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">  {/* ⭐ 3 → 4 */}
+            {/* Hızlı İşlemler */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
 
-                    <button
-                        onClick={() => navigate('/admin/users')}
-                        className="flex items-center gap-3 p-4 border border-gray-200 rounded-lg hover:bg-blue-50 hover:border-blue-300 transition"
-                    >
-                        <Users className="w-6 h-6 text-blue-600" />
-                        <div className="text-left">
-                            <p className="font-semibold text-gray-800">Kullanıcı Yönetimi</p>
-                            <p className="text-sm text-gray-500">Kullanıcıları görüntüle ve yönet</p>
-                        </div>
-                    </button>
+                <button
+                    onClick={() => navigate('/admin/users')}
+                    className="flex items-center gap-3 p-4 border border-gray-200 rounded-lg hover:bg-blue-50 hover:border-blue-300 transition"
+                >
+                    <Users className="w-6 h-6 text-blue-600" />
+                    <div className="text-left">
+                        <p className="font-semibold text-gray-800">Kullanıcı Yönetimi</p>
+                        <p className="text-sm text-gray-500">Kullanıcıları görüntüle ve yönet</p>
+                    </div>
+                </button>
 
-                    <button
-                        onClick={() => navigate('/admin/portfolios')}
-                        className="flex items-center gap-3 p-4 border border-gray-200 rounded-lg hover:bg-purple-50 hover:border-purple-300 transition"
-                    >
-                        <Briefcase className="w-6 h-6 text-purple-600" />
-                        <div className="text-left">
-                            <p className="font-semibold text-gray-800">Portföy Yönetimi</p>
-                            <p className="text-sm text-gray-500">Tüm portföyleri görüntüle</p>
-                        </div>
-                    </button>
+                <button
+                    onClick={() => navigate('/admin/instruments')}
+                    className="flex items-center gap-3 p-4 border border-gray-200 rounded-lg hover:bg-orange-50 hover:border-orange-300 transition"
+                >
+                    <RefreshCw className="w-6 h-6 text-orange-600" />
+                    <div className="text-left">
+                        <p className="font-semibold text-gray-800">Fiyat Güncellemesi</p>
+                        <p className="text-sm text-gray-500">Enstrüman fiyatlarını güncelle</p>
+                    </div>
+                </button>
 
-                    {/* Fiyat Güncelleme */}
-                    <button
-                        onClick={() => navigate('/admin/instruments')}
-                        className="flex items-center gap-3 p-4 border border-gray-200 rounded-lg hover:bg-orange-50 hover:border-orange-300 transition"
-                    >
-                        <RefreshCw className="w-6 h-6 text-orange-600" />
-                        <div className="text-left">
-                            <p className="font-semibold text-gray-800">Fiyat Güncellemesi</p>
-                            <p className="text-sm text-gray-500">Enstrüman fiyatlarını güncelle</p>
-                        </div>
-                    </button>
+                <button
+                    onClick={() => navigate('/admin/news')}
+                    className="flex items-center gap-3 p-4 border border-gray-200 rounded-lg hover:bg-purple-50 hover:border-purple-300 transition"
+                >
+                    <Newspaper className="w-6 h-6 text-purple-600" />
+                    <div className="text-left">
+                        <p className="font-semibold text-gray-800">Haber Yönetimi</p>
+                        <p className="text-sm text-gray-500">Haberleri yönet ve güncelle</p>
+                    </div>
+                </button>
 
-                    <button
-                        onClick={fetchStats}
-                        className="flex items-center gap-3 p-4 border border-gray-200 rounded-lg hover:bg-green-50 hover:border-green-300 transition"
-                    >
-                        <Activity className="w-6 h-6 text-green-600" />
-                        <div className="text-left">
-                            <p className="font-semibold text-gray-800">İstatistikleri Yenile</p>
-                            <p className="text-sm text-gray-500">En güncel verileri getir</p>
-                        </div>
-                    </button>
-                </div>
+                <button
+                    onClick={fetchStats}
+                    className="flex items-center gap-3 p-4 border border-gray-200 rounded-lg hover:bg-green-50 hover:border-green-300 transition"
+                >
+                    <Activity className="w-6 h-6 text-green-600" />
+                    <div className="text-left">
+                        <p className="font-semibold text-gray-800">İstatistikleri Yenile</p>
+                        <p className="text-sm text-gray-500">En güncel verileri getir</p>
+                    </div>
+                </button>
             </div>
         </div>
     );
