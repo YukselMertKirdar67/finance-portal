@@ -10,11 +10,13 @@ import {
     User,
     Home,
     RefreshCw,
-    AlarmClock
+    AlarmClock,
+    Newspaper
 } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
 import { Button } from '../UI/Button';
 import { Avatar, AvatarFallback } from '../UI/Avatar';
+
 
 export default function Sidebar({
                                     isLoggedIn = false,
@@ -111,6 +113,12 @@ export default function Sidebar({
                                 <NavLink to="/admin/instruments" className={navClass}>
                                     <RefreshCw className="w-5 h-5" />
                                     <span>Fiyat Güncellemesi</span>
+                                </NavLink>
+                            </li>
+                            <li>
+                                <NavLink to="/admin/news" className={navClass}>
+                                    <Newspaper className="w-5 h-5" />
+                                    <span>Haber Yönetimi</span>
                                 </NavLink>
                             </li>
                         </>
