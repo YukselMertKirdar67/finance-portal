@@ -20,7 +20,10 @@ public class NotificationServiceImpl implements NotificationService {
     private final NotificationRepository notificationRepository;
     private final UserRepository userRepository;
 
-    // Bildirim oluştur
+    /**
+     * Yeni bildirim oluşturur ve veritabanına kaydeder.
+     */
+
     public Notification createNotification(String userId, String title, String message,
                                            NotificationType type, String relatedId) {
         Notification notification = Notification.builder()
@@ -37,31 +40,46 @@ public class NotificationServiceImpl implements NotificationService {
         return saved;
     }
 
-    // Kullanıcının bildirimlerini getir
+    /**
+     * Kullanıcının bildirimlerini sayfalı olarak getirir.
+     */
+
     @Transactional(readOnly = true)
     public Page<NotificationDTO> getNotifications(int page, int size) {
         String userId = SecurityUtils.getCurrentUserKeycloakId();
+        log.info("Fetching notifications for user: {}, page: {}, size: {}", userId, page, size);
         Pageable pageable = PageRequest.of(page, size);
         return notificationRepository.findByUserIdOrderByCreatedAtDesc(userId, pageable)
                 .map(this::toDTO);
     }
 
-    // Okunmamış bildirimleri getir
+    /**
+     * Kullanıcının okunmamış bildirimlerini getirir.
+     */
+
     @Transactional(readOnly = true)
     public List<NotificationDTO> getUnreadNotifications() {
         String userId = SecurityUtils.getCurrentUserKeycloakId();
+        log.info("Fetching unread notifications for user: {}", userId);
         return notificationRepository.findByUserIdAndReadFalseOrderByCreatedAtDesc(userId)
                 .stream().map(this::toDTO).collect(Collectors.toList());
     }
 
-    // Okunmamış bildirim sayısı
+    /**
+     * Kullanıcının okunmamış bildirim sayısını döner.
+     */
+
     @Transactional(readOnly = true)
     public long getUnreadCount() {
         String userId = SecurityUtils.getCurrentUserKeycloakId();
+        log.info("Fetching unread count for user: {}", userId);
         return notificationRepository.countByUserIdAndReadFalse(userId);
     }
 
-    // Tüm bildirimleri okundu işaretle
+    /**
+     * Tüm bildirimleri okundu olarak işaretler.
+     */
+
     @Transactional
     public void markAllAsRead() {
         String userId = SecurityUtils.getCurrentUserKeycloakId();
@@ -69,14 +87,22 @@ public class NotificationServiceImpl implements NotificationService {
         log.info("✅ All notifications marked as read for user: {}", userId);
     }
 
-    // Tek bildirimi okundu işaretle
+    /**
+     * Belirtilen bildirimi okundu olarak işaretler.
+     */
+
     @Transactional
     public void markAsRead(Long notificationId) {
         String userId = SecurityUtils.getCurrentUserKeycloakId();
+        log.info("Marking notification {} as read for user: {}", notificationId, userId);
         notificationRepository.markAsReadByIdAndUserId(notificationId, userId);
     }
 
-    // Portföy değişimi bildirimi
+    /**
+     * Portföy değer değişimi bildirimi gönderir.
+     * Kullanıcının bildirim tercihi kapalıysa gönderilmez.
+     */
+
     public void notifyPortfolioChange(String userId, String portfolioName,
                                       double changePercent, Long portfolioId) {
         // Kullanıcı tercihi kontrol et
@@ -92,10 +118,14 @@ public class NotificationServiceImpl implements NotificationService {
                 NotificationType.PORTFOLIO_CHANGE, String.valueOf(portfolioId));
     }
 
-    // İşlem bildirimi
+    /**
+     * Alış/satış işlemi bildirimi gönderir.
+     * Kullanıcının bildirim tercihi kapalıysa gönderilmez.
+     */
+
     public void notifyTransaction(String userId, String instrumentSymbol,
                                   String transactionType, double quantity, Long portfolioId) {
-        // Kullanıcı tercihi kontrol et
+
         com.financeportal.backend.User.Entity.User user = userRepository.findByKeycloakId(userId).orElse(null);
         if (user == null || !user.isNotifyTransaction()) return;
 
@@ -109,10 +139,14 @@ public class NotificationServiceImpl implements NotificationService {
                 NotificationType.TRANSACTION, String.valueOf(portfolioId));
     }
 
-    // Fiyat alarmı bildirimi
+    /**
+     * Fiyat alarmı tetiklendiğinde bildirim gönderir.
+     * Kullanıcının bildirim tercihi kapalıysa gönderilmez.
+     */
+
     public void notifyPriceAlert(String userId, String instrumentSymbol,
                                  double currentPrice, String currency) {
-        // Kullanıcı tercihi kontrol et
+
         com.financeportal.backend.User.Entity.User user = userRepository.findByKeycloakId(userId).orElse(null);
         if (user == null || !user.isNotifyPriceAlert()) return;
 
@@ -124,9 +158,13 @@ public class NotificationServiceImpl implements NotificationService {
                 NotificationType.PRICE_ALERT, instrumentSymbol);
     }
 
-    // Haber bildirimi
+    /**
+     * Yeni haber eklendiğinde bildirim gönderir.
+     * Kullanıcının bildirim tercihi kapalıysa gönderilmez.
+     */
+
     public void notifyNews(String userId, String newsTitle, Long newsId) {
-        // Kullanıcı tercihi kontrol et
+
         com.financeportal.backend.User.Entity.User user = userRepository.findByKeycloakId(userId).orElse(null);
         if (user == null || !user.isNotifyNews()) return;
 
@@ -136,6 +174,10 @@ public class NotificationServiceImpl implements NotificationService {
         createNotification(userId, title, message,
                 NotificationType.NEWS, String.valueOf(newsId));
     }
+
+    /**
+     * Notification entity'sini NotificationDTO'ya dönüştürür.
+     */
 
     private NotificationDTO toDTO(Notification n) {
         return NotificationDTO.builder()
