@@ -27,6 +27,7 @@ import LandingPage from './Components/Page/LandingPage';
 import SettingsPage from './Components/Page/SettingsPage';
 import NotificationsPage from './Components/Page/NotificationsPage';
 import PriceAlertsPage from './Components/Page/PriceAlertsPage';
+import AdminNewsDashboard from './Components/Page/AdminNewsDashboard';
 
 // Protected Route Component
 const ProtectedRoute = ({ children, adminOnly = false }) => {
@@ -147,6 +148,15 @@ function App() {
                                     element={
                                         <ProtectedRoute adminOnly>
                                             <AdminInstrumentUpdatePage />
+                                        </ProtectedRoute>
+                                    }
+                                />
+
+                                <Route
+                                    path="/admin/news"
+                                    element={
+                                        <ProtectedRoute adminOnly>
+                                            <AdminNewsDashboard />
                                         </ProtectedRoute>
                                     }
                                 />
