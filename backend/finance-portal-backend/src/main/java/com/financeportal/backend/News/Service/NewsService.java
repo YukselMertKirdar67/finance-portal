@@ -3,6 +3,7 @@ package com.financeportal.backend.News.Service;
 import com.financeportal.backend.News.DTO.NewsRequestDTO;
 import com.financeportal.backend.News.DTO.NewsResponseDTO;
 import com.financeportal.backend.News.DTO.PageResponseDTO;
+import java.util.Map;
 
 
 public interface NewsService {
@@ -13,9 +14,11 @@ public interface NewsService {
 
     NewsResponseDTO getNewsById(Long id);
 
-    NewsResponseDTO createNews(NewsRequestDTO requestDTO);
+    long deleteAllNews();
 
-    NewsResponseDTO updateNews(Long id, NewsRequestDTO requestDTO);
+    int deleteNewsByCategory(String category);
 
-    void deleteNews(Long id);
+    Map<String, Object> refreshNews();
+
+    Map<String, Object> getNewsStats();
 }
