@@ -4,10 +4,12 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { Card, CardContent } from '../UI/Card';
 import { Button } from '../UI/Button';
 import Pagination from '../UI/Pagination';
-import { getAllNews, getNewsByCategory, fetchNewsFromAPI } from '../../API/newsApi';
+import { getAllNews, getNewsByCategory } from '../../API/newsApi';
+import { useAuth } from '../../context/AuthContext';
 
 export default function NewsPage() {
     const navigate = useNavigate();
+    const { isAdmin } = useAuth();
     const { category: urlCategory } = useParams();
 
     const [selectedCategory, setSelectedCategory] = useState(urlCategory || 'all');
@@ -20,10 +22,10 @@ export default function NewsPage() {
     const pageSize = 20;
 
     const categories = [
-        { id: 'all',      name: 'Tümü' },
-        { id: 'FINANS',   name: 'Finans' },
-        { id: 'DOVIZ',    name: 'Döviz' },
-        { id: 'KRIPTO',   name: 'Kripto' },
+        { id: 'all',    name: 'Tümü' },
+        { id: 'FINANS', name: 'Finans' },
+        { id: 'DOVIZ',  name: 'Döviz' },
+        { id: 'KRIPTO', name: 'Kripto' },
     ];
 
     useEffect(() => {
@@ -75,20 +77,9 @@ export default function NewsPage() {
 
     }, [selectedCategory, currentPage]);
 
-    const handleFetchNews = async () => {
-        setLoading(true);
-        try {
-            const result = await fetchNewsFromAPI();
-            const saved = result.stats?.saved ?? result.totalSaved ?? 0;
-            alert(`Başarılı! ${saved} haber kaydedildi.`);
-            setSelectedCategory('all');
-            setCurrentPage(0);
-            navigate('/news');
-        } catch (err) {
-            console.error('Fetch news error:', err);
-            alert('Haberler çekilirken bir hata oluştu.');
-            setLoading(false);
-        }
+    const handleRefresh = () => {
+        setCurrentPage(0);
+        setSelectedCategory('all');
     };
 
     const handleCategoryChange = (categoryId) => {
@@ -128,10 +119,13 @@ export default function NewsPage() {
                         <h1 className="text-3xl font-bold mb-2">Haberler</h1>
                         <p className="text-gray-600">Finansal piyasalardan son dakika haberleri</p>
                     </div>
-                    <Button onClick={handleFetchNews} disabled={loading}>
-                        <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
-                        Haberleri Güncelle
-                    </Button>
+                    {/* Sadece user için yenile butonu */}
+                    {!isAdmin && (
+                        <Button onClick={handleRefresh} disabled={loading}>
+                            <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+                            Yenile
+                        </Button>
+                    )}
                 </div>
 
                 {/* Category Filter */}
@@ -169,7 +163,7 @@ export default function NewsPage() {
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
                             {news.length === 0 ? (
                                 <div className="col-span-2 text-center py-12 text-gray-500">
-                                    Henüz haber bulunmuyor. "Haberleri Güncelle" butonuna tıklayın.
+                                    Henüz haber bulunmuyor.
                                 </div>
                             ) : (
                                 news.map((item) => (
