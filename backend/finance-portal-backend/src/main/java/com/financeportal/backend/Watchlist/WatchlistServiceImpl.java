@@ -40,19 +40,27 @@ public class WatchlistServiceImpl implements WatchlistService {
     private final ObjectMapper cleanMapper;
 
     private static final String CACHE_PREFIX = "watchlist:";
-    private static final long CACHE_TTL = 5; // 5 dakika
+    private static final long CACHE_TTL = 5;
 
+    /**
+     * Enstrümanı kullanıcının takip listesine ekler.
+     * Enstrüman zaten takip listesinde ise hata mesajı döner.
+     * Ekleme başarılı olursa Redis cache temizlenir.
+     */
     @Override
     @Transactional
     public WatchlistDTO.WatchlistResponse addToWatchlist(Long instrumentId) {
         String currentUserId = SecurityUtils.getCurrentUserKeycloakId();
+        log.info("Adding instrument {} to watchlist for user: {}", instrumentId, currentUserId);
 
         BaseInstrument instrument = instrumentRepository.findById(instrumentId)
-                .orElseThrow(() -> new ResourceNotFoundException(
-                        "Instrument not found: " + instrumentId
-                ));
+                .orElseThrow(() -> {
+                    log.error("Instrument not found: {}", instrumentId);
+                    return new ResourceNotFoundException("Instrument not found: " + instrumentId);
+                });
 
         if (watchlistRepository.existsByUserIdAndInstrument(currentUserId, instrument)) {
+            log.warn("Instrument {} already in watchlist for user: {}", instrument.getSymbol(), currentUserId);
             return WatchlistDTO.WatchlistResponse.builder()
                     .success(false)
                     .message("Bu enstrüman zaten takip listenizde")
@@ -75,17 +83,25 @@ public class WatchlistServiceImpl implements WatchlistService {
                 .build();
     }
 
+    /**
+     * Enstrümanı kullanıcının takip listesinden çıkarır.
+     * Enstrüman takip listesinde değilse hata mesajı döner.
+     * Çıkarma başarılı olursa Redis cache temizlenir.
+     */
     @Override
     @Transactional
     public WatchlistDTO.WatchlistResponse removeFromWatchlist(Long instrumentId) {
         String currentUserId = SecurityUtils.getCurrentUserKeycloakId();
+        log.info("Removing instrument {} from watchlist for user: {}", instrumentId, currentUserId);
 
         BaseInstrument instrument = instrumentRepository.findById(instrumentId)
-                .orElseThrow(() -> new ResourceNotFoundException(
-                        "Instrument not found: " + instrumentId
-                ));
+                .orElseThrow(() -> {
+                    log.error("Instrument not found: {}", instrumentId);
+                    return new ResourceNotFoundException("Instrument not found: " + instrumentId);
+                });
 
         if (!watchlistRepository.existsByUserIdAndInstrument(currentUserId, instrument)) {
+            log.warn("Instrument {} not in watchlist for user: {}", instrument.getSymbol(), currentUserId);
             return WatchlistDTO.WatchlistResponse.builder()
                     .success(false)
                     .message("Bu enstrüman takip listenizde değil")
@@ -103,13 +119,17 @@ public class WatchlistServiceImpl implements WatchlistService {
                 .build();
     }
 
+    /**
+     * Kullanıcının takip listesini sayfalı olarak getirir.
+     * Önce Redis cache kontrol edilir, cache miss durumunda DB'den çekilir.
+     * Sonuç Redis'e JSON formatında kaydedilir.
+     */
     @Override
     @Transactional(readOnly = true)
     public WatchlistPageDTO getWatchlist(int page, int size) {
         String currentUserId = SecurityUtils.getCurrentUserKeycloakId();
         String cacheKey = CACHE_PREFIX + currentUserId + ":page:" + page + ":size:" + size;
 
-        // ✅ JSON string olarak oku
         try {
             String cachedJson = (String) redisTemplate.opsForValue().get(cacheKey);
             if (cachedJson != null) {
@@ -152,7 +172,6 @@ public class WatchlistServiceImpl implements WatchlistService {
                 .last(watchlistPage.isLast())
                 .build();
 
-        // ✅ JSON string olarak kaydet (@class YOK)
         try {
             String jsonToCache = cleanMapper.writeValueAsString(result);
             redisTemplate.opsForValue().set(cacheKey, jsonToCache, CACHE_TTL, TimeUnit.MINUTES);
@@ -164,29 +183,36 @@ public class WatchlistServiceImpl implements WatchlistService {
         return result;
     }
 
-
+    /**
+     * Enstrümanın kullanıcının takip listesinde olup olmadığını kontrol eder.
+     * Önce Redis cache kontrol edilir, cache miss durumunda DB'den kontrol edilir.
+     */
     @Override
     @Transactional(readOnly = true)
     public boolean isInWatchlist(Long instrumentId) {
         String currentUserId = SecurityUtils.getCurrentUserKeycloakId();
         String cacheKey = CACHE_PREFIX + "check:" + currentUserId + ":inst:" + instrumentId;
 
-        // ✅ String olarak oku
         try {
             String cachedValue = (String) redisTemplate.opsForValue().get(cacheKey);
             if (cachedValue != null) {
+                log.info("✅ Cache HIT - Watchlist check for instrument: {}", instrumentId);
                 return Boolean.parseBoolean(cachedValue);
             }
         } catch (Exception e) {
             log.warn("⚠️ Cache read error: {}", e.getMessage());
         }
 
+        log.info("🔍 Cache MISS - Checking DB for instrument: {}", instrumentId);
+
         BaseInstrument instrument = instrumentRepository.findById(instrumentId).orElse(null);
-        if (instrument == null) return false;
+        if (instrument == null) {
+            log.warn("Instrument not found: {}", instrumentId);
+            return false;
+        }
 
         boolean exists = watchlistRepository.existsByUserIdAndInstrument(currentUserId, instrument);
 
-        // ✅ String olarak kaydet
         try {
             redisTemplate.opsForValue().set(cacheKey, String.valueOf(exists), CACHE_TTL, TimeUnit.MINUTES);
         } catch (Exception e) {
@@ -196,6 +222,9 @@ public class WatchlistServiceImpl implements WatchlistService {
         return exists;
     }
 
+    /**
+     * Kullanıcıya ait tüm Redis cache kayıtlarını temizler.
+     */
     private void clearCache(String userId) {
         try {
             String pattern = CACHE_PREFIX + userId + "*";

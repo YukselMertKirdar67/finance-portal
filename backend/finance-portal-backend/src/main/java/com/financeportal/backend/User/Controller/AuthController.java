@@ -23,6 +23,10 @@ public class AuthController {
     private final UserService userService;
     private final JwtDecoder jwtDecoder;
 
+    /**
+     * Yeni kullanıcı kaydı oluşturur.
+     */
+
     @PostMapping("/register")
     public ResponseEntity<RegisterResponseDTO> register(@Valid @RequestBody RegisterRequestDTO request) {
         RegisterResponseDTO response = authService.registerUser(request);
@@ -33,6 +37,10 @@ public class AuthController {
             return ResponseEntity.badRequest().body(response);
         }
     }
+
+    /**
+     * Kullanıcıya e-posta doğrulama maili gönderir.
+     */
 
     @PostMapping("/send-verification-email")
     public ResponseEntity<EmailVerificationResponseDTO> sendVerificationEmail(
@@ -47,6 +55,10 @@ public class AuthController {
         }
     }
 
+    /**
+     * Kullanıcının e-posta doğrulama durumunu kontrol eder.
+     */
+
     @GetMapping("/check-email-verification")
     public ResponseEntity<EmailVerificationResponseDTO> checkEmailVerification(
             @RequestParam String email) {
@@ -55,10 +67,19 @@ public class AuthController {
         return ResponseEntity.ok(response);
     }
 
+    /**
+     * Auth servisinin çalışıp çalışmadığını kontrol eder.
+     */
+
     @GetMapping("/health")
     public String health() {
         return "Auth service is running";
     }
+
+    /**
+     * Kullanıcıya şifre sıfırlama e-postası gönderir.
+     */
+
 
     @PostMapping("/forgot-password")
     public ResponseEntity<PasswordResetResponseDTO> forgotPassword(
@@ -67,6 +88,10 @@ public class AuthController {
         PasswordResetResponseDTO response = authService.sendPasswordResetEmail(request);
         return ResponseEntity.ok(response);
     }
+
+    /**
+     * Token ile şifre sıfırlama işlemini gerçekleştirir.
+     */
 
     @PostMapping("/reset-password")
     public ResponseEntity<PasswordResetResponseDTO> resetPassword(
@@ -80,6 +105,12 @@ public class AuthController {
             return ResponseEntity.badRequest().body(response);
         }
     }
+
+    /**
+     * Kullanıcı girişi yapar. Başarılı girişte kullanıcı DB'ye kaydedilir.
+     * OTP gerekliyse OTP_REQUIRED mesajı döner.
+     */
+
 
     @PostMapping("/login")
     public ResponseEntity<LoginResponseDTO> login(@Valid @RequestBody LoginRequestDTO request) {
@@ -104,6 +135,10 @@ public class AuthController {
         }
     }
 
+    /**
+     * Kullanıcının Keycloak oturumunu sonlandırır.
+     */
+
     @PostMapping("/logout")
     public ResponseEntity<LogoutResponseDTO> logout(
             @Valid @RequestBody LogoutRequestDTO request) {
@@ -112,6 +147,10 @@ public class AuthController {
 
         return ResponseEntity.ok(response);
     }
+
+    /**
+     * Refresh token kullanarak yeni access token alır.
+     */
 
     @PostMapping("/refresh")
     public ResponseEntity<RefreshTokenResponseDTO> refreshToken(
@@ -125,6 +164,11 @@ public class AuthController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
         }
     }
+
+    /**
+     * Authorization code ile access token alır.
+     * Başarılı olursa kullanıcı DB'ye kaydedilir.
+     */
 
     @PostMapping("/token-exchange")
     public ResponseEntity<LoginResponseDTO> tokenExchange(@RequestBody TokenExchangeRequestDTO request) {
@@ -144,6 +188,10 @@ public class AuthController {
 
         return ResponseEntity.ok(response);
     }
+
+    /**
+     * Kullanıcı adı ve şifreyi doğrular, OTP gerekliyse Keycloak URL'i döner.
+     */
 
     @PostMapping("/pre-auth")
     public ResponseEntity<PreAuthResponseDTO> preAuth(@RequestBody LoginRequestDTO request) {

@@ -31,7 +31,10 @@ public class PortfolioHoldingServiceImpl implements PortfolioHoldingService {
     private final PortfolioMapper portfolioMapper;
     private final TcmbService tcmbService;
 
-    // Currency parametreli — portföy para birimine göre hesapla
+    /**
+     * Portföydeki tüm holdingleri portföy currency'sine göre hesaplayarak getirir.
+     */
+
     @Override
     @Transactional(readOnly = true)
     public List<HoldingDTO> getHoldingsByPortfolioId(Long portfolioId, String portfolioCurrency) {
@@ -44,7 +47,11 @@ public class PortfolioHoldingServiceImpl implements PortfolioHoldingService {
                 .collect(Collectors.toList());
     }
 
-    // Currency parametreli
+    /**
+     * Portföydeki toplam yatırım tutarını portföy currency'sine çevirerek hesaplar.
+     * Holding'lerin ortalama alış fiyatları TRY'ye çevrilip toplanır.
+     */
+
     @Override
     @Transactional(readOnly = true)
     public BigDecimal calculateTotalInvestment(Long portfolioId, String portfolioCurrency) {
@@ -73,7 +80,10 @@ public class PortfolioHoldingServiceImpl implements PortfolioHoldingService {
         return tcmbService.convertFromTRY(totalInTRY, portfolioCurrency);
     }
 
-    // Currency parametreli
+    /**
+     * Portföydeki toplam güncel değeri portföy currency'sine çevirerek hesaplar.
+     */
+
     @Override
     @Transactional(readOnly = true)
     public BigDecimal calculateCurrentValue(Long portfolioId, String portfolioCurrency) {
@@ -91,12 +101,19 @@ public class PortfolioHoldingServiceImpl implements PortfolioHoldingService {
         return tcmbService.convertFromTRY(totalInTRY, portfolioCurrency);
     }
 
-    // Eski metodlar — TRY döndürür (geriye uyumluluk)
+    /**
+     * Portföydeki tüm holdingleri TRY cinsinden getirir (geriye uyumluluk).
+     */
+
     @Override
     @Transactional(readOnly = true)
     public List<HoldingDTO> getHoldingsByPortfolioId(Long portfolioId) {
         return getHoldingsByPortfolioId(portfolioId, "TRY");
     }
+
+    /**
+     * ID'ye göre holding getirir.
+     */
 
     @Override
     @Transactional(readOnly = true)
@@ -109,6 +126,10 @@ public class PortfolioHoldingServiceImpl implements PortfolioHoldingService {
         return enrichHoldingDTO(holding, "TRY");
     }
 
+    /**
+     * Portföy ve enstrüman ID'sine göre holding getirir.
+     */
+
     @Override
     @Transactional(readOnly = true)
     public HoldingDTO getHoldingByPortfolioAndInstrument(Long portfolioId, Long instrumentId) {
@@ -119,6 +140,10 @@ public class PortfolioHoldingServiceImpl implements PortfolioHoldingService {
 
         return holdingOpt.map(h -> enrichHoldingDTO(h, "TRY")).orElse(null);
     }
+
+    /**
+     * Portföydeki aktif (miktarı sıfırdan büyük) holdingleri getirir.
+     */
 
     @Override
     @Transactional(readOnly = true)
@@ -132,6 +157,10 @@ public class PortfolioHoldingServiceImpl implements PortfolioHoldingService {
                 .collect(Collectors.toList());
     }
 
+    /**
+     * Portföydeki en yüksek değerli N holdingi getirir.
+     */
+
     @Override
     @Transactional(readOnly = true)
     public List<HoldingDTO> getTopHoldingsByValue(Long portfolioId, int limit) {
@@ -144,6 +173,11 @@ public class PortfolioHoldingServiceImpl implements PortfolioHoldingService {
                 .limit(limit)
                 .collect(Collectors.toList());
     }
+
+    /**
+     * Portföydeki varlık dağılımını portföy currency'sine göre hesaplar.
+     * Enstrüman türlerine göre gruplar ve yüzde hesaplar.
+     */
 
     @Override
     @Transactional(readOnly = true)
@@ -189,11 +223,19 @@ public class PortfolioHoldingServiceImpl implements PortfolioHoldingService {
         return allocation;
     }
 
+    /**
+     * Portföydeki varlık dağılımını TRY cinsinden hesaplar (geriye uyumluluk).
+     */
+
     @Override
     @Transactional(readOnly = true)
     public List<AssetAllocationDTO> getAssetAllocation(Long portfolioId) {
         return getAssetAllocation(portfolioId, "TRY");
     }
+
+    /**
+     * Toplam yatırımı TRY cinsinden hesaplar (geriye uyumluluk).
+     */
 
     @Override
     @Transactional(readOnly = true)
@@ -201,11 +243,19 @@ public class PortfolioHoldingServiceImpl implements PortfolioHoldingService {
         return calculateTotalInvestment(portfolioId, "TRY");
     }
 
+    /**
+     * Güncel değeri TRY cinsinden hesaplar (geriye uyumluluk).
+     */
+
     @Override
     @Transactional(readOnly = true)
     public BigDecimal calculateCurrentValue(Long portfolioId) {
         return calculateCurrentValue(portfolioId, "TRY");
     }
+
+    /**
+     * Portföydeki toplam gerçekleşmemiş kâr/zararı hesaplar.
+     */
 
     @Override
     @Transactional(readOnly = true)
@@ -217,6 +267,10 @@ public class PortfolioHoldingServiceImpl implements PortfolioHoldingService {
 
         return currentValue.subtract(totalInvestment);
     }
+
+    /**
+     * Belirli bir holding için gerçekleşmemiş kâr/zararı hesaplar.
+     */
 
     @Override
     @Transactional(readOnly = true)
@@ -235,11 +289,19 @@ public class PortfolioHoldingServiceImpl implements PortfolioHoldingService {
         );
     }
 
+    /**
+     * Portföyde belirli bir enstrümana ait holding olup olmadığını kontrol eder.
+     */
+
     @Override
     @Transactional(readOnly = true)
     public boolean holdingExists(Long portfolioId, Long instrumentId) {
         return holdingRepository.existsByPortfolioIdAndInstrumentId(portfolioId, instrumentId);
     }
+
+    /**
+     * Holding'i kalıcı olarak siler.
+     */
 
     @Override
     @Transactional
@@ -253,6 +315,10 @@ public class PortfolioHoldingServiceImpl implements PortfolioHoldingService {
         holdingRepository.deleteById(holdingId);
         log.info("Holding deleted successfully: {}", holdingId);
     }
+
+    /**
+     * Portföydeki sıfır miktarlı holdingleri temizler.
+     */
 
     @Override
     @Transactional
@@ -275,8 +341,13 @@ public class PortfolioHoldingServiceImpl implements PortfolioHoldingService {
 
     // ========== PRIVATE HELPER METHODS ==========
 
+    /**
+     * HoldingDTO'yu güncel fiyat, yatırım değeri ve kâr/zarar bilgileriyle zenginleştirir.
+     * Fiyatlar önce TRY'ye çevrilir, sonra portföy currency'sine dönüştürülür.
+     */
+
     private HoldingDTO enrichHoldingDTO(PortfolioHolding holding, String portfolioCurrency) {
-        // 1. Önce TRY cinsinden hesapla
+
         BigDecimal currentPriceInTRY = getCurrentPriceInTRY(holding.getInstrument());
         BigDecimal avgPriceInTRY = holding.getAverageBuyPrice();
         String holdingCurrency = holding.getCurrency();
@@ -295,7 +366,6 @@ public class PortfolioHoldingServiceImpl implements PortfolioHoldingService {
                     .setScale(6, RoundingMode.HALF_UP);
         }
 
-        // 2. Portföy currency'sine çevir
         BigDecimal currentPrice = tcmbService.convertFromTRY(currentPriceInTRY, portfolioCurrency);
         BigDecimal avgPrice = tcmbService.convertFromTRY(avgPriceInTRY, portfolioCurrency);
 
@@ -313,6 +383,11 @@ public class PortfolioHoldingServiceImpl implements PortfolioHoldingService {
 
         return dto;
     }
+
+    /**
+     * Enstrümanın güncel fiyatını TRY cinsinden döner.
+     * TRY dışındaki enstrümanlar için TCMB kur çevirimi yapılır.
+     */
 
     private BigDecimal getCurrentPriceInTRY(BaseInstrument instrument) {
         BigDecimal price = priceRepository

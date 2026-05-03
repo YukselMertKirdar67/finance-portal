@@ -27,7 +27,14 @@ public class PortfolioChangeNotificationScheduler {
     // Önceki değerleri hafızada tut
     private final Map<Long, BigDecimal> previousValues = new HashMap<>();
 
-    // Her 1 saatte bir kontrol et
+    /**
+     * Her 1 saatte bir tüm portföylerin değer değişimini kontrol eder.
+     * Önceki değere göre %5 veya daha fazla değişim tespit edilirse
+     * ilgili kullanıcıya bildirim gönderir.
+     * Portföylerin anlık değerleri hafızada tutularak bir sonraki
+     * kontrolde karşılaştırma yapılır.
+     */
+
     @Scheduled(fixedRate = 3600000)
     public void checkPortfolioChanges() {
         log.info("Checking portfolio value changes...");

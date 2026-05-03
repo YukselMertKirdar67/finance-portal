@@ -31,7 +31,7 @@ public class UserController {
     private final AuthService authService;
 
     /**
-     * Get current user profile
+     * Giriş yapmış kullanıcının temel profil bilgilerini getirir.
      */
     @GetMapping
     public MeResponseDTO me(@AuthenticationPrincipal Jwt jwt) {
@@ -41,7 +41,8 @@ public class UserController {
     }
 
     /**
-     * Get current user profile (detailed)
+     * Giriş yapmış kullanıcının detaylı profil bilgilerini getirir.
+     * Bildirim tercihleri ve tema bilgisi de dahildir.
      */
     @GetMapping("/profile")
     public UserProfileDTO getCurrentUserProfile(@AuthenticationPrincipal Jwt jwt) {
@@ -75,7 +76,8 @@ public class UserController {
     }
 
     /**
-     * Change password for current user
+     * Giriş yapmış kullanıcının şifresini değiştirir.
+     * OTP aktifse doğrulama kodu da istenir.
      */
     @PostMapping("/change-password")
     public ResponseEntity<ChangePasswordResponseDTO> changePassword(
@@ -94,6 +96,11 @@ public class UserController {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
         }
     }
+
+    /**
+     * Giriş yapmış kullanıcının kullanıcı adını günceller.
+     */
+
     @PutMapping("/username")
     public ResponseEntity<?> updateUsername(
             @AuthenticationPrincipal Jwt jwt,
@@ -116,6 +123,11 @@ public class UserController {
             ));
         }
     }
+
+    /**
+     * Giriş yapmış kullanıcının e-posta adresini günceller.
+     * Doğrulama e-postası gönderilir.
+     */
 
     @PutMapping("/email")
     public ResponseEntity<?> updateEmail(
@@ -140,6 +152,10 @@ public class UserController {
         }
     }
 
+    /**
+     * Kullanıcının son şifre değişim tarihini getirir.
+     */
+
     @GetMapping("/password-last-changed")
     public ResponseEntity<PasswordLastChangedDTO> getPasswordLastChanged(
             @AuthenticationPrincipal Jwt jwt) {
@@ -153,7 +169,7 @@ public class UserController {
     }
 
     /**
-     * Update user preferences
+     * Kullanıcının tema ve bildirim tercihlerini günceller.
      */
     @PutMapping("/preferences")
     public ResponseEntity<?> updatePreferences(
@@ -181,6 +197,10 @@ public class UserController {
         }
     }
 
+    /**
+     * Kullanıcının tüm verilerini JSON formatında dışa aktarır.
+     */
+
     @GetMapping("/export")
     public ResponseEntity<byte[]> exportUserData(@AuthenticationPrincipal Jwt jwt) {
         try {
@@ -196,6 +216,11 @@ public class UserController {
             return ResponseEntity.status(500).build();
         }
     }
+
+    /**
+     * Kullanıcının hesabını kalıcı olarak siler.
+     * Tüm portföy, işlem ve watchlist verileri de silinir.
+     */
 
     @DeleteMapping("/account")
     public ResponseEntity<?> deleteAccount(@AuthenticationPrincipal Jwt jwt) {
@@ -215,6 +240,10 @@ public class UserController {
         }
     }
 
+    /**
+     * Kullanıcının OTP (2FA) aktif olup olmadığını kontrol eder.
+     */
+
     @GetMapping("/has-otp")
     public ResponseEntity<Map<String, Boolean>> checkIfUserHasOTP(@AuthenticationPrincipal Jwt jwt) {
         log.info("Checking if user has OTP enabled");
@@ -227,10 +256,19 @@ public class UserController {
         return ResponseEntity.ok(Map.of("hasOTP", hasOTP));
     }
 
+    /**
+     * Kullanıcı kimlik doğrulamasını test eder.
+     */
+
     @GetMapping("/ping")
     public String ping() {
         return "User authenticated";
     }
+
+
+    /**
+     * Admin yetkisini test eder.
+     */
 
     @GetMapping("/admin-check")
     @PreAuthorize("hasRole('ADMIN')")

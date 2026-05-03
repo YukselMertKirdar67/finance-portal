@@ -45,6 +45,11 @@ public class PortfolioTransactionServiceImpl implements PortfolioTransactionServ
     private final TcmbService tcmbService;
     private final NotificationService notificationService;
 
+
+    /**
+     * İşlem türüne göre alış veya satış işlemi oluşturur.
+     */
+
     @Override
     @Transactional
     public TransactionDTO createTransaction(Long portfolioId, CreateTransactionRequestDTO request) {
@@ -60,23 +65,25 @@ public class PortfolioTransactionServiceImpl implements PortfolioTransactionServ
         }
     }
 
+    /**
+     * Portföye alış işlemi ekler.
+     * Enstrüman fiyatını döviz kuruyla çevirir, işlemi kaydeder,
+     * holding günceller ve işlem bildirimi gönderir.
+     */
+
     @Override
     @Transactional
     public TransactionDTO createBuyTransaction(Long portfolioId, CreateTransactionRequestDTO request) {
         log.info("Processing BUY transaction for portfolio: {}, instrument: {}", portfolioId, request.getInstrumentId());
 
-        // 1. Validate portfolio ownership
         Portfolio portfolio = getPortfolioWithOwnershipCheck(portfolioId);
 
-        // 2. Get instrument
         BaseInstrument instrument = instrumentRepository.findById(request.getInstrumentId())
                 .orElseThrow(() -> new ResourceNotFoundException("Instrument not found with id: " + request.getInstrumentId()));
 
-        // 3. Döviz kuru al
         String currency = instrument.getCurrency();
         BigDecimal exchangeRate = tcmbService.getExchangeRate(currency);
 
-        // 4. Create transaction entity
         PortfolioTransaction transaction = portfolioMapper.toTransactionEntity(request);
         transaction.setPortfolio(portfolio);
         transaction.setInstrument(instrument);
@@ -87,15 +94,12 @@ public class PortfolioTransactionServiceImpl implements PortfolioTransactionServ
             transaction.setTransactionDate(LocalDateTime.now());
         }
 
-        // 5. Save transaction
         PortfolioTransaction savedTransaction = transactionRepository.save(transaction);
         log.info("BUY transaction saved with ID: {}", savedTransaction.getId());
 
-        // 6. Update or create holding
         updateHoldingForBuy(portfolio, instrument, request.getQuantity(), request.getPrice(),
                 transaction.getTransactionDate(), currency, exchangeRate);
 
-        // 7. İşlem bildirimi
         notificationService.notifyTransaction(
                 portfolio.getUserId(),
                 instrument.getSymbol(),
@@ -104,27 +108,28 @@ public class PortfolioTransactionServiceImpl implements PortfolioTransactionServ
                 portfolioId
         );
 
-        // 8. Map to DTO and return
         return portfolioMapper.toTransactionDTO(savedTransaction);
     }
+
+    /**
+     * Portföyden satış işlemi yapar.
+     * Yeterli miktar kontrolü yapar, işlemi kaydeder,
+     * holding miktarını düşürür ve işlem bildirimi gönderir.
+     */
 
     @Override
     @Transactional
     public TransactionDTO createSellTransaction(Long portfolioId, CreateTransactionRequestDTO request) {
         log.info("Processing SELL transaction for portfolio: {}, instrument: {}", portfolioId, request.getInstrumentId());
 
-        // 1. Validate portfolio ownership
         Portfolio portfolio = getPortfolioWithOwnershipCheck(portfolioId);
 
-        // 2. Get instrument
         BaseInstrument instrument = instrumentRepository.findById(request.getInstrumentId())
                 .orElseThrow(() -> new ResourceNotFoundException("Instrument not found with id: " + request.getInstrumentId()));
 
-        // 3. Check if holding exists
         PortfolioHolding holding = holdingRepository.findByPortfolioIdAndInstrumentId(portfolioId, request.getInstrumentId())
                 .orElseThrow(() -> new BusinessRuleException("You don't own this instrument in this portfolio"));
 
-        // 4. Validate sell quantity
         if (!calculationService.validateSellQuantity(holding.getQuantity(), request.getQuantity())) {
             throw new BusinessRuleException(String.format(
                     "Insufficient quantity. Available: %s, Requested: %s",
@@ -132,11 +137,9 @@ public class PortfolioTransactionServiceImpl implements PortfolioTransactionServ
             ));
         }
 
-        // 5. Döviz kuru al
         String currency = instrument.getCurrency();
         BigDecimal exchangeRate = tcmbService.getExchangeRate(currency);
 
-        // 6. Create transaction entity
         PortfolioTransaction transaction = portfolioMapper.toTransactionEntity(request);
         transaction.setPortfolio(portfolio);
         transaction.setInstrument(instrument);
@@ -147,15 +150,12 @@ public class PortfolioTransactionServiceImpl implements PortfolioTransactionServ
             transaction.setTransactionDate(LocalDateTime.now());
         }
 
-        // 7. Save transaction
         PortfolioTransaction savedTransaction = transactionRepository.save(transaction);
         log.info("SELL transaction saved with ID: {}", savedTransaction.getId());
 
-        // 8. Update holding (reduce quantity)
         updateHoldingForSell(holding, request.getQuantity());
 
 
-        //  9. İşlem bildirimi
         notificationService.notifyTransaction(
                 portfolio.getUserId(),
                 instrument.getSymbol(),
@@ -164,9 +164,12 @@ public class PortfolioTransactionServiceImpl implements PortfolioTransactionServ
                 portfolioId
         );
 
-        // 10. Map to DTO and return
         return portfolioMapper.toTransactionDTO(savedTransaction);
     }
+
+    /**
+     * ID'ye göre işlem getirir.
+     */
 
     @Override
     @Transactional(readOnly = true)
@@ -178,6 +181,10 @@ public class PortfolioTransactionServiceImpl implements PortfolioTransactionServ
 
         return portfolioMapper.toTransactionDTO(transaction);
     }
+
+    /**
+     * Portföyün tüm işlem geçmişini getirir (liste).
+     */
 
     @Override
     @Transactional(readOnly = true)
@@ -192,6 +199,10 @@ public class PortfolioTransactionServiceImpl implements PortfolioTransactionServ
                 .collect(Collectors.toList());
     }
 
+    /**
+     * Portföyün tüm işlem geçmişini sayfalı olarak getirir.
+     */
+
     @Override
     @Transactional(readOnly = true)
     public Page<TransactionDTO> getTransactionHistory(Long portfolioId, Pageable pageable) {
@@ -202,6 +213,10 @@ public class PortfolioTransactionServiceImpl implements PortfolioTransactionServ
 
         return portfolioMapper.toTransactionDTOPage(transactionPage);
     }
+
+    /**
+     * Portföydeki işlemleri türe göre filtreler (BUY/SELL).
+     */
 
     @Override
     @Transactional(readOnly = true)
@@ -218,6 +233,10 @@ public class PortfolioTransactionServiceImpl implements PortfolioTransactionServ
                 .collect(Collectors.toList());
     }
 
+    /**
+     * Belirli bir enstrümana ait işlemleri getirir.
+     */
+
     @Override
     @Transactional(readOnly = true)
     public List<TransactionDTO> getTransactionsByInstrument(Long portfolioId, Long instrumentId) {
@@ -233,6 +252,10 @@ public class PortfolioTransactionServiceImpl implements PortfolioTransactionServ
                 .collect(Collectors.toList());
     }
 
+    /**
+     * Belirtilen tarih aralığındaki işlemleri getirir.
+     */
+
     @Override
     @Transactional(readOnly = true)
     public List<TransactionDTO> getTransactionsByDateRange(Long portfolioId, LocalDateTime startDate, LocalDateTime endDate) {
@@ -247,6 +270,10 @@ public class PortfolioTransactionServiceImpl implements PortfolioTransactionServ
                 .map(portfolioMapper::toTransactionDTO)
                 .collect(Collectors.toList());
     }
+
+    /**
+     * Son N gün içindeki işlemleri getirir.
+     */
 
     @Override
     @Transactional(readOnly = true)
@@ -264,6 +291,11 @@ public class PortfolioTransactionServiceImpl implements PortfolioTransactionServ
                 .map(portfolioMapper::toTransactionDTO)
                 .collect(Collectors.toList());
     }
+
+    /**
+     * Portföy için işlem özeti hesaplar.
+     * Toplam alış/satış tutarı, komisyon, vergi ve gerçekleşmiş kâr/zarar içerir.
+     */
 
     @Override
     @Transactional(readOnly = true)
@@ -295,11 +327,19 @@ public class PortfolioTransactionServiceImpl implements PortfolioTransactionServ
                 .build();
     }
 
+    /**
+     * Portföydeki toplam alış tutarını hesaplar.
+     */
+
     @Override
     @Transactional(readOnly = true)
     public BigDecimal calculateTotalBuyAmount(Long portfolioId) {
         return transactionRepository.sumBuyAmountByPortfolioId(portfolioId);
     }
+
+    /**
+     * Portföydeki toplam satış tutarını hesaplar.
+     */
 
     @Override
     @Transactional(readOnly = true)
@@ -307,11 +347,19 @@ public class PortfolioTransactionServiceImpl implements PortfolioTransactionServ
         return transactionRepository.sumSellAmountByPortfolioId(portfolioId);
     }
 
+    /**
+     * Portföydeki toplam komisyon tutarını hesaplar.
+     */
+
     @Override
     @Transactional(readOnly = true)
     public BigDecimal calculateTotalCommission(Long portfolioId) {
         return transactionRepository.sumCommissionByPortfolioId(portfolioId);
     }
+
+    /**
+     * Portföydeki toplam vergi tutarını hesaplar.
+     */
 
     @Override
     @Transactional(readOnly = true)
@@ -319,11 +367,20 @@ public class PortfolioTransactionServiceImpl implements PortfolioTransactionServ
         return transactionRepository.sumTaxByPortfolioId(portfolioId);
     }
 
+    /**
+     * Portföydeki gerçekleşmiş kâr/zararı hesaplar.
+     */
+
     @Override
     @Transactional(readOnly = true)
     public BigDecimal calculateRealizedPnL(Long portfolioId) {
         return transactionRepository.calculateRealizedPnL(portfolioId);
     }
+
+    /**
+     * İşlemi soft delete ile siler (deleted = true).
+     * Veriler korunur ancak hesaplamalara dahil edilmez.
+     */
 
     @Override
     @Transactional
@@ -343,17 +400,29 @@ public class PortfolioTransactionServiceImpl implements PortfolioTransactionServ
         log.warn("Transaction soft deleted: {}", transactionId);
     }
 
+    /**
+     * Portföydeki toplam işlem sayısını döner.
+     */
+
     @Override
     @Transactional(readOnly = true)
     public long countTransactions(Long portfolioId) {
         return transactionRepository.countByPortfolioIdAndDeletedFalse(portfolioId);
     }
 
+    /**
+     * Portföydeki toplam alış işlemi sayısını döner.
+     */
+
     @Override
     @Transactional(readOnly = true)
     public long countBuyTransactions(Long portfolioId) {
         return transactionRepository.countByPortfolioIdAndTransactionTypeAndDeletedFalse(portfolioId, TransactionType.BUY);
     }
+
+    /**
+     * Portföydeki toplam satış işlemi sayısını döner.
+     */
 
     @Override
     @Transactional(readOnly = true)
@@ -362,6 +431,11 @@ public class PortfolioTransactionServiceImpl implements PortfolioTransactionServ
     }
 
     // ========== PRIVATE HELPER METHODS ==========
+
+    /**
+     * Portföy sahipliğini doğrular, portföyü döner.
+     * Yetkisiz erişimde exception fırlatır.
+     */
 
     private Portfolio getPortfolioWithOwnershipCheck(Long portfolioId) {
         Portfolio portfolio = portfolioRepository.findById(portfolioId)
@@ -374,6 +448,12 @@ public class PortfolioTransactionServiceImpl implements PortfolioTransactionServ
 
         return portfolio;
     }
+
+    /**
+     * Alış işlemi sonrası holding günceller.
+     * Mevcut holding varsa ortalama fiyat ve miktar güncellenir.
+     * Yoksa yeni holding oluşturulur.
+     */
 
     private void updateHoldingForBuy(Portfolio portfolio, BaseInstrument instrument,
                                      BigDecimal quantity, BigDecimal price,
@@ -425,6 +505,11 @@ public class PortfolioTransactionServiceImpl implements PortfolioTransactionServ
                     quantity, price, currency, exchangeRate);
         }
     }
+
+    /**
+     * Satış işlemi sonrası holding miktarını düşürür.
+     * Miktar sıfıra düşerse holding silinir.
+     */
 
     private void updateHoldingForSell(PortfolioHolding holding, BigDecimal sellQuantity) {
         log.info("Updating holding ID: {} for SELL (current quantity: {}, sell quantity: {})",

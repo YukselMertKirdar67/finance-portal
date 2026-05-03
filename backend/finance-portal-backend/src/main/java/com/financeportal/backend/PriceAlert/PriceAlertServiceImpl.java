@@ -28,13 +28,23 @@ public class PriceAlertServiceImpl implements PriceAlertService {
     private final InstrumentPriceRepository instrumentPriceRepository;
     private final NotificationService notificationService;
 
+    /**
+     * Kullanıcı için yeni fiyat alarmı oluşturur.
+     * Alarm oluşturulduğunda aktif ve tetiklenmemiş olarak kaydedilir.
+     */
+
     @Override
     @Transactional
     public PriceAlertDTO createAlert(CreatePriceAlertRequestDTO request) {
         String userId = SecurityUtils.getCurrentUserKeycloakId();
+        log.info("Creating price alert for user: {} instrument: {} condition: {} target: {}",
+                userId, request.getInstrumentId(), request.getCondition(), request.getTargetPrice());
 
         BaseInstrument instrument = instrumentRepository.findById(request.getInstrumentId())
-                .orElseThrow(() -> new ResourceNotFoundException("Instrument not found"));
+                .orElseThrow(() -> {
+                    log.error("Instrument not found: {}", request.getInstrumentId());
+                    return new ResourceNotFoundException("Instrument not found");
+                });
 
         PriceAlert alert = PriceAlert.builder()
                 .userId(userId)
@@ -52,31 +62,50 @@ public class PriceAlertServiceImpl implements PriceAlertService {
         return toDTO(saved);
     }
 
+    /**
+     * Giriş yapmış kullanıcının tüm alarmlarını getirir (aktif + tetiklenmiş).
+     */
+
     @Override
     @Transactional(readOnly = true)
     public List<PriceAlertDTO> getUserAlerts() {
         String userId = SecurityUtils.getCurrentUserKeycloakId();
+        log.info("Fetching all alerts for user: {}", userId);
         return priceAlertRepository.findByUserIdOrderByCreatedAtDesc(userId)
                 .stream().map(this::toDTO).collect(Collectors.toList());
     }
+
+    /**
+     * Giriş yapmış kullanıcının sadece aktif alarmlarını getirir.
+     */
 
     @Override
     @Transactional(readOnly = true)
     public List<PriceAlertDTO> getActiveUserAlerts() {
         String userId = SecurityUtils.getCurrentUserKeycloakId();
+        log.info("Fetching active alerts for user: {}", userId);
         return priceAlertRepository.findByUserIdAndActiveTrue(userId)
                 .stream().map(this::toDTO).collect(Collectors.toList());
     }
+
+    /**
+     * Belirtilen alarmı siler. Sadece kendi alarmını silebilir.
+     */
 
     @Override
     @Transactional
     public void deleteAlert(Long alertId) {
         String userId = SecurityUtils.getCurrentUserKeycloakId();
         priceAlertRepository.deleteByIdAndUserId(alertId, userId);
+        log.info("Deleting price alert: {} for user: {}", alertId, userId);
         log.info("✅ Price alert deleted: {} for user: {}", alertId, userId);
     }
 
-    // Her 15 dakikada bir fiyat kontrolü
+    /**
+     * Her 15 dakikada bir aktif alarmları kontrol eder.
+     * Fiyat koşulu sağlanırsa bildirim gönderir ve alarmı devre dışı bırakır.
+     */
+
     @Override
     @Scheduled(fixedRate = 900000)
     @Transactional
@@ -128,6 +157,10 @@ public class PriceAlertServiceImpl implements PriceAlertService {
             }
         }
     }
+
+    /**
+     * PriceAlert entity'sini PriceAlertDTO'ya dönüştürür.
+     */
 
     private PriceAlertDTO toDTO(PriceAlert alert) {
         return PriceAlertDTO.builder()

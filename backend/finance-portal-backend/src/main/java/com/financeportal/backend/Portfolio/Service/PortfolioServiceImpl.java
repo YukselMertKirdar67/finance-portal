@@ -43,6 +43,10 @@ public class PortfolioServiceImpl implements PortfolioService {
     private final PortfolioHoldingRepository holdingRepository;
     private final TcmbService tcmbService;
 
+    /**
+     * Yeni portföy oluşturur ve başlangıç değerlerini sıfır olarak ayarlar.
+     */
+
     @Override
     @Transactional
     public PortfolioDTO createPortfolio(CreatePortfolioRequestDTO request) {
@@ -65,6 +69,10 @@ public class PortfolioServiceImpl implements PortfolioService {
         return dto;
     }
 
+    /**
+     * Portföy adını, açıklamasını veya aktiflik durumunu günceller.
+     */
+
     @Override
     @Transactional
     public PortfolioDTO updatePortfolio(Long portfolioId, UpdatePortfolioRequestDTO request) {
@@ -82,6 +90,10 @@ public class PortfolioServiceImpl implements PortfolioService {
         return enrichPortfolioDTO(portfolioMapper.toDTO(updated), updated);
     }
 
+    /**
+     * Portföyü soft delete ile pasif hale getirir (active = false).
+     */
+
     @Override
     @Transactional
     public void deletePortfolio(Long portfolioId) {
@@ -92,6 +104,10 @@ public class PortfolioServiceImpl implements PortfolioService {
         log.info("Portfolio soft deleted: {}", portfolioId);
     }
 
+    /**
+     * Portföyü kalıcı olarak siler.
+     */
+
     @Override
     @Transactional
     public void hardDeletePortfolio(Long portfolioId) {
@@ -100,6 +116,10 @@ public class PortfolioServiceImpl implements PortfolioService {
         portfolioRepository.delete(portfolio);
         log.warn("Portfolio permanently deleted: {}", portfolioId);
     }
+
+    /**
+     * Kullanıcının tüm portföylerini getirir.
+     */
 
     @Override
     @Transactional(readOnly = true)
@@ -114,6 +134,10 @@ public class PortfolioServiceImpl implements PortfolioService {
                 .collect(Collectors.toList());
     }
 
+    /**
+     * Kullanıcının portföylerini sayfalı olarak getirir.
+     */
+
     @Override
     @Transactional(readOnly = true)
     public Page<PortfolioDTO> getUserPortfolios(Pageable pageable) {
@@ -124,6 +148,11 @@ public class PortfolioServiceImpl implements PortfolioService {
 
         return portfolioPage.map(p -> enrichPortfolioDTO(portfolioMapper.toDTO(p), p));
     }
+
+    /**
+     * Kullanıcının sadece aktif portföylerini getirir.
+     */
+
 
     @Override
     @Transactional(readOnly = true)
@@ -137,6 +166,11 @@ public class PortfolioServiceImpl implements PortfolioService {
                 .map(p -> enrichPortfolioDTO(portfolioMapper.toDTO(p), p))
                 .collect(Collectors.toList());
     }
+
+    /**
+     * Portföyün detay bilgilerini getirir.
+     * Holding listesi, toplam yatırım, güncel değer ve kâr/zarar içerir.
+     */
 
     @Override
     @Transactional(readOnly = true)
@@ -159,7 +193,6 @@ public class PortfolioServiceImpl implements PortfolioService {
             PortfolioDetailDTO dto = portfolioMapper.toDetailDTO(portfolio);
             log.info("Mapped to DTO");
 
-            // Portfolio currency'sine göre holdings
             String portfolioCurrency = portfolio.getCurrency() != null ? portfolio.getCurrency() : "TRY";
             List<HoldingDTO> holdings = holdingService.getHoldingsByPortfolioId(portfolioId, portfolioCurrency);
             log.info("Holdings fetched: {}", holdings.size());
@@ -202,6 +235,10 @@ public class PortfolioServiceImpl implements PortfolioService {
         }
     }
 
+    /**
+     * ID'ye göre portföy getirir.
+     */
+
     @Override
     @Transactional(readOnly = true)
     public PortfolioDTO getPortfolioById(Long portfolioId) {
@@ -209,6 +246,12 @@ public class PortfolioServiceImpl implements PortfolioService {
         Portfolio portfolio = getPortfolioEntityWithOwnershipCheck(portfolioId);
         return enrichPortfolioDTO(portfolioMapper.toDTO(portfolio), portfolio);
     }
+
+    /**
+     * Kullanıcının tüm portföylerinin özetini getirir.
+     * Tüm değerler TRY'ye çevrilerek toplanır.
+     * En iyi ve en kötü performanslı portföyler listelenir.
+     */
 
     @Override
     @Transactional(readOnly = true)
@@ -280,6 +323,11 @@ public class PortfolioServiceImpl implements PortfolioService {
                 .build();
     }
 
+    /**
+     * Portföyün belirli tarih aralığındaki performans verilerini hesaplar.
+     * Her gün için portföy değeri ve getiri yüzdesi hesaplanır.
+     */
+
     @Override
     @Transactional(readOnly = true)
     public PortfolioPerformanceDTO getPortfolioPerformance(Long portfolioId, LocalDate startDate, LocalDate endDate) {
@@ -313,6 +361,11 @@ public class PortfolioServiceImpl implements PortfolioService {
                 .historicalData(historicalData)
                 .build();
     }
+
+    /**
+     * Günlük performans veri noktalarını oluşturur.
+     * İşlem geçmişine göre her gün holding değerleri hesaplanır.
+     */
 
     private List<PerformanceDataPointDTO> generateHistoricalPerformanceData(
             Portfolio portfolio, LocalDate startDate, LocalDate endDate,
@@ -382,6 +435,11 @@ public class PortfolioServiceImpl implements PortfolioService {
         return dataPoints;
     }
 
+    /**
+     * İşlemi holding haritasına uygular.
+     * Alışta miktar artırılır, satışta azaltılır.
+     */
+
     private void processTransaction(PortfolioTransaction tx, Map<Long, BigDecimal> holdingsMap) {
         Long instrumentId = tx.getInstrument().getId();
         BigDecimal quantity = tx.getQuantity();
@@ -397,7 +455,10 @@ public class PortfolioServiceImpl implements PortfolioService {
         }
     }
 
-    // Portfolio currency parametresi eklendi
+    /**
+     * Belirli bir tarihteki holding değerini portföy currency'sine göre hesaplar.
+     */
+
     private BigDecimal calculateHoldingsValueAtDate(Map<Long, BigDecimal> holdingsMap,
                                                     LocalDate date,
                                                     String portfolioCurrency) {
@@ -420,7 +481,11 @@ public class PortfolioServiceImpl implements PortfolioService {
         return totalValue;
     }
 
-    // TRY cinsinden fiyat döndür
+    /**
+     * Enstrümanın güncel fiyatını TRY cinsinden döner.
+     * TRY dışındaki enstrümanlar için kur çevirimi yapılır.
+     */
+
     private BigDecimal getCurrentPriceForInstrumentInTRY(Long instrumentId) {
         try {
             BaseInstrument instrument = instrumentRepository.findById(instrumentId).orElse(null);
@@ -455,6 +520,10 @@ public class PortfolioServiceImpl implements PortfolioService {
         return getCurrentPriceForInstrumentInTRY(instrumentId);
     }
 
+    /**
+     * Kullanıcının tüm portföylerinin toplam güncel değerini TRY cinsinden hesaplar.
+     */
+
     @Override
     @Transactional(readOnly = true)
     public BigDecimal calculateTotalPortfolioValue() {
@@ -464,6 +533,10 @@ public class PortfolioServiceImpl implements PortfolioService {
                 .map(p -> holdingService.calculateCurrentValue(p.getId()))
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
+
+    /**
+     * Kullanıcının tüm portföylerinin toplam gerçekleşmemiş kâr/zararını hesaplar.
+     */
 
     @Override
     @Transactional(readOnly = true)
@@ -475,6 +548,10 @@ public class PortfolioServiceImpl implements PortfolioService {
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
+    /**
+     * Portföyü aktif hale getirir.
+     */
+
     @Override
     @Transactional
     public void activatePortfolio(Long portfolioId) {
@@ -484,6 +561,10 @@ public class PortfolioServiceImpl implements PortfolioService {
         portfolioRepository.save(portfolio);
         log.info("Portfolio activated: {}", portfolioId);
     }
+
+    /**
+     * Portföyü pasif hale getirir.
+     */
 
     @Override
     @Transactional
@@ -495,6 +576,10 @@ public class PortfolioServiceImpl implements PortfolioService {
         log.info("Portfolio deactivated: {}", portfolioId);
     }
 
+    /**
+     * Portföyleri isme göre arar.
+     */
+
     @Override
     @Transactional(readOnly = true)
     public List<PortfolioDTO> searchPortfoliosByName(String searchTerm) {
@@ -504,6 +589,10 @@ public class PortfolioServiceImpl implements PortfolioService {
                 .map(p -> enrichPortfolioDTO(portfolioMapper.toDTO(p), p))
                 .collect(Collectors.toList());
     }
+
+    /**
+     * Portföyleri türe göre filtreler.
+     */
 
     @Override
     @Transactional(readOnly = true)
@@ -518,6 +607,10 @@ public class PortfolioServiceImpl implements PortfolioService {
 
     // ========== PRIVATE HELPER METHODS ==========
 
+    /**
+     * Portföy sahipliğini doğrular. Yetkisiz erişimde exception fırlatır.
+     */
+
     private Portfolio getPortfolioEntityWithOwnershipCheck(Long portfolioId) {
         Portfolio portfolio = portfolioRepository.findById(portfolioId)
                 .orElseThrow(() -> new ResourceNotFoundException("Portfolio not found with id: " + portfolioId));
@@ -530,6 +623,10 @@ public class PortfolioServiceImpl implements PortfolioService {
 
         return portfolio;
     }
+
+    /**
+     * PortfolioDTO'yu güncel değer, yatırım ve kâr/zarar bilgileriyle zenginleştirir.
+     */
 
     private PortfolioDTO enrichPortfolioDTO(PortfolioDTO dto, Portfolio portfolio) {
         String currency = portfolio.getCurrency() != null ? portfolio.getCurrency() : "TRY";
@@ -555,6 +652,11 @@ public class PortfolioServiceImpl implements PortfolioService {
 
         return dto;
     }
+
+    /**
+     * Tüm portföylerin varlık dağılımını hesaplar.
+     * Her enstrüman türü için toplam değer ve yüzde hesaplanır.
+     */
 
     private List<AssetAllocationDTO> calculateAggregateAssetAllocation(List<Portfolio> portfolios) {
         log.debug("Calculating aggregate asset allocation for {} portfolios", portfolios.size());

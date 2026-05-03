@@ -36,8 +36,9 @@ public class AdminServiceImpl implements AdminService {
     @Value("${keycloak.admin.realm}")
     private String realm;
 
-    // ===== USER MANAGEMENT (KEYCLOAK) =====
-
+    /**
+     * Keycloak'tan tüm kullanıcıları getirir ve DTO'ya dönüştürür.
+     */
     @Override
     public List<UserResponseDTO> getAllUsers() {
         log.info("Admin: Fetching all users from Keycloak");
@@ -56,6 +57,9 @@ public class AdminServiceImpl implements AdminService {
         }
     }
 
+    /**
+     * Keycloak'ta kullanıcıyı devre dışı bırakır (enabled = false).
+     */
     @Override
     public void disableUser(String userId) {
         log.info("Admin: Disabling user with Keycloak ID: {}", userId);
@@ -64,12 +68,9 @@ public class AdminServiceImpl implements AdminService {
             RealmResource realmResource = keycloakAdminClient.realm(realm);
             UsersResource usersResource = realmResource.users();
 
-            // Keycloak'ta user ID string olarak kullanılır
-            String keycloakUserId = String.valueOf(userId);
-            UserRepresentation user = usersResource.get(keycloakUserId).toRepresentation();
-
+            UserRepresentation user = usersResource.get(userId).toRepresentation();
             user.setEnabled(false);
-            usersResource.get(keycloakUserId).update(user);
+            usersResource.get(userId).update(user);
 
             log.info("Admin: User disabled successfully: {}", userId);
 
@@ -79,6 +80,9 @@ public class AdminServiceImpl implements AdminService {
         }
     }
 
+    /**
+     * Keycloak'ta kullanıcıyı aktif eder (enabled = true).
+     */
     @Override
     public void enableUser(String userId) {
         log.info("Admin: Enabling user with Keycloak ID: {}", userId);
@@ -87,11 +91,9 @@ public class AdminServiceImpl implements AdminService {
             RealmResource realmResource = keycloakAdminClient.realm(realm);
             UsersResource usersResource = realmResource.users();
 
-            String keycloakUserId = String.valueOf(userId);
-            UserRepresentation user = usersResource.get(keycloakUserId).toRepresentation();
-
+            UserRepresentation user = usersResource.get(userId).toRepresentation();
             user.setEnabled(true);
-            usersResource.get(keycloakUserId).update(user);
+            usersResource.get(userId).update(user);
 
             log.info("Admin: User enabled successfully: {}", userId);
 
@@ -101,6 +103,9 @@ public class AdminServiceImpl implements AdminService {
         }
     }
 
+    /**
+     * Keycloak'ta kullanıcı arar. Query ile username, email veya ad soyad eşleşmesi yapar.
+     */
     @Override
     public List<UserResponseDTO> searchUsers(String query) {
         log.info("Admin: Searching users with query: {}", query);
@@ -119,6 +124,10 @@ public class AdminServiceImpl implements AdminService {
         }
     }
 
+    /**
+     * Kullanıcının detay bilgilerini getirir.
+     * Keycloak'tan profil ve roller, DB'den portföy/işlem/watchlist istatistikleri alınır.
+     */
     @Override
     public UserDetailDTO getUserDetail(String userId) {
         log.info("Fetching user detail for userId: {}", userId);
@@ -127,10 +136,8 @@ public class AdminServiceImpl implements AdminService {
             RealmResource realmResource = keycloakAdminClient.realm(realm);
             UsersResource usersResource = realmResource.users();
 
-            // Keycloak'tan user bilgisi
             UserRepresentation keycloakUser = usersResource.get(userId).toRepresentation();
 
-            // User'ın rollerini al
             List<String> roles = usersResource.get(userId)
                     .roles()
                     .realmLevel()
@@ -139,24 +146,20 @@ public class AdminServiceImpl implements AdminService {
                     .map(org.keycloak.representations.idm.RoleRepresentation::getName)
                     .collect(Collectors.toList());
 
-            // Database'den user'ın Keycloak ID'sine göre istatistikleri al
             int portfolioCount = 0;
             int transactionCount = 0;
             int watchlistCount = 0;
 
             try {
-                // Portfolio count - userId direkt String olarak tutuluyor
                 portfolioCount = (int) portfolioRepository.findAll().stream()
                         .filter(p -> userId.equals(p.getUserId()))
                         .count();
 
-                // Transaction count - portfolio üzerinden userId kontrol et
                 transactionCount = (int) transactionRepository.findAll().stream()
                         .filter(t -> t.getPortfolio() != null &&
                                 userId.equals(t.getPortfolio().getUserId()))
                         .count();
 
-                // Watchlist count - userId direkt kontrol et
                 watchlistCount = (int) watchlistRepository.findAll().stream()
                         .filter(w -> userId.equals(w.getUserId()))
                         .count();
@@ -190,6 +193,9 @@ public class AdminServiceImpl implements AdminService {
         }
     }
 
+    /**
+     * Kullanıcıya Keycloak'ta belirtilen rolü atar.
+     */
     @Override
     public AssignRoleResponseDTO assignRole(String userId, AssignRoleRequestDTO request) {
         log.info("Assigning role {} to user {}", request.getRoleName(), userId);
@@ -198,15 +204,10 @@ public class AdminServiceImpl implements AdminService {
             RealmResource realmResource = keycloakAdminClient.realm(realm);
             UsersResource usersResource = realmResource.users();
 
-            // Role'ü al
             org.keycloak.representations.idm.RoleRepresentation roleRepresentation =
                     realmResource.roles().get(request.getRoleName()).toRepresentation();
 
-            // User'a role ata
-            usersResource.get(userId)
-                    .roles()
-                    .realmLevel()
-                    .add(List.of(roleRepresentation));
+            usersResource.get(userId).roles().realmLevel().add(List.of(roleRepresentation));
 
             log.info("✅ Role {} assigned to user {}", request.getRoleName(), userId);
 
@@ -217,7 +218,6 @@ public class AdminServiceImpl implements AdminService {
 
         } catch (Exception e) {
             log.error("❌ Error assigning role: {}", e.getMessage(), e);
-
             return AssignRoleResponseDTO.builder()
                     .success(false)
                     .message("Failed to assign role: " + e.getMessage())
@@ -225,6 +225,9 @@ public class AdminServiceImpl implements AdminService {
         }
     }
 
+    /**
+     * Kullanıcıdan Keycloak'ta belirtilen rolü kaldırır.
+     */
     @Override
     public RemoveRoleResponseDTO removeRole(String userId, RemoveRoleRequestDTO request) {
         log.info("Removing role {} from user {}", request.getRoleName(), userId);
@@ -233,15 +236,10 @@ public class AdminServiceImpl implements AdminService {
             RealmResource realmResource = keycloakAdminClient.realm(realm);
             UsersResource usersResource = realmResource.users();
 
-            // Role'ü al
             org.keycloak.representations.idm.RoleRepresentation roleRepresentation =
                     realmResource.roles().get(request.getRoleName()).toRepresentation();
 
-            // User'dan role kaldır
-            usersResource.get(userId)
-                    .roles()
-                    .realmLevel()
-                    .remove(List.of(roleRepresentation));
+            usersResource.get(userId).roles().realmLevel().remove(List.of(roleRepresentation));
 
             log.info("✅ Role {} removed from user {}", request.getRoleName(), userId);
 
@@ -252,7 +250,6 @@ public class AdminServiceImpl implements AdminService {
 
         } catch (Exception e) {
             log.error("❌ Error removing role: {}", e.getMessage(), e);
-
             return RemoveRoleResponseDTO.builder()
                     .success(false)
                     .message("Failed to remove role: " + e.getMessage())
@@ -260,28 +257,26 @@ public class AdminServiceImpl implements AdminService {
         }
     }
 
-    // ===== ADMIN STATS =====
-
+    /**
+     * Admin dashboard için genel istatistikleri getirir.
+     * Keycloak'tan kullanıcı sayıları, DB'den portföy, işlem ve watchlist istatistikleri alınır.
+     */
     @Override
     @Transactional(readOnly = true)
     public AdminStatsDTO getAdminStats() {
         log.info("Admin: Fetching admin dashboard statistics");
 
         try {
-            //  KEYCLOAK'TAN KULLANICI İSTATİSTİKLERİ
             RealmResource realmResource = keycloakAdminClient.realm(realm);
             List<UserRepresentation> allUsers = realmResource.users().list();
 
             Long totalUsers = (long) allUsers.size();
-            Long activeUsers = allUsers.stream()
-                    .filter(UserRepresentation::isEnabled)
-                    .count();
+            Long activeUsers = allUsers.stream().filter(UserRepresentation::isEnabled).count();
             Long disabledUsers = totalUsers - activeUsers;
 
             log.info("✅ Keycloak stats - Total: {}, Active: {}, Disabled: {}",
                     totalUsers, activeUsers, disabledUsers);
 
-            //  DATABASE'DEN PORTFÖY İSTATİSTİKLERİ
             Long totalPortfolios = portfolioRepository.count();
             Long activePortfolios = portfolioRepository.findAll().stream()
                     .filter(Portfolio::isActive)
@@ -289,14 +284,11 @@ public class AdminServiceImpl implements AdminService {
 
             log.info("✅ Portfolio stats - Total: {}, Active: {}", totalPortfolios, activePortfolios);
 
-            // Toplam portföy değeri
             BigDecimal totalPortfolioValue = transactionRepository.findAll().stream()
-                    .filter(tx -> tx.getTransactionType() == TransactionType.BUY
-                            && !tx.isDeleted())
+                    .filter(tx -> tx.getTransactionType() == TransactionType.BUY && !tx.isDeleted())
                     .map(tx -> tx.getTotalAmount() != null ? tx.getTotalAmount() : BigDecimal.ZERO)
                     .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-            //  İŞLEM İSTATİSTİKLERİ
             Long totalTransactions = transactionRepository.count();
             Long buyTransactions = transactionRepository.findAll().stream()
                     .filter(tx -> tx.getTransactionType() == TransactionType.BUY)
@@ -306,9 +298,7 @@ public class AdminServiceImpl implements AdminService {
             log.info("✅ Transaction stats - Total: {}, Buy: {}, Sell: {}",
                     totalTransactions, buyTransactions, sellTransactions);
 
-            //  WATCHLIST İSTATİSTİKLERİ
             Long totalWatchlistItems = watchlistRepository.count();
-
             log.info("✅ Watchlist stats - Total: {}", totalWatchlistItems);
 
             return AdminStatsDTO.builder()
@@ -326,28 +316,22 @@ public class AdminServiceImpl implements AdminService {
 
         } catch (Exception e) {
             log.error("❌ Error fetching admin stats: {}", e.getMessage(), e);
-
-            // Hata durumunda 0'lar döndür
             return AdminStatsDTO.builder()
-                    .totalUsers(0L)
-                    .activeUsers(0L)
-                    .disabledUsers(0L)
-                    .totalPortfolios(0L)
-                    .activePortfolios(0L)
+                    .totalUsers(0L).activeUsers(0L).disabledUsers(0L)
+                    .totalPortfolios(0L).activePortfolios(0L)
                     .totalPortfolioValue(BigDecimal.ZERO)
-                    .totalTransactions(0L)
-                    .buyTransactions(0L)
-                    .sellTransactions(0L)
+                    .totalTransactions(0L).buyTransactions(0L).sellTransactions(0L)
                     .totalWatchlistItems(0L)
                     .build();
         }
     }
 
-    // ===== HELPER METHODS =====
-
+    /**
+     * Keycloak UserRepresentation'ı UserResponseDTO'ya dönüştürür.
+     */
     private UserResponseDTO mapToUserResponseDTO(UserRepresentation keycloakUser) {
         return UserResponseDTO.builder()
-                .id(keycloakUser.getId())  // Keycloak UUID (String)
+                .id(keycloakUser.getId())
                 .username(keycloakUser.getUsername())
                 .email(keycloakUser.getEmail())
                 .enabled(keycloakUser.isEnabled())

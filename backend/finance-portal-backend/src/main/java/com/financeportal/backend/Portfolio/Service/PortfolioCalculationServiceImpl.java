@@ -17,16 +17,19 @@ public class PortfolioCalculationServiceImpl implements PortfolioCalculationServ
     private static final int PERCENT_SCALE = 2;     // 2 decimal places for percentages
     private static final int CALCULATION_SCALE = 4; // 4 decimal places for intermediate calculations
 
+    /**
+     * Mevcut pozisyona yeni alış eklendikten sonra yeni ortalama alış fiyatını hesaplar.
+     * Formül: ((mevcut_miktar × mevcut_ort_fiyat) + (yeni_miktar × yeni_fiyat)) / toplam_miktar
+     */
+
     @Override
     public BigDecimal calculateNewAverageBuyPrice(BigDecimal existingQuantity, BigDecimal existingAvgPrice,
                                                   BigDecimal newQuantity, BigDecimal newPrice) {
         log.debug("Calculating new average buy price. Existing: qty={}, avg={}, New: qty={}, price={}",
                 existingQuantity, existingAvgPrice, newQuantity, newPrice);
 
-        // Formula: ((existing_qty × existing_avg_price) + (new_qty × new_price)) / (existing_qty + new_qty)
 
         if (existingQuantity == null || existingQuantity.compareTo(BigDecimal.ZERO) == 0) {
-            // No existing position, just return new price
             return newPrice.setScale(PRICE_SCALE, RoundingMode.HALF_UP);
         }
 
@@ -42,12 +45,16 @@ public class PortfolioCalculationServiceImpl implements PortfolioCalculationServ
         return newAvgPrice;
     }
 
+    /**
+     * Gerçekleşmemiş kâr/zararı hesaplar.
+     * Formül: (güncel_fiyat - ortalama_alış_fiyatı) × miktar
+     */
+
     @Override
     public BigDecimal calculateUnrealizedPnL(BigDecimal quantity, BigDecimal avgBuyPrice, BigDecimal currentPrice) {
         log.debug("Calculating unrealized P&L. Qty: {}, Avg Buy: {}, Current: {}",
                 quantity, avgBuyPrice, currentPrice);
 
-        // Formula: (current_price - avg_buy_price) × quantity
 
         if (quantity == null || quantity.compareTo(BigDecimal.ZERO) == 0) {
             return BigDecimal.ZERO;
@@ -62,11 +69,15 @@ public class PortfolioCalculationServiceImpl implements PortfolioCalculationServ
         return unrealizedPnL;
     }
 
+    /**
+     * Kâr/zarar yüzdesini hesaplar.
+     * Formül: ((güncel_fiyat - ortalama_alış_fiyatı) / ortalama_alış_fiyatı) × 100
+     */
+
     @Override
     public BigDecimal calculatePnLPercent(BigDecimal avgBuyPrice, BigDecimal currentPrice) {
         log.debug("Calculating P&L percent. Avg Buy: {}, Current: {}", avgBuyPrice, currentPrice);
 
-        // Formula: ((current_price - avg_buy_price) / avg_buy_price) × 100
 
         if (avgBuyPrice == null || avgBuyPrice.compareTo(BigDecimal.ZERO) == 0) {
             return BigDecimal.ZERO;
@@ -83,11 +94,15 @@ public class PortfolioCalculationServiceImpl implements PortfolioCalculationServ
         return pnlPercent;
     }
 
+    /**
+     * Toplam yatırım tutarını hesaplar.
+     * Formül: miktar × ortalama_alış_fiyatı
+     */
+
     @Override
     public BigDecimal calculateTotalInvestment(BigDecimal quantity, BigDecimal avgBuyPrice) {
         log.debug("Calculating total investment. Qty: {}, Avg Buy: {}", quantity, avgBuyPrice);
 
-        // Formula: quantity × avg_buy_price
 
         if (quantity == null || avgBuyPrice == null) {
             return BigDecimal.ZERO;
@@ -101,11 +116,15 @@ public class PortfolioCalculationServiceImpl implements PortfolioCalculationServ
         return totalInvestment;
     }
 
+    /**
+     * Güncel portföy değerini hesaplar.
+     * Formül: miktar × güncel_fiyat
+     */
+
     @Override
     public BigDecimal calculateCurrentValue(BigDecimal quantity, BigDecimal currentPrice) {
         log.debug("Calculating current value. Qty: {}, Current Price: {}", quantity, currentPrice);
 
-        // Formula: quantity × current_price
 
         if (quantity == null || currentPrice == null) {
             return BigDecimal.ZERO;
@@ -119,11 +138,15 @@ public class PortfolioCalculationServiceImpl implements PortfolioCalculationServ
         return currentValue;
     }
 
+    /**
+     * Komisyon ve vergi dahil net tutarı hesaplar.
+     * Formül: toplam_tutar + komisyon + vergi
+     */
+
     @Override
     public BigDecimal calculateNetAmount(BigDecimal totalAmount, BigDecimal commission, BigDecimal tax) {
         log.debug("Calculating net amount. Total: {}, Commission: {}, Tax: {}", totalAmount, commission, tax);
 
-        // Formula: total_amount + commission + tax
 
         BigDecimal net = totalAmount != null ? totalAmount : BigDecimal.ZERO;
 
@@ -140,6 +163,11 @@ public class PortfolioCalculationServiceImpl implements PortfolioCalculationServ
 
         return netAmount;
     }
+
+    /**
+     * Satış miktarının geçerli olup olmadığını doğrular.
+     * Sıfır veya negatif miktar ve mevcut miktarı aşan satış reddedilir.
+     */
 
     @Override
     public boolean validateSellQuantity(BigDecimal availableQuantity, BigDecimal sellQuantity) {
@@ -163,11 +191,15 @@ public class PortfolioCalculationServiceImpl implements PortfolioCalculationServ
         return true;
     }
 
+    /**
+     * Portföy getirisini yüzde olarak hesaplar.
+     * Formül: ((güncel_değer - başlangıç_bakiye) / başlangıç_bakiye) × 100
+     */
+
     @Override
     public BigDecimal calculatePortfolioReturn(BigDecimal initialBalance, BigDecimal currentValue) {
         log.debug("Calculating portfolio return. Initial: {}, Current: {}", initialBalance, currentValue);
 
-        // Formula: ((current_value - initial_balance) / initial_balance) × 100
 
         if (initialBalance == null || initialBalance.compareTo(BigDecimal.ZERO) == 0) {
             return BigDecimal.ZERO;
@@ -184,7 +216,6 @@ public class PortfolioCalculationServiceImpl implements PortfolioCalculationServ
         return returnPercent;
     }
 
-    // Inner class for future lot tracking feature
     private static class Lot {
         private BigDecimal quantity;
         private BigDecimal buyPrice;
