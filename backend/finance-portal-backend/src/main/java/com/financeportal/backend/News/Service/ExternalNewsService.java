@@ -44,6 +44,14 @@ public class ExternalNewsService {
         this.userRepository = userRepository;
     }
 
+    /**
+     * NewsAPI'dan finans, döviz ve kripto kategorilerinde haber çeker ve veritabanına kaydeder.
+     * Her kategori için ayrı anahtar kelimelerle arama yapılır.
+     * İlgisiz, duplicate veya geçersiz içerikli haberler atlanır.
+     * İlk kaydedilen haber için tüm kullanıcılara bildirim gönderilir.
+     * İşlem sonunda kategori bazlı kayıt ve atlama istatistikleri döner.
+     */
+
     @Caching(evict = {
             @CacheEvict(value = "news", allEntries = true),
             @CacheEvict(value = "allNews", allEntries = true),
@@ -56,7 +64,6 @@ public class ExternalNewsService {
         int totalFetched = 0;
         int totalSkipped = 0;
 
-        // Daha spesifik keyword'ler
         Map<String, String> categories = new LinkedHashMap<>();
         categories.put("borsa hisse piyasa", "FINANS");
         categories.put("dolar euro kur", "DOVIZ");
@@ -204,7 +211,11 @@ public class ExternalNewsService {
         );
     }
 
-    //İçerik filtreleme
+    /**
+     * Haberin kategoriye göre içerik ilgililiğini kontrol eder.
+     * Başlık ve açıklama metni kategori anahtar kelimeleri içermiyorsa false döner.
+     */
+
     private boolean isRelevantFinanceNews(String category, ExternalNewsResponse.Article article) {
         String text = ((article.getTitle() != null ? article.getTitle() : "") + " " +
                 (article.getDescription() != null ? article.getDescription() : "")).toLowerCase();
@@ -226,6 +237,12 @@ public class ExternalNewsService {
         };
     }
 
+    /**
+     * Haberin içeriğini döner.
+     * Önce description, yoksa content alanı kullanılır.
+     * Fazla karakter uyarıları temizlenir.
+     */
+
     private String getContent(ExternalNewsResponse.Article article) {
         String content = article.getDescription() != null
                 ? article.getDescription()
@@ -235,6 +252,11 @@ public class ExternalNewsService {
 
         return content.replaceAll("\\[\\+\\d+ chars\\]", "").trim();
     }
+
+    /**
+     * Haberin geçerli içerik barındırıp barındırmadığını kontrol eder.
+     * Boş, çok kısa, anlamsız veya placeholder içerikler geçersiz sayılır.
+     */
 
     private boolean hasValidContent(ExternalNewsResponse.Article article) {
         String content = article.getDescription() != null

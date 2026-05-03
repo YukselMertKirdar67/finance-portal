@@ -35,8 +35,8 @@ public class AdminNewsController {
     }
 
     /**
-     * Tüm haberleri çek
-     * POST /api/admin/news/fetch
+     * NewsAPI'dan tüm kategorilerde haber çeker ve veritabanına kaydeder.
+     * İşlem sonunda kategori bazlı istatistik döner.
      */
     @PostMapping("/fetch")
     public ResponseEntity<?> fetchNewsFromApi() {
@@ -86,8 +86,7 @@ public class AdminNewsController {
     }
 
     /**
-     * Tüm haberleri sil
-     * DELETE /api/admin/news/all
+     * Veritabanındaki tüm haberleri siler ve cache'i temizler.
      */
     @DeleteMapping("/all")
     public ResponseEntity<?> deleteAllNews() {
@@ -123,8 +122,7 @@ public class AdminNewsController {
     }
 
     /**
-     * Tüm haberleri sil ve yeniden çek
-     * POST /api/admin/news/refresh
+     * Tüm haberleri silip NewsAPI'dan yeniden çeker.
      */
     @PostMapping("/refresh")
     public ResponseEntity<?> refreshAllNews() {
@@ -182,8 +180,7 @@ public class AdminNewsController {
     }
 
     /**
-     * Belirli bir kategorideki haberleri sil
-     * DELETE /api/admin/news/category/{category}
+     * Belirtilen kategorideki tüm haberleri siler.
      */
     @DeleteMapping("/category/{category}")
     public ResponseEntity<?> deleteNewsByCategory(@PathVariable String category) {
@@ -227,8 +224,7 @@ public class AdminNewsController {
     }
 
     /**
-     * Tüm haberleri tarihe göre sıralı getir
-     * GET /api/admin/news/all
+     * Tüm haberleri yayın tarihine göre sıralı getirir.
      */
     @GetMapping("/all")
     public ResponseEntity<?> getAllNewsSorted() {
@@ -255,8 +251,7 @@ public class AdminNewsController {
     }
 
     /**
-     * Kategoriye göre haberleri sıralı getir
-     * GET /api/admin/news/category/{category}
+     * Belirtilen kategorideki haberleri yayın tarihine göre sıralı getirir.
      */
     @GetMapping("/category/{category}")
     public ResponseEntity<?> getNewsByCategorySorted(@PathVariable String category) {
@@ -284,8 +279,7 @@ public class AdminNewsController {
     }
 
     /**
-     * Mevcut kategorileri listele
-     * GET /api/admin/news/categories
+     * Mevcut kategorileri ve her kategorideki haber sayısını getirir.
      */
     @GetMapping("/categories")
     public ResponseEntity<?> getAvailableCategories() {
@@ -320,8 +314,7 @@ public class AdminNewsController {
     }
 
     /**
-     * İstatistikler
-     * GET /api/admin/news/stats
+     * Toplam haber sayısı, kategori dağılımı ve son güncelleme tarihini getirir.
      */
     @GetMapping("/stats")
     public ResponseEntity<?> getNewsStats() {
@@ -363,7 +356,7 @@ public class AdminNewsController {
     }
 
     /**
-     * Cache'leri temizle - Private helper metod
+     * news, allNews ve newsByCategory cache'lerini temizler.
      */
     private void clearAllCaches() {
         try {

@@ -25,8 +25,8 @@ public class PortfolioAdminController {
     private final PortfolioService portfolioService;
 
     /**
-     * Get all portfolios (admin view)
-     * GET /api/admin/portfolios
+     * Tüm kullanıcıların portföylerini listeler.
+     * Opsiyonel userId parametresiyle belirli kullanıcıya göre filtreler.
      */
     @GetMapping
     @PreAuthorize("hasRole('ADMIN')")
@@ -44,8 +44,7 @@ public class PortfolioAdminController {
     }
 
     /**
-     * Force delete portfolio (admin)
-     * DELETE /api/admin/portfolios/{id}
+     * Herhangi bir portföyü kalıcı olarak siler (admin yetkisi gerektirir).
      */
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
@@ -61,8 +60,7 @@ public class PortfolioAdminController {
     }
 
     /**
-     * Get portfolio statistics (admin)
-     * GET /api/admin/portfolios/statistics
+     * Sistem genelindeki portföy istatistiklerini getirir.
      */
     @GetMapping("/statistics")
     @PreAuthorize("hasRole('ADMIN')")

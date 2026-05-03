@@ -26,8 +26,7 @@ public class PortfolioHoldingController {
     private final PortfolioRepository portfolioRepository;
 
     /**
-     * Get all holdings for a portfolio
-     * GET /api/portfolios/{portfolioId}/holdings
+     * Portföydeki tüm holdingleri güncel fiyatlarla getirir.
      */
     @GetMapping
     @Operation(summary = "Get portfolio holdings", description = "Get all holdings for a portfolio with current prices")
@@ -42,8 +41,7 @@ public class PortfolioHoldingController {
     }
 
     /**
-     * Get active holdings only (quantity > 0)
-     * GET /api/portfolios/{portfolioId}/holdings/active
+     * Portföydeki aktif holdingleri getirir (miktar > 0).
      */
     @GetMapping("/active")
     @Operation(summary = "Get active holdings", description = "Get only holdings with quantity > 0")
@@ -58,8 +56,7 @@ public class PortfolioHoldingController {
     }
 
     /**
-     * Get top holdings by value
-     * GET /api/portfolios/{portfolioId}/holdings/top
+     * Portföydeki en yüksek değerli N holdingi getirir.
      */
     @GetMapping("/top")
     @Operation(summary = "Get top holdings", description = "Get top N holdings by current value")
@@ -76,8 +73,7 @@ public class PortfolioHoldingController {
     }
 
     /**
-     * Get holding by ID
-     * GET /api/portfolios/{portfolioId}/holdings/{holdingId}
+     * ID'ye göre holding getirir.
      */
     @GetMapping("/{holdingId}")
     @Operation(summary = "Get holding by ID", description = "Get details of a specific holding")
@@ -94,8 +90,7 @@ public class PortfolioHoldingController {
     }
 
     /**
-     * Get asset allocation
-     * GET /api/portfolios/{portfolioId}/holdings/asset-allocation
+     * Portföydeki varlık dağılımını portföy currency'sine göre hesaplar.
      */
     @GetMapping("/asset-allocation")
     @Operation(summary = "Get asset allocation")
@@ -113,8 +108,7 @@ public class PortfolioHoldingController {
     }
 
     /**
-     * Calculate total investment
-     * GET /api/portfolios/{portfolioId}/holdings/total-investment
+     * Portföydeki toplam yatırım tutarını hesaplar.
      */
     @GetMapping("/total-investment")
     @Operation(summary = "Calculate total investment", description = "Calculate total invested amount")
@@ -129,8 +123,7 @@ public class PortfolioHoldingController {
     }
 
     /**
-     * Calculate current value
-     * GET /api/portfolios/{portfolioId}/holdings/current-value
+     * Portföydeki toplam güncel değeri hesaplar.
      */
     @GetMapping("/current-value")
     @Operation(summary = "Calculate current value", description = "Calculate total current value")
@@ -145,8 +138,7 @@ public class PortfolioHoldingController {
     }
 
     /**
-     * Calculate unrealized P&L
-     * GET /api/portfolios/{portfolioId}/holdings/unrealized-pnl
+     * Portföydeki toplam gerçekleşmemiş kâr/zararı hesaplar.
      */
     @GetMapping("/unrealized-pnl")
     @Operation(summary = "Calculate unrealized P&L", description = "Calculate total unrealized profit/loss")
@@ -161,8 +153,7 @@ public class PortfolioHoldingController {
     }
 
     /**
-     * Delete a holding
-     * DELETE /api/portfolios/{portfolioId}/holdings/{holdingId}
+     * Belirtilen holdingi portföyden siler.
      */
     @DeleteMapping("/{holdingId}")
     @Operation(summary = "Delete holding", description = "Delete a holding from portfolio")
@@ -179,8 +170,7 @@ public class PortfolioHoldingController {
     }
 
     /**
-     * Delete zero quantity holdings
-     * DELETE /api/portfolios/{portfolioId}/holdings/cleanup
+     * Portföydeki sıfır miktarlı holdingleri temizler.
      */
     @DeleteMapping("/cleanup")
     @Operation(summary = "Cleanup zero holdings", description = "Delete all holdings with zero quantity")

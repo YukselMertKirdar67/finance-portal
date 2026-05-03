@@ -33,8 +33,7 @@ public class PortfolioTransactionController {
     private final PortfolioTransactionService transactionService;
 
     /**
-     * Create a new transaction (BUY or SELL)
-     * POST /api/portfolios/{portfolioId}/transactions
+     * Portföye alış veya satış işlemi ekler.
      */
     @PostMapping
     @Operation(summary = "Create transaction", description = "Create a new BUY or SELL transaction")
@@ -50,8 +49,7 @@ public class PortfolioTransactionController {
     }
 
     /**
-     * Get all transactions for a portfolio
-     * GET /api/portfolios/{portfolioId}/transactions
+     * Portföyün tüm işlem geçmişini sayfalı olarak getirir.
      */
     @GetMapping
     @Operation(summary = "Get transaction history", description = "Get all transactions for a portfolio (paginated)")
@@ -73,8 +71,7 @@ public class PortfolioTransactionController {
     }
 
     /**
-     * Get transaction by ID
-     * GET /api/portfolios/{portfolioId}/transactions/{transactionId}
+     * ID'ye göre işlem getirir.
      */
     @GetMapping("/{transactionId}")
     @Operation(summary = "Get transaction by ID", description = "Get details of a specific transaction")
@@ -91,8 +88,7 @@ public class PortfolioTransactionController {
     }
 
     /**
-     * Get transactions by type (BUY or SELL)
-     * GET /api/portfolios/{portfolioId}/transactions/type/{type}
+     * İşlemleri türe göre filtreler (BUY/SELL).
      */
     @GetMapping("/type/{type}")
     @Operation(summary = "Get transactions by type", description = "Get BUY or SELL transactions")
@@ -109,8 +105,7 @@ public class PortfolioTransactionController {
     }
 
     /**
-     * Get transactions for a specific instrument
-     * GET /api/portfolios/{portfolioId}/transactions/instrument/{instrumentId}
+     * Belirli bir enstrümana ait işlemleri getirir.
      */
     @GetMapping("/instrument/{instrumentId}")
     @Operation(summary = "Get transactions by instrument", description = "Get all transactions for a specific instrument")
@@ -127,8 +122,7 @@ public class PortfolioTransactionController {
     }
 
     /**
-     * Get transactions within date range
-     * GET /api/portfolios/{portfolioId}/transactions/date-range
+     * Belirtilen tarih aralığındaki işlemleri getirir.
      */
     @GetMapping("/date-range")
     @Operation(summary = "Get transactions by date range", description = "Get transactions within a date range")
@@ -150,8 +144,7 @@ public class PortfolioTransactionController {
     }
 
     /**
-     * Get recent transactions (last N days)
-     * GET /api/portfolios/{portfolioId}/transactions/recent
+     * Son N gün içindeki işlemleri getirir.
      */
     @GetMapping("/recent")
     @Operation(summary = "Get recent transactions", description = "Get transactions from the last N days")
@@ -168,8 +161,8 @@ public class PortfolioTransactionController {
     }
 
     /**
-     * Get transaction summary
-     * GET /api/portfolios/{portfolioId}/transactions/summary
+     * Portföy için işlem özeti getirir.
+     * Toplam alış/satış tutarı, komisyon, vergi ve kâr/zarar içerir.
      */
     @GetMapping("/summary")
     @Operation(summary = "Get transaction summary", description = "Get summary statistics for all transactions")
@@ -184,8 +177,8 @@ public class PortfolioTransactionController {
     }
 
     /**
-     * Delete a transaction
-     * DELETE /api/portfolios/{portfolioId}/transactions/{transactionId}
+     * İşlemi soft delete ile siler.
+     * Holding değişiklikleri geri alınmaz.
      */
     @DeleteMapping("/{transactionId}")
     @Operation(summary = "Delete transaction", description = "Delete a transaction (WARNING: Does not reverse holding changes)")

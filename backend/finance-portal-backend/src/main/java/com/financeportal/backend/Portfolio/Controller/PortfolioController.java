@@ -30,8 +30,7 @@ public class PortfolioController {
     private final PortfolioService portfolioService;
 
     /**
-     * Create a new portfolio
-     * POST /api/portfolios
+     * Yeni portföy oluşturur
      */
     @PostMapping
     @Operation(summary = "Create new portfolio", description = "Create a new portfolio for the current user")
@@ -45,8 +44,7 @@ public class PortfolioController {
     }
 
     /**
-     * Get all portfolios for current user
-     * GET /api/portfolios
+     * Giriş yapmış kullanıcının tüm portföylerini getirir
      */
     @GetMapping
     @Operation(summary = "Get user portfolios", description = "Get all portfolios for the current user")
@@ -59,8 +57,7 @@ public class PortfolioController {
     }
 
     /**
-     * Get portfolios with pagination
-     * GET /api/portfolios/paginated
+     * Giriş yapmış kullanıcının portföylerini sayfalı olarak getirir.
      */
     @GetMapping("/paginated")
     @Operation(summary = "Get user portfolios (paginated)", description = "Get portfolios with pagination")
@@ -86,8 +83,7 @@ public class PortfolioController {
     }
 
     /**
-     * Get active portfolios only
-     * GET /api/portfolios/active
+     * Sadece aktif portföyleri getirir.
      */
     @GetMapping("/active")
     @Operation(summary = "Get active portfolios", description = "Get only active portfolios")
@@ -100,8 +96,7 @@ public class PortfolioController {
     }
 
     /**
-     * Get portfolio by ID
-     * GET /api/portfolios/{id}
+     * ID'ye göre portföy getirir.
      */
     @GetMapping("/{id}")
     @Operation(summary = "Get portfolio by ID", description = "Get basic portfolio information")
@@ -116,8 +111,7 @@ public class PortfolioController {
     }
 
     /**
-     * Get portfolio detail (with holdings)
-     * GET /api/portfolios/{id}/detail
+     * Portföyün holding listesi dahil detay bilgilerini getirir.
      */
     @GetMapping("/{id}/detail")
     @Operation(summary = "Get portfolio detail", description = "Get detailed portfolio information with holdings")
@@ -132,8 +126,7 @@ public class PortfolioController {
     }
 
     /**
-     * Update portfolio
-     * PUT /api/portfolios/{id}
+     * Portföy adını, açıklamasını veya aktiflik durumunu günceller.
      */
     @PutMapping("/{id}")
     @Operation(summary = "Update portfolio", description = "Update portfolio information")
@@ -149,8 +142,7 @@ public class PortfolioController {
     }
 
     /**
-     * Soft delete portfolio
-     * DELETE /api/portfolios/{id}
+     * Portföyü soft delete ile pasif hale getirir.
      */
     @DeleteMapping("/{id}")
     @Operation(summary = "Delete portfolio", description = "Soft delete portfolio (set active to false)")
@@ -165,8 +157,7 @@ public class PortfolioController {
     }
 
     /**
-     * Hard delete portfolio
-     * DELETE /api/portfolios/{id}/hard
+     * Portföyü kalıcı olarak siler.
      */
     @DeleteMapping("/{id}/hard")
     @Operation(summary = "Hard delete portfolio", description = "Permanently delete portfolio")
@@ -181,8 +172,7 @@ public class PortfolioController {
     }
 
     /**
-     * Activate portfolio
-     * PATCH /api/portfolios/{id}/activate
+     * Portföyü aktif hale getirir.
      */
     @PatchMapping("/{id}/activate")
     @Operation(summary = "Activate portfolio", description = "Set portfolio as active")
@@ -197,8 +187,7 @@ public class PortfolioController {
     }
 
     /**
-     * Deactivate portfolio
-     * PATCH /api/portfolios/{id}/deactivate
+     * Portföyü pasif hale getirir.
      */
     @PatchMapping("/{id}/deactivate")
     @Operation(summary = "Deactivate portfolio", description = "Set portfolio as inactive")
@@ -213,8 +202,8 @@ public class PortfolioController {
     }
 
     /**
-     * Get portfolio summary (dashboard)
-     * GET /api/portfolios/summary
+     * Dashboard için tüm portföylerin özetini getirir.
+     * Toplam değer, kâr/zarar ve varlık dağılımı içerir.
      */
     @GetMapping("/summary")
     @Operation(summary = "Get portfolio summary", description = "Get summary of all portfolios for dashboard")
@@ -227,8 +216,8 @@ public class PortfolioController {
     }
 
     /**
-     * Get portfolio performance history (for chart)
-     * GET /api/portfolios/{id}/performance?days=30
+     * Portföyün belirli gün sayısına ait performans geçmişini getirir.
+     * Grafik için kullanılır.
      */
     @GetMapping("/{id}/performance")
     @Operation(summary = "Get portfolio performance history", description = "Get historical performance data for chart")
@@ -245,13 +234,11 @@ public class PortfolioController {
 
         PortfolioPerformanceDTO performance = portfolioService.getPortfolioPerformance(id, startDate, endDate);
 
-        // Return only historical data (array format for chart)
         return ResponseEntity.ok(performance.getHistoricalData());
     }
 
     /**
-     * Search portfolios by name
-     * GET /api/portfolios/search
+     * Portföyleri isme göre arar.
      */
     @GetMapping("/search")
     @Operation(summary = "Search portfolios", description = "Search portfolios by name")
@@ -266,8 +253,7 @@ public class PortfolioController {
     }
 
     /**
-     * Get portfolios by type
-     * GET /api/portfolios/type/{type}
+     * Portföyleri türe göre filtreler.
      */
     @GetMapping("/type/{type}")
     @Operation(summary = "Get portfolios by type", description = "Get portfolios filtered by type")
@@ -282,8 +268,7 @@ public class PortfolioController {
     }
 
     /**
-     * Calculate total portfolio value (all portfolios)
-     * GET /api/portfolios/total-value
+     * Tüm portföylerin toplam güncel değerini TRY cinsinden hesaplar.
      */
     @GetMapping("/total-value")
     @Operation(summary = "Get total portfolio value", description = "Calculate total value across all portfolios")
@@ -296,8 +281,7 @@ public class PortfolioController {
     }
 
     /**
-     * Calculate total unrealized P&L (all portfolios)
-     * GET /api/portfolios/total-pnl
+     * Tüm portföylerin toplam gerçekleşmemiş kâr/zararını hesaplar.
      */
     @GetMapping("/total-pnl")
     @Operation(summary = "Get total unrealized P&L", description = "Calculate total unrealized P&L across all portfolios")
