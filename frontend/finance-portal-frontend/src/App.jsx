@@ -28,6 +28,10 @@ import SettingsPage from './Components/Page/SettingsPage';
 import NotificationsPage from './Components/Page/NotificationsPage';
 import PriceAlertsPage from './Components/Page/PriceAlertsPage';
 import AdminNewsDashboard from './Components/Page/AdminNewsDashboard';
+import EmailVerifiedPage from './Components/Page/EmailVerifiedPage';
+import Setup2FAPage from './Components/Page/Setup2FAPage';
+import Verify2FAPage from './Components/Page/Verify2FAPage';
+
 
 // Protected Route Component
 const ProtectedRoute = ({ children, adminOnly = false }) => {
@@ -83,6 +87,9 @@ function App() {
             />
             <Route path="/forgot-password" element={<ForgotPasswordPage />} />
             <Route path="/auth/callback" element={<AuthCallbackPage />} />
+            <Route path="/email-verified" element={<EmailVerifiedPage />} />
+            <Route path="/verify-2fa" element={<Verify2FAPage />} />
+            <Route path="/setup-2fa" element={<Setup2FAPage />} />
 
             {/* PROTECTED ROUTES - USER & ADMIN */}
             <Route
