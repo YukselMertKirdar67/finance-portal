@@ -21,7 +21,6 @@ public interface AuthService {
 
     LogoutResponseDTO logout(LogoutRequestDTO request);
 
-    PreAuthResponseDTO preAuth(LoginRequestDTO request);
 
     LoginResponseDTO exchangeCodeForToken(String authCode);
 
