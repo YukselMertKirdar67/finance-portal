@@ -98,6 +98,12 @@ public class YahooFinanceService {
             Map.of("yahoo", "CADTRY=X", "db", "CAD/TRY"),
             Map.of("yahoo", "AEDTRY=X", "db", "AED/TRY")
     );
+    private static final List<Map<String, String>> BONDS = List.of(
+            Map.of("yahoo", "^TNX",    "db", "US-10Y-BOND", "name", "ABD 10 Yıllık Tahvil"),
+            Map.of("yahoo", "^TYX",    "db", "US-30Y-BOND", "name", "ABD 30 Yıllık Tahvil"),
+            Map.of("yahoo", "^IRX",    "db", "US-3M-BOND",  "name", "ABD 3 Aylık Hazine Bonosu"),
+            Map.of("yahoo", "^FVX",    "db", "US-5Y-BOND",  "name", "ABD 5 Yıllık Tahvil")
+    );
 
 
     public InstrumentPrice fetchQuote(String yahooSymbol, String dbSymbol) {
@@ -158,6 +164,11 @@ public class YahooFinanceService {
                     .multiply(new BigDecimal("100"))
                     : BigDecimal.ZERO;
 
+            BigDecimal yieldRate = null;
+            if (dbSymbol.endsWith("-BOND")) {
+                yieldRate = currentPrice;
+            }
+
             InstrumentPrice price = InstrumentPrice.builder()
                     .instrument(instrument)
                     .currentPrice(currentPrice)
@@ -168,6 +179,7 @@ public class YahooFinanceService {
                     .changeAmount(changeAmount)
                     .changePercent(changePercent)
                     .volume(volume)
+                    .yieldRate(yieldRate)
                     .timestamp(LocalDateTime.now())
                     .build();
 
@@ -359,6 +371,25 @@ public class YahooFinanceService {
         return updated;
     }
 
+    /**
+     * Yahoo Finance'den tahvil faiz oranlarını günceller.
+     */
+    public int updateBonds() {
+        log.info("📊 Updating bonds via Yahoo Finance...");
+        int updated = 0;
+        for (Map<String, String> bond : BONDS) {
+            try {
+                InstrumentPrice price = fetchQuote(bond.get("yahoo"), bond.get("db"));
+                if (price != null) updated++;
+                Thread.sleep(2000);
+            } catch (Exception e) {
+                log.error("❌ Failed: {}", bond.get("db"));
+            }
+        }
+        log.info("✅ Bonds updated: {}/{}", updated, BONDS.size());
+        return updated;
+    }
+
     public int updateAll() {
         log.info("📊 Updating ALL instruments via Yahoo Finance...");
         int total = 0;
@@ -366,6 +397,7 @@ public class YahooFinanceService {
         total += updateBistStocks();
         total += updateCryptos();
         total += updatePreciousMetals();
+        total += updateBonds();
         log.info("✅ Total updated: {}", total);
         return total;
     }
@@ -379,6 +411,7 @@ public class YahooFinanceService {
         all.addAll(CRYPTOS);
         all.addAll(PRECIOUS_METALS);
         all.addAll(FOREX_PAIRS);
+        all.addAll(BONDS);
 
         for (Map<String, String> instrument : all) {
             try {
@@ -435,7 +468,14 @@ public class YahooFinanceService {
                     .blockchain("Unknown").exchange("CRYPTO")
                     .currency("USD").active(true).build();
 
-        } else {
+        }
+        else if (dbSymbol.endsWith("-BOND")) {
+            instrument = BondInstrument.builder()
+                    .symbol(dbSymbol).name(meta.path("longName").asText(dbSymbol))
+                    .issuer("US Treasury").exchange("CBOE")
+                    .currency("USD").active(true).build();
+        }
+        else {
             instrument = StockInstrument.builder()
                     .symbol(dbSymbol).name(longName)
                     .sector("Genel").exchange(exchange)
