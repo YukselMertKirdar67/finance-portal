@@ -3,26 +3,28 @@ package com.financeportal.backend.Comparison;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
-import org.springframework.format.annotation.DateTimeFormat;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.time.LocalDate;
 
 @RestController
 @RequestMapping("/api/comparison")
 @RequiredArgsConstructor
+@Slf4j
 @Tag(name = "Comparison API", description = "Enstrüman karşılaştırma")
 public class ComparisonController {
 
     private final ComparisonService comparisonService;
 
     /**
-     * İki enstrümanı karşılaştır (Period bazlı)
+     * İki enstrümanı belirtilen zaman dilimine göre karşılaştırır.
+     * Anlık fiyatlar, tarihsel veriler ve performans metrikleri döner.
      */
+
     @GetMapping
     @Operation(summary = "İki enstrümanı karşılaştır")
     public ResponseEntity<ComparisonDTO> compareInstruments(
@@ -30,6 +32,7 @@ public class ComparisonController {
             @RequestParam Long id2,
             @RequestParam(defaultValue = "1A") String period
     ) {
+        log.info("Comparing instruments {} vs {} for period: {}", id1, id2, period);
         ComparisonDTO comparison = comparisonService.compareInstruments(id1, id2, period);
         return ResponseEntity.ok(comparison);
     }

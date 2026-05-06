@@ -27,8 +27,10 @@ public class ComparisonService {
     private final PriceHistoryRepository historyRepository;
 
     /**
-     * İki enstrümanı karşılaştır (Period bazlı)
+     * İki enstrümanı belirtilen zaman dilimine göre karşılaştırır.
+     * Anlık fiyatlar, tarihsel veriler ve performans metrikleri hesaplanır.
      */
+
     public ComparisonDTO compareInstruments(Long id1, Long id2, String period) {
 
         // Period'a göre tarih aralığını hesapla
@@ -80,8 +82,10 @@ public class ComparisonService {
     }
 
     /**
-     * Period'a göre başlangıç tarihini hesapla
+     * Belirtilen period string'ine göre başlangıç tarihini hesaplar.
+     * 1H=1 hafta, 1A=1 ay, 3A=3 ay, 6A=6 ay, 1Y=1 yıl
      */
+
     private LocalDate calculateStartDate(String period) {
         LocalDate now = LocalDate.now();
 
@@ -96,8 +100,10 @@ public class ComparisonService {
     }
 
     /**
-     * İki enstrümanın tarihsel verilerini birleştir
+     * İki enstrümanın tarihsel verilerini ortak tarihler üzerinden birleştirir.
+     * Sadece her iki enstrümanda da mevcut olan tarihler dahil edilir.
      */
+
     private List<ComparisonDTO.ComparisonDataPoint> mergeHistoricalData(
             List<PriceHistory> history1,
             List<PriceHistory> history2) {
@@ -124,8 +130,10 @@ public class ComparisonService {
     }
 
     /**
-     * Performans metrikleri hesapla (Dönem bazlı)
+     * Dönem bazlı performans metriklerini hesaplar.
+     * Dönem değişimi, volatilite, en yüksek/düşük fiyat ve fiyat aralığı içerir.
      */
+
     private ComparisonDTO.MetricData calculateMetrics(
             List<PriceHistory> history,
             InstrumentPrice currentPrice) {
@@ -178,8 +186,10 @@ public class ComparisonService {
     }
 
     /**
-     * Yüzde değişim hesapla
+     * İki fiyat arasındaki yüzde değişimini hesaplar.
+     * Formül: ((yeni - eski) / eski) × 100
      */
+
     private BigDecimal calculatePercentChange(BigDecimal oldPrice, BigDecimal newPrice) {
         if (oldPrice.compareTo(BigDecimal.ZERO) == 0) return BigDecimal.ZERO;
 
@@ -190,8 +200,10 @@ public class ComparisonService {
     }
 
     /**
-     * Volatilite hesapla (standart sapma)
+     * Günlük getirilerin standart sapmasını hesaplayarak volatiliteyi döner.
+     * En az 2 veri noktası gerektirir, aksi halde sıfır döner.
      */
+
     private BigDecimal calculateVolatility(List<PriceHistory> history) {
         if (history.size() < 2) return BigDecimal.ZERO;
 
@@ -221,8 +233,9 @@ public class ComparisonService {
     }
 
     /**
-     * InstrumentInfo oluştur
+     * Enstrüman ve fiyat bilgisinden karşılaştırma için özet bilgi oluşturur.
      */
+
     private ComparisonDTO.InstrumentInfo buildInstrumentInfo(
             BaseInstrument instrument,
             InstrumentPrice price) {
