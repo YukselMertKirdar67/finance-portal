@@ -241,22 +241,6 @@ public class UserController {
     }
 
     /**
-     * Kullanıcının OTP (2FA) aktif olup olmadığını kontrol eder.
-     */
-
-    @GetMapping("/has-otp")
-    public ResponseEntity<Map<String, Boolean>> checkIfUserHasOTP(@AuthenticationPrincipal Jwt jwt) {
-        log.info("Checking if user has OTP enabled");
-
-        String userId = jwt.getSubject();
-        boolean hasOTP = authService.checkIfUserHasOTP(userId);
-
-        log.info("User {} has OTP: {}", userId, hasOTP);
-
-        return ResponseEntity.ok(Map.of("hasOTP", hasOTP));
-    }
-
-    /**
      * Kullanıcı kimlik doğrulamasını test eder.
      */
 
