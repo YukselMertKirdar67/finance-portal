@@ -63,18 +63,18 @@ public class AdminInstrumentController {
     @PostMapping("/update-bonds")
     public ResponseEntity<?> updateBondYields() {
         lastUpdateStatus = InstrumentUpdateStatusDTO.builder()
-                .updating(true).message("Tahvil/Bono güncellemesi devam ediyor...").build();
+                .updating(true).message("Tahvil/Bono güncelleniyor...").build();
         try {
-            List<InstrumentPrice> updated = tcmbEvdsService.fetchBondYields();
+            int updated = yahooFinanceService.updateBonds();
             lastUpdateStatus = InstrumentUpdateStatusDTO.builder()
                     .updating(false).lastUpdateTime(LocalDateTime.now())
-                    .totalUpdated(updated.size()).bondsUpdated(updated.size())
+                    .totalUpdated(updated).bondsUpdated(updated)
                     .message("Tahvil/Bono getiri oranları güncellendi").build();
             return ResponseEntity.ok(Map.of(
                     "success", true,
                     "message", "Tahvil/Bono getiri oranları güncellendi",
-                    "updatedCount", updated.size(),
-                    "note", "6 farklı vade (3A, 6A, 1Y, 2Y, 5Y, 10Y)"));
+                    "updatedCount", updated,
+                    "note", "ABD 10Y, 30Y, 5Y tahvil ve 3 aylık hazine bonosu"));
         } catch (Exception e) {
             log.error("❌ Bonds update failed: {}", e.getMessage());
             lastUpdateStatus = InstrumentUpdateStatusDTO.builder()
@@ -228,8 +228,8 @@ public class AdminInstrumentController {
                 .updating(true).message("Tüm fiyatlar güncelleniyor...").build();
         try {
             int tcmbUpdated    = tcmbService.fetchDailyRates().size();
-            int bondsUpdated   = tcmbEvdsService.fetchBondYields().size();
             int yahooUpdated   = yahooFinanceService.updateAll();
+            int bondsUpdated = yahooFinanceService.updateBonds();
             int totalUpdated   = tcmbUpdated + bondsUpdated + yahooUpdated;
 
             lastUpdateStatus = InstrumentUpdateStatusDTO.builder()
