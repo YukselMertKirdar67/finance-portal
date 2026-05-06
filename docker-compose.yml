@@ -71,6 +71,15 @@ services:
     networks:
       - finance-network
 
+  mailhog:
+    image: mailhog/mailhog
+    container_name: finance-mailhog
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+    networks:
+      - finance-network
+
   phpldapadmin:
       image: osixia/phpldapadmin:0.9.0
       container_name: finance-phpldapadmin
@@ -125,6 +134,19 @@ services:
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+    networks:
+      - finance-network
+
+  logstash:
+    image: opensearchproject/logstash-oss-with-opensearch-output-plugin:8.9.0
+    container_name: finance-logstash
+    volumes:
+      - ./logstash.conf:/usr/share/logstash/pipeline/logstash.conf
+    depends_on:
+      opensearch:
+        condition: service_healthy
+      kafka:
+        condition: service_started
     networks:
       - finance-network
 
