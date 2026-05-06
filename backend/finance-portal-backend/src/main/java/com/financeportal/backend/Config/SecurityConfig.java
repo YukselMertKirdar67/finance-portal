@@ -43,6 +43,7 @@ public class SecurityConfig {
                         .requestMatchers("/v3/api-docs/**").permitAll()
 
                         .requestMatchers("/api/auth/**").permitAll()
+                        .requestMatchers("/api/totp/verify-login").permitAll()
 
                         // Admin endpoints
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
