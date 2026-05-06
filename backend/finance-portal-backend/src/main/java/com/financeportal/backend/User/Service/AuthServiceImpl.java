@@ -1,6 +1,8 @@
 package com.financeportal.backend.User.Service;
 
+import com.financeportal.backend.Email.EmailService;
 import com.financeportal.backend.Exception.ResourceNotFoundException;
+import com.financeportal.backend.Totp.TotpService;
 import com.financeportal.backend.User.DTO.*;
 import com.financeportal.backend.User.Entity.User;
 import com.financeportal.backend.User.Repository.UserRepository;
@@ -39,6 +41,8 @@ public class AuthServiceImpl implements AuthService {
     private final Keycloak keycloakAdminClient;
     private final JwtDecoder jwtDecoder;
     private final UserRepository userRepository;
+    private final EmailService emailService;
+    private final TotpService totpService;
 
     @Value("${keycloak.admin.realm}")
     private String realm;
@@ -78,7 +82,7 @@ public class AuthServiceImpl implements AuthService {
                 assignUserRole(realmResource, userId);
 
                 try {
-                    usersResource.get(userId).executeActionsEmail(Collections.singletonList("VERIFY_EMAIL"));
+                    emailService.sendVerificationEmail(userId, request.getEmail());
                     log.info("Email verification sent to: {}", request.getEmail());
                 } catch (Exception e) {
                     log.error("Failed to send verification email: {}", e.getMessage());
@@ -137,7 +141,7 @@ public class AuthServiceImpl implements AuthService {
             }
 
             String userId = users.get(0).getId();
-            usersResource.get(userId).executeActionsEmail(Collections.singletonList("UPDATE_PASSWORD"));
+            emailService.sendVerificationEmail(userId, users.get(0).getEmail());
             log.info("Password reset email sent successfully to: {}", request.getEmail());
 
             return PasswordResetResponseDTO.builder()
@@ -210,7 +214,7 @@ public class AuthServiceImpl implements AuthService {
                         .build();
             }
 
-            usersResource.get(userId).executeActionsEmail(Collections.singletonList("VERIFY_EMAIL"));
+            emailService.sendVerificationEmail(userId, request.getEmail());
             log.info("Email verification sent successfully to: {}", request.getEmail());
 
             return EmailVerificationResponseDTO.builder()
@@ -271,7 +275,9 @@ public class AuthServiceImpl implements AuthService {
     }
 
     /**
-     * Kullanıcı girişi yapar. OTP gerekliyse OTP_REQUIRED mesajı döner.
+     * Kullanıcı girişi yapar.
+     * 2FA aktifse 2FA_REQUIRED mesajı döner.
+     * totpVerified true ise 2FA kontrolü atlanır.
      * Başarılı girişte access token ve refresh token döner.
      */
     @Override
@@ -290,10 +296,6 @@ public class AuthServiceImpl implements AuthService {
             body.add("username", request.getUsername());
             body.add("password", request.getPassword());
             body.add("grant_type", "password");
-
-            if (request.getOtpCode() != null && !request.getOtpCode().isEmpty()) {
-                body.add("totp", request.getOtpCode());
-            }
 
             if (request.isRememberMe()) {
                 body.add("scope", "openid offline_access");
@@ -318,6 +320,16 @@ public class AuthServiceImpl implements AuthService {
                         ? (List<String>) realmAccess.get("roles")
                         : Collections.emptyList();
 
+                // 2FA kontrolü — totpVerified true ise atla
+                if (!request.isTotpVerified() && totpService.isTotpEnabled(keycloakId)) {
+                    log.info("⚠️ 2FA required for user: {}", username);
+                    return LoginResponseDTO.builder()
+                            .success(false)
+                            .message("2FA_REQUIRED")
+                            .keycloakId(keycloakId)
+                            .build();
+                }
+
                 log.info("✅ Login successful for username: {}", username);
 
                 return LoginResponseDTO.builder()
@@ -332,36 +344,10 @@ public class AuthServiceImpl implements AuthService {
 
             } catch (HttpClientErrorException e) {
                 log.warn("❌ Login failed for username: {} - Status: {}", request.getUsername(), e.getStatusCode());
-
-                if (request.getOtpCode() == null || request.getOtpCode().isEmpty()) {
-                    try {
-                        boolean userHasOTP = checkIfUserHasOTPByUsername(request.getUsername());
-                        if (userHasOTP) {
-                            log.info("⚠️ User has OTP configured, requesting OTP");
-                            return LoginResponseDTO.builder()
-                                    .success(false)
-                                    .message("OTP_REQUIRED")
-                                    .build();
-                        } else {
-                            return LoginResponseDTO.builder()
-                                    .success(false)
-                                    .message("Invalid username or password")
-                                    .build();
-                        }
-                    } catch (Exception ex) {
-                        log.error("Error checking OTP status: {}", ex.getMessage());
-                        return LoginResponseDTO.builder()
-                                .success(false)
-                                .message("OTP_REQUIRED")
-                                .build();
-                    }
-                } else {
-                    log.warn("❌ Invalid OTP code for username: {}", request.getUsername());
-                    return LoginResponseDTO.builder()
-                            .success(false)
-                            .message("Invalid OTP code. Please try again.")
-                            .build();
-                }
+                return LoginResponseDTO.builder()
+                        .success(false)
+                        .message("Invalid username or password")
+                        .build();
             }
 
         } catch (Exception e) {
@@ -375,7 +361,7 @@ public class AuthServiceImpl implements AuthService {
 
     /**
      * Kullanıcının şifresini değiştirir.
-     * Mevcut şifre doğrulanır, OTP varsa OTP kodu da istenir.
+     * Mevcut şifre doğrulanır.
      * Başarılı değişimde son şifre değişim tarihi güncellenir.
      */
     @Override
@@ -411,27 +397,15 @@ public class AuthServiceImpl implements AuthService {
                 body.add("password", request.getCurrentPassword());
                 body.add("grant_type", "password");
 
-                if (request.getOtpCode() != null && !request.getOtpCode().isEmpty()) {
-                    body.add("totp", request.getOtpCode());
-                }
-
                 HttpEntity<MultiValueMap<String, String>> entity = new HttpEntity<>(body, headers);
 
                 try {
                     restTemplate.postForEntity(tokenUrl, entity, Map.class);
                 } catch (HttpClientErrorException e) {
-                    boolean hasOTP = checkIfUserHasOTPByUsername(username);
-                    if (hasOTP && (request.getOtpCode() == null || request.getOtpCode().isEmpty())) {
-                        log.warn("⚠️ OTP required for user: {}", userId);
-                        return ChangePasswordResponseDTO.builder()
-                                .success(false)
-                                .message("OTP_REQUIRED")
-                                .build();
-                    }
-                    log.warn("❌ Current password or OTP is incorrect for user: {}", userId);
+                    log.warn("❌ Current password is incorrect for user: {}", userId);
                     return ChangePasswordResponseDTO.builder()
                             .success(false)
-                            .message("Mevcut şifre veya OTP kodu hatalı")
+                            .message("Mevcut şifre hatalı")
                             .build();
                 }
 
@@ -525,77 +499,6 @@ public class AuthServiceImpl implements AuthService {
             return RefreshTokenResponseDTO.builder()
                     .success(false)
                     .message("Token refresh failed. Please login again.")
-                    .build();
-        }
-    }
-
-    /**
-     * Kullanıcı adı ve şifreyi doğrular.
-     * OTP gerekliyse Keycloak yönlendirme URL'i döner.
-     */
-    @Override
-    public PreAuthResponseDTO preAuth(LoginRequestDTO request) {
-        log.info("Pre-auth check for username: {}", request.getUsername());
-
-        try {
-            String tokenUrl = "http://finance-keycloak:8080/realms/finance-portal/protocol/openid-connect/token";
-
-            RestTemplate restTemplate = new RestTemplate();
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
-
-            MultiValueMap<String, String> body = new LinkedMultiValueMap<>();
-            body.add("client_id", "finance-portal-frontend");
-            body.add("username", request.getUsername());
-            body.add("password", request.getPassword());
-            body.add("grant_type", "password");
-
-            HttpEntity<MultiValueMap<String, String>> entity = new HttpEntity<>(body, headers);
-
-            try {
-                ResponseEntity<Map> response = restTemplate.postForEntity(tokenUrl, entity, Map.class);
-                Map<String, Object> tokenResponse = response.getBody();
-
-                String accessToken = (String) tokenResponse.get("access_token");
-                Jwt jwt = jwtDecoder.decode(accessToken);
-                String username = jwt.getClaimAsString("preferred_username");
-
-                log.info("✅ Pre-auth successful (no OTP required) for: {}", username);
-
-                return PreAuthResponseDTO.builder()
-                        .success(true)
-                        .message("Login successful")
-                        .requiresOTP(false)
-                        .build();
-
-            } catch (HttpClientErrorException e) {
-                boolean userHasOTP = checkIfUserHasOTPByUsername(request.getUsername());
-
-                if (userHasOTP) {
-                    String keycloakAuthUrl = buildKeycloakAuthUrl(request.getUsername());
-                    log.info("⚠️ User has OTP, redirecting to Keycloak");
-                    return PreAuthResponseDTO.builder()
-                            .success(false)
-                            .message("OTP_REQUIRED")
-                            .requiresOTP(true)
-                            .keycloakAuthUrl(keycloakAuthUrl)
-                            .build();
-                } else {
-                    log.warn("❌ Invalid credentials for: {}", request.getUsername());
-                    return PreAuthResponseDTO.builder()
-                            .success(false)
-                            .message("Invalid username or password")
-                            .requiresOTP(false)
-                            .build();
-                }
-            }
-
-        } catch (Exception e) {
-            log.error("❌ Error during pre-auth: {}", e.getMessage(), e);
-            return PreAuthResponseDTO.builder()
-                    .success(false)
-                    .message("Authentication failed")
-                    .requiresOTP(false)
                     .build();
         }
     }
@@ -717,55 +620,10 @@ public class AuthServiceImpl implements AuthService {
     }
 
     /**
-     * Keycloak Authorization Code Flow URL'i oluşturur.
-     */
-    private String buildKeycloakAuthUrl(String username) {
-        String baseUrl = "http://localhost:8180/realms/finance-portal/protocol/openid-connect/auth";
-        String clientId = "finance-portal-frontend";
-        String redirectUri = "http://localhost:3000/auth/callback";
-        String responseType = "code";
-        String scope = "openid";
-
-        return String.format("%s?client_id=%s&redirect_uri=%s&response_type=%s&scope=%s&login_hint=%s",
-                baseUrl, clientId, redirectUri, responseType, scope, username);
-    }
-
-    /**
      * Kullanıcının OTP (2FA) aktif olup olmadığını Keycloak credentials üzerinden kontrol eder.
      */
     @Override
     public boolean checkIfUserHasOTP(String userId) {
-        try {
-            RealmResource realmResource = keycloakAdminClient.realm(realm);
-            List<CredentialRepresentation> credentials = realmResource.users().get(userId).credentials();
-
-            for (CredentialRepresentation cred : credentials) {
-                if ("otp".equalsIgnoreCase(cred.getType())) {
-                    return true;
-                }
-            }
-            return false;
-        } catch (Exception e) {
-            log.error("Error checking OTP for userId {}: {}", userId, e.getMessage());
-            return false;
-        }
-    }
-
-    /**
-     * Kullanıcı adına göre OTP durumunu kontrol eder.
-     * Önce kullanıcıyı Keycloak'ta arar, sonra checkIfUserHasOTP'yi çağırır.
-     */
-    private boolean checkIfUserHasOTPByUsername(String username) {
-        try {
-            RealmResource realmResource = keycloakAdminClient.realm(realm);
-            List<UserRepresentation> users = realmResource.users().search(username, true);
-
-            if (users.isEmpty()) return false;
-
-            return checkIfUserHasOTP(users.get(0).getId());
-        } catch (Exception e) {
-            log.error("Error checking OTP by username: {}", e.getMessage());
-            return false;
-        }
+        return totpService.isTotpEnabled(userId);
     }
 }
