@@ -358,15 +358,24 @@ export default function InstrumentDetailPage() {
 
                         {price && (
                             <div className="text-right">
-                                <p className="text-5xl font-bold text-gray-900 mb-2">
-                                    {formatPrice(price.current)}
-                                    <span className="text-lg text-gray-400 ml-2">{instrument.currency}</span>
-                                </p>
+                                {instrument.type === 'BOND' ? (
+                                    <>
+                                        <p className="text-5xl font-bold text-gray-900 mb-2">
+                                            %{formatPrice(price.current)}
+                                            <span className="text-lg text-gray-400 ml-2">Getiri</span>
+                                        </p>
+                                    </>
+                                ) : (
+                                    <p className="text-5xl font-bold text-gray-900 mb-2">
+                                        {formatPrice(price.current)}
+                                        <span className="text-lg text-gray-400 ml-2">{instrument.currency}</span>
+                                    </p>
+                                )}
                                 <div className={`flex items-center justify-end gap-2 text-lg font-semibold ${isPositive ? 'text-emerald-600' : 'text-red-500'}`}>
                                     {isPositive ? <TrendingUp className="w-5 h-5" /> : <TrendingDown className="w-5 h-5" />}
                                     <span>
-                                        {isPositive ? '+' : ''}{formatPrice(price.changeAmount)} ({Math.abs(price.changePercent).toFixed(2)}%)
-                                    </span>
+                {isPositive ? '+' : ''}{formatPrice(price.changeAmount)} ({Math.abs(price.changePercent).toFixed(2)}%)
+            </span>
                                 </div>
                                 <p className="text-xs text-gray-400 mt-2">{formatDate(price.timestamp)}</p>
                             </div>
@@ -379,19 +388,41 @@ export default function InstrumentDetailPage() {
 
                 {price && (
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                        {[
-                            { label: 'Açılış', value: formatPrice(price.open), color: 'text-gray-900' },
-                            { label: 'Gün Yüksek', value: formatPrice(price.high), color: 'text-emerald-600' },
-                            { label: 'Gün Düşük', value: formatPrice(price.low), color: 'text-red-500' },
-                            { label: 'Önceki Kapanış', value: formatPrice(price.previousClose), color: 'text-gray-900' },
-                        ].map(stat => (
-                            <Card key={stat.label} className="border-0 shadow-sm">
-                                <CardContent className="pt-5 pb-5">
-                                    <p className="text-xs text-gray-500 uppercase tracking-wide mb-2">{stat.label}</p>
-                                    <p className={`text-xl font-bold ${stat.color}`}>{stat.value}</p>
-                                </CardContent>
-                            </Card>
-                        ))}
+                        {instrument.type === 'BOND' ? (
+                            // Tahvil için özel kartlar
+                            <>
+                                {[
+                                    { label: 'Güncel Getiri', value: `%${formatPrice(price.current)}`, color: 'text-amber-600' },
+                                    { label: 'Önceki Kapanış', value: `%${formatPrice(price.previousClose)}`, color: 'text-gray-900' },
+                                    { label: 'Değişim', value: `${price.changeAmount >= 0 ? '+' : ''}${formatPrice(price.changeAmount)}`, color: price.changeAmount >= 0 ? 'text-emerald-600' : 'text-red-500' },
+                                    { label: 'Değişim %', value: `${price.changePercent >= 0 ? '+' : ''}${Math.abs(price.changePercent).toFixed(2)}%`, color: price.changePercent >= 0 ? 'text-emerald-600' : 'text-red-500' },
+                                ].map(stat => (
+                                    <Card key={stat.label} className="border-0 shadow-sm">
+                                        <CardContent className="pt-5 pb-5">
+                                            <p className="text-xs text-gray-500 uppercase tracking-wide mb-2">{stat.label}</p>
+                                            <p className={`text-xl font-bold ${stat.color}`}>{stat.value}</p>
+                                        </CardContent>
+                                    </Card>
+                                ))}
+                            </>
+                        ) : (
+                            // Normal enstrümanlar
+                            <>
+                                {[
+                                    { label: 'Açılış', value: formatPrice(price.open), color: 'text-gray-900' },
+                                    { label: 'Gün Yüksek', value: formatPrice(price.high), color: 'text-emerald-600' },
+                                    { label: 'Gün Düşük', value: formatPrice(price.low), color: 'text-red-500' },
+                                    { label: 'Önceki Kapanış', value: formatPrice(price.previousClose), color: 'text-gray-900' },
+                                ].map(stat => (
+                                    <Card key={stat.label} className="border-0 shadow-sm">
+                                        <CardContent className="pt-5 pb-5">
+                                            <p className="text-xs text-gray-500 uppercase tracking-wide mb-2">{stat.label}</p>
+                                            <p className={`text-xl font-bold ${stat.color}`}>{stat.value}</p>
+                                        </CardContent>
+                                    </Card>
+                                ))}
+                            </>
+                        )}
                     </div>
                 )}
 
