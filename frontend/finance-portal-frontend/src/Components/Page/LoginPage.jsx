@@ -44,32 +44,36 @@ const LoginPage = () => {
         setError('');
 
         try {
-            //  Pre-auth: Credentials check + OTP kontrolü
-            const preAuthResponse = await api.post('/auth/pre-auth', {
-                username: formData.username,
-                password: formData.password,
+            const loginResponse = await api.post('/auth/login', {
+                ...formData,
                 rememberMe: rememberMe
             });
 
-            if (preAuthResponse.data.success && !preAuthResponse.data.requiresOTP) {
-                // OTP yok, direkt login
-                const loginResponse = await api.post('/auth/login', {
-                    ...formData,
-                    rememberMe: rememberMe
+            if (loginResponse.data.success) {
+                login(loginResponse.data, rememberMe);
+
+                const token = loginResponse.data.accessToken;
+                const totpStatus = await api.get('/totp/status', {
+                    headers: { Authorization: `Bearer ${token}` }
                 });
 
-                if (loginResponse.data.success) {
-                    //  AuthContext'e rememberMe parametresi ile token kaydet
-                    login(loginResponse.data, rememberMe);
+                if (!totpStatus.data.enabled) {
+                    window.location.href = '/setup-2fa';
+                } else {
                     window.location.href = '/home';
                 }
-
-            } else if (preAuthResponse.data.requiresOTP) {
-                //  OTP gerekli - Keycloak popup aç
-                openKeycloakOTPPopup(preAuthResponse.data.keycloakAuthUrl);
-
+            }
+            else if (loginResponse.data.message === '2FA_REQUIRED') {
+                navigate('/verify-2fa', {
+                    state: {
+                        keycloakId: loginResponse.data.keycloakId,
+                        username: formData.username,
+                        password: formData.password,
+                        rememberMe: rememberMe
+                    }
+                });
             } else {
-                setError(preAuthResponse.data.message || 'Giriş başarısız');
+                setError(loginResponse.data.message || 'Giriş başarısız');
             }
 
         } catch (err) {
@@ -78,57 +82,6 @@ const LoginPage = () => {
         } finally {
             setLoading(false);
         }
-    };
-
-    // Keycloak OTP Popup
-    const openKeycloakOTPPopup = (authUrl) => {
-        const width = 500;
-        const height = 600;
-        const left = (window.screen.width / 2) - (width / 2);
-        const top = (window.screen.height / 2) - (height / 2);
-
-        const popup = window.open(
-            authUrl,
-            'Keycloak 2FA',
-            `width=${width},height=${height},left=${left},top=${top},toolbar=no,menubar=no,scrollbars=yes`
-        );
-
-        // Popup'tan mesaj dinle (postMessage)
-        const messageHandler = (event) => {
-            // Güvenlik: Origin kontrolü
-            if (event.origin !== window.location.origin) return;
-
-            if (event.data.type === 'KEYCLOAK_AUTH_SUCCESS') {
-                // Token alındı!
-                const { accessToken, refreshToken, username, email, roles } = event.data;
-
-                //  AuthContext'e rememberMe ile kaydet
-                login(
-                    { accessToken, refreshToken, username, email, roles },
-                    rememberMe
-                );
-
-                // Popup'ı kapat
-                if (popup && !popup.closed) popup.close();
-
-                // Home'a yönlendir
-                navigate('/home');
-
-                // Event listener'ı temizle
-                window.removeEventListener('message', messageHandler);
-            }
-        };
-
-        window.addEventListener('message', messageHandler);
-
-        // Popup kapandığında cleanup
-        const checkPopupClosed = setInterval(() => {
-            if (popup && popup.closed) {
-                clearInterval(checkPopupClosed);
-                window.removeEventListener('message', messageHandler);
-                setLoading(false);
-            }
-        }, 500);
     };
 
     return (
