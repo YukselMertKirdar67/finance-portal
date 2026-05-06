@@ -1,5 +1,6 @@
 package com.financeportal.backend.User.Controller;
 
+import com.financeportal.backend.Email.EmailService;
 import com.financeportal.backend.User.DTO.*;
 import com.financeportal.backend.User.Entity.User;
 import com.financeportal.backend.User.Service.AuthService;
@@ -13,6 +14,8 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Map;
+
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
@@ -22,6 +25,7 @@ public class AuthController {
     private final AuthService authService;
     private final UserService userService;
     private final JwtDecoder jwtDecoder;
+    private final EmailService emailService;
 
     /**
      * Yeni kullanıcı kaydı oluşturur.
@@ -190,12 +194,16 @@ public class AuthController {
     }
 
     /**
-     * Kullanıcı adı ve şifreyi doğrular, OTP gerekliyse Keycloak URL'i döner.
+     * Email doğrulama tokenini doğrular.
      */
-
-    @PostMapping("/pre-auth")
-    public ResponseEntity<PreAuthResponseDTO> preAuth(@RequestBody LoginRequestDTO request) {
-        PreAuthResponseDTO response = authService.preAuth(request);
-        return ResponseEntity.ok(response);
+    @GetMapping("/verify-email")
+    public ResponseEntity<?> verifyEmail(@RequestParam String token) {
+        log.info("Verifying email token");
+        boolean success = emailService.verifyEmail(token);
+        if (success) {
+            return ResponseEntity.ok(Map.of("success", true, "message", "Email doğrulandı"));
+        } else {
+            return ResponseEntity.badRequest().body(Map.of("success", false, "message", "Geçersiz veya süresi dolmuş token"));
+        }
     }
 }
