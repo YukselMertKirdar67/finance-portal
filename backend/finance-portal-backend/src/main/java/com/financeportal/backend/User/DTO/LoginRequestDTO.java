@@ -19,4 +19,6 @@ public class LoginRequestDTO {
     private String otpCode;
 
     private boolean rememberMe;
+
+    private boolean totpVerified;
 }
