@@ -27,6 +27,12 @@ public class HomeService {
     private final InstrumentPriceRepository priceRepository;
     private final NewsService newsService;
 
+    /**
+     * Anasayfa için piyasa özeti, kazananlar, kaybedenler,
+     * son haberler, istatistikler ve kategori özetlerini tek seferde getirir.
+     * Sonuçlar Redis cache'te tutulur.
+     */
+
     @Cacheable(value = "homePage", key = "'data'")
     public HomePageDTO getHomePageData() {
         log.info("🏠 Generating home page data...");
@@ -42,7 +48,7 @@ public class HomeService {
     }
 
     /**
-     * ✅ Piyasa Özeti (4 önemli enstrüman)
+     *  Piyasa Özeti (4 önemli enstrüman)
      */
     private List<HomePageDTO.MarketOverviewItem> getMarketOverview() {
         // USD/TRY, EUR/TRY, BTC, Altın
@@ -63,7 +69,7 @@ public class HomeService {
     }
 
     /**
-     * ✅ En Çok Kazananlar
+     * En Çok Kazananlar
      */
     private List<HomePageDTO.InstrumentSummary> getTopGainers(int limit) {
         List<BaseInstrument> instruments = instrumentRepository.findByActiveTrue();
@@ -91,7 +97,7 @@ public class HomeService {
     }
 
     /**
-     * ✅ En Çok Kaybedenler
+     * En Çok Kaybedenler
      */
     private List<HomePageDTO.InstrumentSummary> getTopLosers(int limit) {
         List<BaseInstrument> instruments = instrumentRepository.findByActiveTrue();
@@ -119,7 +125,7 @@ public class HomeService {
     }
 
     /**
-     * ✅ Son Haberler
+     * Son Haberler
      */
     private List<NewsResponseDTO> getRecentNews(int limit) {
         try {
@@ -131,7 +137,7 @@ public class HomeService {
     }
 
     /**
-     * ✅ Piyasa İstatistikleri
+     * Piyasa İstatistikleri
      */
     private HomePageDTO.MarketStats getMarketStats() {
         List<BaseInstrument> instruments = instrumentRepository.findByActiveTrue();
@@ -165,13 +171,13 @@ public class HomeService {
     }
 
     /**
-     * ✅ Kategori Özetleri
+     * Kategori Özetleri
      */
     private List<HomePageDTO.CategorySummary> getCategorySummaries() {
         Map<InstrumentType, Long> counts = new HashMap<>();
 
         for (InstrumentType type : InstrumentType.values()) {
-            // ✅ Entity class kullan
+            // Entity class kullan
             Class<? extends BaseInstrument> entityClass = switch (type) {
                 case FOREX -> ForexInstrument.class;
                 case STOCK -> StockInstrument.class;
@@ -198,7 +204,11 @@ public class HomeService {
                 .collect(Collectors.toList());
     }
 
-    // ✅ Helper metodlar
+    /**
+     * Enstrüman ve fiyat bilgisinden piyasa özeti öğesi oluşturur.
+     * Anasayfadaki piyasa özeti kartları için kullanılır.
+     */
+
     private HomePageDTO.MarketOverviewItem buildMarketOverviewItem(
             BaseInstrument instrument,
             InstrumentPrice price
@@ -214,6 +224,11 @@ public class HomeService {
                         price.getChangePercent().compareTo(BigDecimal.ZERO) >= 0)
                 .build();
     }
+
+    /**
+     * Enstrüman ve fiyat bilgisinden enstrüman özeti oluşturur.
+     * En çok kazananlar ve kaybedenler listesi için kullanılır.
+     */
 
     private HomePageDTO.InstrumentSummary buildInstrumentSummary(
             BaseInstrument instrument,
@@ -232,10 +247,18 @@ public class HomeService {
                 .build();
     }
 
+    /**
+     * Fiyatı formatlar. Null gelirse "0.00" döner.
+     */
+
     private String formatPrice(BigDecimal price) {
         if (price == null) return "0.00";
         return price.setScale(2, RoundingMode.HALF_UP).toString();
     }
+
+    /**
+     * Değişim miktarını formatlar. Pozitifse "+" prefix ekler.
+     */
 
     private String formatChange(BigDecimal change) {
         if (change == null) return "0.00";
@@ -243,12 +266,20 @@ public class HomeService {
         return change.compareTo(BigDecimal.ZERO) > 0 ? "+" + formatted : formatted;
     }
 
+    /**
+     * Yüzde değerini formatlar. Pozitifse "+" prefix, sona "%" ekler.
+     */
+
     private String formatPercent(BigDecimal percent) {
         if (percent == null) return "0.00%";
         String formatted = percent.setScale(2, RoundingMode.HALF_UP).toString();
         String withSign = percent.compareTo(BigDecimal.ZERO) > 0 ? "+" + formatted : formatted;
         return withSign + "%";
     }
+
+    /**
+     * Enstrüman türünün Türkçe görünen adını döner.
+     */
 
     private String getDisplayName(InstrumentType type) {
         return switch (type) {
@@ -261,6 +292,10 @@ public class HomeService {
             case FUND -> "Yatırım Fonu";
         };
     }
+
+    /**
+     * Enstrüman türüne ait ikon adını döner (Lucide React ikon isimleri).
+     */
 
     private String getIconName(InstrumentType type) {
         return switch (type) {
