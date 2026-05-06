@@ -281,8 +281,8 @@ const AdminInstrumentUpdatePage = () => {
                     disabled={updating || status?.updating}
                 />
                 <UpdateCard
-                    title="TCMB EVDS - Tahvil"
-                    description="Devlet tahvili getiri oranları"
+                    title="Yahoo Finance - Tahvil"
+                    description="ABD 10Y, 30Y, 5Y tahvil ve 3 aylık hazine bonosu"
                     icon={<FileText className="w-6 h-6" />}
                     iconBg="bg-indigo-100" iconColor="text-indigo-600"
                     limit="Sınırsız"
