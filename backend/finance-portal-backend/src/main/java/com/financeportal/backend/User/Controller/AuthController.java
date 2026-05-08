@@ -133,6 +133,9 @@ public class AuthController {
 
             log.info("✅ Login successful for user: {}", request.getUsername());
             return ResponseEntity.ok(response);
+        }else if ("2FA_REQUIRED".equals(response.getMessage())) {
+            log.info("⚠️ 2FA required for user: {}", request.getUsername());
+            return ResponseEntity.ok(response);
         } else {
             log.warn("❌ Login failed for user: {}", request.getUsername());
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
