@@ -2,14 +2,16 @@ package com.financeportal.backend.Instrument.Controller;
 
 import com.financeportal.backend.Instrument.DTO.InstrumentUpdateStatusDTO;
 import com.financeportal.backend.Instrument.Entity.InstrumentPrice;
+import com.financeportal.backend.Instrument.Repository.PriceHistoryRepository;
 import com.financeportal.backend.Instrument.Service.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.List;
+
 import java.util.Map;
 
 @Slf4j
@@ -171,6 +173,52 @@ public class AdminInstrumentController {
         }
     }
 
+    @PostMapping("/update-etfs")
+    public ResponseEntity<?> updateEtfs() {
+        lastUpdateStatus = InstrumentUpdateStatusDTO.builder()
+                .updating(true).message("ETF'ler güncelleniyor...").build();
+        try {
+            int updated = yahooFinanceService.updateEtfs();
+            lastUpdateStatus = InstrumentUpdateStatusDTO.builder()
+                    .updating(false).lastUpdateTime(LocalDateTime.now())
+                    .totalUpdated(updated)
+                    .message("ETF'ler güncellendi").build();
+            return ResponseEntity.ok(Map.of(
+                    "success", true,
+                    "message", "ETF'ler güncellendi",
+                    "updatedCount", updated));
+        } catch (Exception e) {
+            log.error("❌ ETF update failed: {}", e.getMessage());
+            lastUpdateStatus = InstrumentUpdateStatusDTO.builder()
+                    .updating(false).message("ETF güncellemesi başarısız").build();
+            return ResponseEntity.status(500).body(Map.of("success", false, "message", e.getMessage()));
+        }
+    }
+
+    @PostMapping("/fetch-forex-historical")
+    public ResponseEntity<?> fetchForexHistoricalData(
+            @RequestParam(defaultValue = "365") int days) {
+        lastUpdateStatus = InstrumentUpdateStatusDTO.builder()
+                .updating(true).message("Döviz geçmiş verileri çekiliyor...").build();
+        try {
+            LocalDate endDate = LocalDate.now();
+            LocalDate startDate = endDate.minusDays(days);
+            tcmbService.fetchHistoricalRates(startDate, endDate);
+            lastUpdateStatus = InstrumentUpdateStatusDTO.builder()
+                    .updating(false).lastUpdateTime(LocalDateTime.now())
+                    .message("Döviz geçmiş verileri çekildi").build();
+            return ResponseEntity.ok(Map.of(
+                    "success", true,
+                    "message", "Döviz geçmiş verileri çekildi",
+                    "days", days));
+        } catch (Exception e) {
+            log.error("❌ Forex historical failed: {}", e.getMessage());
+            lastUpdateStatus = InstrumentUpdateStatusDTO.builder()
+                    .updating(false).message("Geçmiş veri çekme başarısız").build();
+            return ResponseEntity.status(500).body(Map.of("success", false, "message", e.getMessage()));
+        }
+    }
+
     @PostMapping("/update-symbol/{yahooSymbol}/{dbSymbol}")
     public ResponseEntity<?> updateSymbol(@PathVariable String yahooSymbol,
                                           @PathVariable String dbSymbol) {
@@ -230,7 +278,7 @@ public class AdminInstrumentController {
             int tcmbUpdated    = tcmbService.fetchDailyRates().size();
             int yahooUpdated   = yahooFinanceService.updateAll();
             int bondsUpdated = yahooFinanceService.updateBonds();
-            int totalUpdated   = tcmbUpdated + bondsUpdated + yahooUpdated;
+            int totalUpdated = tcmbUpdated + bondsUpdated + yahooUpdated;
 
             lastUpdateStatus = InstrumentUpdateStatusDTO.builder()
                     .updating(false).lastUpdateTime(LocalDateTime.now())
