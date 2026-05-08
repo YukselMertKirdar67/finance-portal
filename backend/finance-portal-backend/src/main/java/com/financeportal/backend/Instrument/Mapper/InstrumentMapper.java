@@ -48,6 +48,13 @@ public class InstrumentMapper {
             dto.setMetalType(precious.getMetalType());
             dto.setUnit(precious.getUnit());
         }
+        else if (instrument instanceof FundInstrument fund) {
+            dto.setFundCode(fund.getFundCode());
+            dto.setFundType(fund.getFundType());
+            dto.setUmbrella(fund.getUmbrella());
+            dto.setTotalValue(fund.getTotalValue());
+            dto.setInvestorCount(fund.getInvestorCount());
+        }
 
         return dto;
     }
@@ -133,6 +140,20 @@ public class InstrumentMapper {
                     .currency(dto.getCurrency())
                     .metalType(dto.getMetalType())
                     .unit(dto.getUnit())
+                    .active(true)
+                    .build();
+
+            case FUND -> FundInstrument.builder()
+                    .symbol(dto.getSymbol())
+                    .name(dto.getName())
+                    .exchange(dto.getExchange())
+                    .description(dto.getDescription())
+                    .currency(dto.getCurrency())
+                    .fundCode(dto.getFundCode())
+                    .fundType(dto.getFundType())
+                    .umbrella(dto.getUmbrella())
+                    .totalValue(dto.getTotalValue())
+                    .investorCount(dto.getInvestorCount())
                     .active(true)
                     .build();
         };
