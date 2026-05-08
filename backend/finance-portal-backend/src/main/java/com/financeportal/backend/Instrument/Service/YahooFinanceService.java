@@ -104,6 +104,18 @@ public class YahooFinanceService {
             Map.of("yahoo", "^IRX",    "db", "US-3M-BOND",  "name", "ABD 3 Aylık Hazine Bonosu"),
             Map.of("yahoo", "^FVX",    "db", "US-5Y-BOND",  "name", "ABD 5 Yıllık Tahvil")
     );
+    private static final List<Map<String, String>> ETFS = List.of(
+            Map.of("yahoo", "SPY",  "db", "SPY",  "name", "SPDR S&P 500 ETF Trust"),
+            Map.of("yahoo", "QQQ",  "db", "QQQ",  "name", "Invesco QQQ Trust"),
+            Map.of("yahoo", "VTI",  "db", "VTI",  "name", "Vanguard Total Stock Market ETF"),
+            Map.of("yahoo", "GLD",  "db", "GLD",  "name", "SPDR Gold Shares ETF"),
+            Map.of("yahoo", "IEF",  "db", "IEF",  "name", "iShares 7-10 Year Treasury Bond ETF"),
+            Map.of("yahoo", "EEM",  "db", "EEM",  "name", "iShares MSCI Emerging Markets ETF"),
+            Map.of("yahoo", "XLK",  "db", "XLK",  "name", "Technology Select Sector SPDR ETF"),
+            Map.of("yahoo", "XLF",  "db", "XLF",  "name", "Financial Select Sector SPDR ETF"),
+            Map.of("yahoo", "ARKK", "db", "ARKK", "name", "ARK Innovation ETF"),
+            Map.of("yahoo", "VNQ",  "db", "VNQ",  "name", "Vanguard Real Estate ETF")
+    );
 
 
     public InstrumentPrice fetchQuote(String yahooSymbol, String dbSymbol) {
@@ -390,6 +402,22 @@ public class YahooFinanceService {
         return updated;
     }
 
+    public int updateEtfs() {
+        log.info("📊 Updating ETFs via Yahoo Finance...");
+        int updated = 0;
+        for (Map<String, String> etf : ETFS) {
+            try {
+                InstrumentPrice price = fetchQuote(etf.get("yahoo"), etf.get("db"));
+                if (price != null) updated++;
+                Thread.sleep(2000);
+            } catch (Exception e) {
+                log.error("❌ Failed: {}", etf.get("db"));
+            }
+        }
+        log.info("✅ ETFs updated: {}/{}", updated, ETFS.size());
+        return updated;
+    }
+
     public int updateAll() {
         log.info("📊 Updating ALL instruments via Yahoo Finance...");
         int total = 0;
@@ -398,6 +426,7 @@ public class YahooFinanceService {
         total += updateCryptos();
         total += updatePreciousMetals();
         total += updateBonds();
+        total += updateEtfs();
         log.info("✅ Total updated: {}", total);
         return total;
     }
@@ -412,6 +441,7 @@ public class YahooFinanceService {
         all.addAll(PRECIOUS_METALS);
         all.addAll(FOREX_PAIRS);
         all.addAll(BONDS);
+        all.addAll(ETFS);
 
         for (Map<String, String> instrument : all) {
             try {
@@ -474,6 +504,21 @@ public class YahooFinanceService {
                     .symbol(dbSymbol).name(meta.path("longName").asText(dbSymbol))
                     .issuer("US Treasury").exchange("CBOE")
                     .currency("USD").active(true).build();
+        }
+        else if (dbSymbol.equals("SPY") || dbSymbol.equals("QQQ") ||
+            dbSymbol.equals("VTI") || dbSymbol.equals("GLD") ||
+            dbSymbol.equals("IEF") || dbSymbol.equals("EEM") ||
+            dbSymbol.equals("XLK") || dbSymbol.equals("XLF") ||
+            dbSymbol.equals("ARKK") || dbSymbol.equals("VNQ")) {
+            instrument = FundInstrument.builder()
+                .symbol(dbSymbol)
+                .name(meta.path("longName").asText(dbSymbol))
+                .fundCode(dbSymbol)
+                .fundType("ETF")
+                .exchange(meta.path("exchangeName").asText("NYSE"))
+                .currency("USD")
+                .active(true)
+                .build();
         }
         else {
             instrument = StockInstrument.builder()
