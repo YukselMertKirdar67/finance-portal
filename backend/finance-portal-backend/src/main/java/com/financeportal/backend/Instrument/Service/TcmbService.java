@@ -4,8 +4,6 @@ import com.financeportal.backend.Instrument.Entity.*;
 import com.financeportal.backend.Instrument.Repository.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.cache.annotation.CacheEvict;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import org.w3c.dom.Document;
@@ -21,10 +19,7 @@ import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor
@@ -37,6 +32,7 @@ public class TcmbService {
     private final RestTemplate restTemplate;
     private final InstrumentRepository instrumentRepository;
     private final InstrumentPriceRepository priceRepository;
+    private final PriceHistoryRepository historyRepository;
 
     public List<InstrumentPrice> fetchDailyRates() {
         log.info("Fetching TCMB rates...");
@@ -44,18 +40,15 @@ public class TcmbService {
         List<InstrumentPrice> prices = new ArrayList<>();
 
         try {
-            // Bugünkü kurları çek
             String todayXml = restTemplate.getForObject(TCMB_TODAY_URL, String.class);
             if (todayXml == null || todayXml.isEmpty()) {
                 log.error("TCMB XML is empty");
                 return prices;
             }
 
-            // Dünkü kurları çek (previousClose için)
             Map<String, BigDecimal> yesterdayRates = fetchYesterdayRates();
             log.info("Yesterday rates fetched: {} currencies", yesterdayRates.size());
 
-            // XML parse
             DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
             DocumentBuilder docBuilder = factory.newDocumentBuilder();
             Document doc = docBuilder.parse(
@@ -85,11 +78,8 @@ public class TcmbService {
                 BigDecimal avgPrice  = buyPrice.add(sellPrice)
                         .divide(BigDecimal.valueOf(2), 6, RoundingMode.HALF_UP);
 
-                // previousClose: önce dünkü arşivden bak, yoksa DB'den al
                 BigDecimal previousClose = yesterdayRates.getOrDefault(code, null);
-
                 if (previousClose == null) {
-                    // Arşivden gelemediyse DB'deki son farklı günün fiyatına bak
                     previousClose = getPreviousCloseFromDb(instrument, avgPrice);
                 }
 
@@ -120,12 +110,102 @@ public class TcmbService {
         return prices;
     }
 
+    /**
+     * TCMB arşivinden belirtilen tarih aralığındaki tüm döviz kurlarının
+     * geçmiş verilerini çeker ve PriceHistory'e kaydeder.
+     */
+    public void fetchHistoricalRates(LocalDate startDate, LocalDate endDate) {
+        log.info("Fetching historical TCMB rates from {} to {}", startDate, endDate);
+
+        int saved = 0;
+        int skipped = 0;
+
+        LocalDate current = startDate;
+        while (!current.isAfter(endDate)) {
+
+            // Hafta sonu atla
+            if (current.getDayOfWeek() == DayOfWeek.SATURDAY ||
+                    current.getDayOfWeek() == DayOfWeek.SUNDAY) {
+                current = current.plusDays(1);
+                continue;
+            }
+
+            try {
+                String archiveUrl = buildArchiveUrl(current);
+                String xml = restTemplate.getForObject(archiveUrl, String.class);
+
+                if (xml == null || xml.isEmpty()) {
+                    log.warn("No data for date: {}", current);
+                    current = current.plusDays(1);
+                    continue;
+                }
+
+                DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+                DocumentBuilder builder = factory.newDocumentBuilder();
+                Document doc = builder.parse(new ByteArrayInputStream(xml.getBytes("UTF-8")));
+
+                NodeList currencies = doc.getElementsByTagName("Currency");
+
+                for (int i = 0; i < currencies.getLength(); i++) {
+                    Element currency = (Element) currencies.item(i);
+
+                    String code = currency.getAttribute("Kod");
+                    String forexBuyingStr = getElementValue(currency, "ForexBuying");
+                    String forexSellingStr = getElementValue(currency, "ForexSelling");
+
+                    if (forexBuyingStr == null || forexBuyingStr.isEmpty()) continue;
+
+                    String symbol = code + "/TRY";
+
+                    BaseInstrument instrument = instrumentRepository.findBySymbol(symbol).orElse(null);
+                    if (instrument == null) continue;
+
+                    BigDecimal buyPrice = new BigDecimal(forexBuyingStr.replace(",", "."));
+                    BigDecimal sellPrice = new BigDecimal(forexSellingStr.replace(",", "."));
+                    BigDecimal avgPrice = buyPrice.add(sellPrice)
+                            .divide(BigDecimal.valueOf(2), 6, RoundingMode.HALF_UP);
+
+                    Optional<PriceHistory> existing = historyRepository
+                            .findByInstrumentAndDate(instrument, current);
+
+                    if (existing.isPresent()) {
+                        skipped++;
+                    } else {
+                        PriceHistory history = PriceHistory.builder()
+                                .instrument(instrument)
+                                .date(current)
+                                .open(avgPrice)
+                                .high(sellPrice)
+                                .low(buyPrice)
+                                .close(avgPrice)
+                                .build();
+                        historyRepository.save(history);
+                        saved++;
+                    }
+                }
+
+                log.info("✅ Date: {} processed", current);
+
+            } catch (Exception e) {
+                log.error("Error fetching date {}: {}", current, e.getMessage());
+            }
+
+            current = current.plusDays(1);
+
+            try { Thread.sleep(300); } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                break;
+            }
+        }
+
+        log.info("✅ Historical TCMB rates completed. Saved: {}, Skipped: {}", saved, skipped);
+    }
+
     public BigDecimal getExchangeRate(String currency) {
         if (currency == null || currency.equals("TRY")) {
             return BigDecimal.ONE;
         }
 
-        // Kripto stablecoin'leri USD olarak kabul et
         if (currency.equals("USDT") || currency.equals("USDC") || currency.equals("BUSD")) {
             currency = "USD";
         }
@@ -156,12 +236,10 @@ public class TcmbService {
         return amountInTRY.divide(exchangeRate, 6, RoundingMode.HALF_UP);
     }
 
-    // Dünkü kurları TCMB arşivinden çek
     private Map<String, BigDecimal> fetchYesterdayRates() {
         Map<String, BigDecimal> rates = new HashMap<>();
 
         try {
-            // Dün (hafta sonu varsa Cuma'ya git)
             LocalDate yesterday = getPreviousBusinessDay(LocalDate.now());
             String archiveUrl = buildArchiveUrl(yesterday);
 
@@ -170,7 +248,6 @@ public class TcmbService {
             String xml = restTemplate.getForObject(archiveUrl, String.class);
             if (xml == null || xml.isEmpty()) {
                 log.warn("Yesterday archive empty, trying one more day back");
-                // Bir gün daha geri git
                 yesterday = getPreviousBusinessDay(yesterday);
                 archiveUrl = buildArchiveUrl(yesterday);
                 xml = restTemplate.getForObject(archiveUrl, String.class);
@@ -214,15 +291,12 @@ public class TcmbService {
         return rates;
     }
 
-    // TCMB arşiv URL'si oluştur
     private String buildArchiveUrl(LocalDate date) {
-        // Format: /202602/17022026.xml
         String monthYear = date.format(DateTimeFormatter.ofPattern("yyyyMM"));
         String dateStr   = date.format(DateTimeFormatter.ofPattern("ddMMyyyy"));
         return String.format(TCMB_ARCHIVE_URL, monthYear, dateStr);
     }
 
-    // Hafta sonu kontrolü (Cumartesi/Pazar → Cuma'ya git)
     private LocalDate getPreviousBusinessDay(LocalDate date) {
         LocalDate previous = date.minusDays(1);
         while (previous.getDayOfWeek() == DayOfWeek.SATURDAY ||
@@ -232,7 +306,6 @@ public class TcmbService {
         return previous;
     }
 
-    // Arşiv çekilemediyse DB'den al
     private BigDecimal getPreviousCloseFromDb(BaseInstrument instrument, BigDecimal fallback) {
         return priceRepository
                 .findTopByInstrumentOrderByTimestampDesc(instrument)
@@ -240,7 +313,6 @@ public class TcmbService {
                     boolean isSameDay = lastPrice.getTimestamp()
                             .toLocalDate()
                             .equals(LocalDate.now());
-                    // Aynı günse o kaydın previousClose'unu kullan
                     return isSameDay
                             ? lastPrice.getPreviousClose()
                             : lastPrice.getCurrentPrice();
@@ -248,7 +320,6 @@ public class TcmbService {
                 .orElse(fallback);
     }
 
-    // Log için
     private String calcChangePercent(BigDecimal current, BigDecimal previous) {
         if (previous == null || previous.compareTo(BigDecimal.ZERO) == 0) return "N/A";
         return current.subtract(previous)
