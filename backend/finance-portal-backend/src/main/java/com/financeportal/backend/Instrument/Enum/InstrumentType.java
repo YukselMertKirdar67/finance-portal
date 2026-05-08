@@ -6,5 +6,6 @@ public enum InstrumentType {
     PRECIOUS,     // Değerli Madenler (GOLD, SILVER, XAU/USD)
     CRYPTO,       // Kripto (BTC, ETH)
     EUROBOND,     // EuroBond
-    BOND          // Tahvil/Bono
+    BOND,         // Tahvil/Bono
+    FUND
 }
