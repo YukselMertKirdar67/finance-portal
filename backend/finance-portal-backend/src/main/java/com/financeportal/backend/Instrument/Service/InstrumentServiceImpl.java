@@ -202,6 +202,7 @@ public class InstrumentServiceImpl implements InstrumentService {
             case BOND -> instrumentRepository.findAllBonds(pageable);
             case EUROBOND -> instrumentRepository.findAllEurobonds(pageable);
             case PRECIOUS -> instrumentRepository.findAllPrecious(pageable);
+            case FUND -> instrumentRepository.findAllFunds(pageable);
             default -> Page.empty(pageable);
         };
 
