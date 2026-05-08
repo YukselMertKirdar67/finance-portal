@@ -1,8 +1,10 @@
 package com.financeportal.backend.Instrument.DTO;
 
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.financeportal.backend.Instrument.Enum.InstrumentType;
 import lombok.*;
 
+import java.io.Serializable;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
@@ -10,7 +12,8 @@ import java.time.LocalDate;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class InstrumentResponseDTO {
+@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS)
+public class InstrumentResponseDTO implements Serializable {
     private Long id;
     private String symbol;
     private String name;
@@ -45,6 +48,14 @@ public class InstrumentResponseDTO {
     // ====== PRECIOUS (Değerli Maden) Alanları ======
     private String metalType;  // GOLD, SILVER, PLATINUM
     private String unit;       // oz, kg, gram
+
+    // ====== FUND (Yatırım Fonları) Alanları ======
+    private String fundCode;  // AAK, AHL, vs
+    private String fundType;  // Hisse Senedi Fonu, Tahvil Fonu, vs
+    private String umbrella;
+    private BigDecimal totalValue;
+    private Integer investorCount;
+
 
     // ====== Fiyat Bilgileri ======
     private PriceDataDTO currentPrice;
