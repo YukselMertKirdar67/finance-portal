@@ -47,4 +47,7 @@ public interface InstrumentRepository extends JpaRepository<BaseInstrument, Long
 
     @Query("SELECT i FROM PreciousInstrument i WHERE i.active = true")
     Page<BaseInstrument> findAllPrecious(Pageable pageable);
+
+    @Query("SELECT i FROM FundInstrument i WHERE i.active = true")
+    Page<BaseInstrument> findAllFunds(Pageable pageable);
 }
