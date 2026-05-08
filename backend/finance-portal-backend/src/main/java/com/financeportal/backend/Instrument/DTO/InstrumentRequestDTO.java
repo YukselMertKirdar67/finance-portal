@@ -52,4 +52,11 @@ public class InstrumentRequestDTO {
     // ====== PRECIOUS (Değerli Maden) Alanları ======
     private String metalType;
     private String unit;
+
+    // ====== FUND (Yatırım Fonları) Alanları ======
+    private String fundCode;  // AAK, AHL, vs
+    private String fundType;  // Hisse Senedi Fonu, Tahvil Fonu, vs
+    private String umbrella;
+    private BigDecimal totalValue;
+    private Integer investorCount;
 }
