@@ -84,6 +84,16 @@ export const updateBonds = async () => {
     }
 };
 
+export const updateEtfs = async () => {
+    try {
+        const response = await api.post('/admin/instruments/update-etfs');
+        return response.data;
+    } catch (error) {
+        console.error('Error updating ETFs:', error);
+        throw error;
+    }
+};
+
 // Geçmiş veri
 export const fetchAllHistoricalData = async () => {
     try {
@@ -91,6 +101,16 @@ export const fetchAllHistoricalData = async () => {
         return response.data;
     } catch (error) {
         console.error('Error fetching historical data:', error);
+        throw error;
+    }
+};
+
+export const fetchForexHistoricalData = async (days = 365) => {
+    try {
+        const response = await api.post(`/admin/instruments/fetch-forex-historical?days=${days}`);
+        return response.data;
+    } catch (error) {
+        console.error('Error fetching forex historical data:', error);
         throw error;
     }
 };
