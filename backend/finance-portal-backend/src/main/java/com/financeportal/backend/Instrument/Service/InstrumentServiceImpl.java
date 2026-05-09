@@ -30,92 +30,11 @@ public class InstrumentServiceImpl implements InstrumentService {
     private final PriceHistoryRepository historyRepository;
     private final InstrumentMapper instrumentMapper;
 
-    @Override
-    @CacheEvict(value = {"instrumentDetails", "instrumentPrices"}, allEntries = true)
-    public InstrumentResponseDTO createInstrument(InstrumentRequestDTO requestDTO) {
-        log.info("🗑️ Cache EVICT - Clearing cache");
 
-        if (instrumentRepository.existsBySymbol(requestDTO.getSymbol())) {
-            throw new IllegalArgumentException(
-                    "Instrument with symbol " + requestDTO.getSymbol() + " already exists"
-            );
-        }
-
-        BaseInstrument instrument = instrumentMapper.toEntity(requestDTO);
-        BaseInstrument saved = instrumentRepository.save(instrument);
-
-        log.info("Created instrument: {} (Type: {})", saved.getSymbol(), saved.getInstrumentType());
-
-        return instrumentMapper.toResponseDTO(saved);
-    }
-
-    @Override
-    @CacheEvict(value = {"instrumentDetails", "instrumentPrices"}, allEntries = true)
-    public InstrumentResponseDTO updateInstrument(Long id, InstrumentRequestDTO requestDTO) {
-        log.info("🗑️ Cache EVICT - Clearing cache for instrument: {}", id);
-
-        BaseInstrument existing = instrumentRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException(
-                        "Instrument not found with id: " + id
-                ));
-
-        if (!existing.getSymbol().equals(requestDTO.getSymbol()) &&
-                instrumentRepository.existsBySymbol(requestDTO.getSymbol())) {
-            throw new IllegalArgumentException(
-                    "Instrument with symbol " + requestDTO.getSymbol() + " already exists"
-            );
-        }
-
-        existing.setSymbol(requestDTO.getSymbol());
-        existing.setName(requestDTO.getName());
-        existing.setExchange(requestDTO.getExchange());
-        existing.setDescription(requestDTO.getDescription());
-        existing.setCurrency(requestDTO.getCurrency());
-
-        if (existing instanceof StockInstrument stock) {
-            stock.setSector(requestDTO.getSector());
-            stock.setMarketCap(requestDTO.getMarketCap());
-        } else if (existing instanceof BondInstrument bond) {
-            bond.setMaturityDate(requestDTO.getMaturityDate());
-            bond.setCouponRate(requestDTO.getCouponRate());
-            bond.setFaceValue(requestDTO.getFaceValue());
-            bond.setIssuer(requestDTO.getIssuer());
-        } else if (existing instanceof ForexInstrument forex) {
-            forex.setBaseCurrency(requestDTO.getBaseCurrency());
-            forex.setQuoteCurrency(requestDTO.getQuoteCurrency());
-        } else if (existing instanceof CryptoInstrument crypto) {
-            crypto.setBlockchain(requestDTO.getBlockchain());
-            crypto.setTotalSupply(requestDTO.getTotalSupply());
-            crypto.setCirculatingSupply(requestDTO.getCirculatingSupply());
-        } else if (existing instanceof PreciousInstrument precious) {
-            precious.setMetalType(requestDTO.getMetalType());
-            precious.setUnit(requestDTO.getUnit());
-        }
-
-        BaseInstrument updated = instrumentRepository.save(existing);
-
-        log.info("Updated instrument: {} (Type: {})", updated.getSymbol(), updated.getInstrumentType());
-
-        return instrumentMapper.toResponseDTO(updated);
-    }
-
-    @Override
-    @CacheEvict(value = {"instrumentDetails", "instrumentPrices"}, allEntries = true)
-    public void deleteInstrument(Long id) {
-        log.info("🗑️ Cache EVICT - Clearing cache for deleted instrument: {}", id);
-
-        BaseInstrument instrument = instrumentRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException(
-                        "Instrument not found with id: " + id
-                ));
-
-        instrument.setActive(false);
-        instrumentRepository.save(instrument);
-
-        log.info("Deleted (deactivated) instrument: {} (Type: {})",
-                instrument.getSymbol(), instrument.getInstrumentType());
-    }
-
+    /**
+     * ID ile enstrüman detayını döner.
+     * Sonuç cache'lenir, tekrar istekte DB'ye gidilmez.
+     */
     @Override
     @Transactional(readOnly = true)
     @Cacheable(value = "instrumentDetails", key = "#id")
@@ -145,6 +64,10 @@ public class InstrumentServiceImpl implements InstrumentService {
         return instrumentMapper.toResponseDTO(instrument, price);
     }
 
+    /**
+     * Sembol ile enstrüman detayını döner.
+     * Sonuç cache'lenir, tekrar istekte DB'ye gidilmez.
+     */
     @Override
     @Transactional(readOnly = true)
     @Cacheable(value = "instrumentDetails", key = "'symbol:' + #symbol")
@@ -163,6 +86,9 @@ public class InstrumentServiceImpl implements InstrumentService {
         return instrumentMapper.toResponseDTO(instrument, price);
     }
 
+    /**
+     * Tüm aktif enstrümanları sayfalı olarak döner.
+     */
     @Override
     @Transactional(readOnly = true)
     public Page<InstrumentResponseDTO> getAllInstruments(Pageable pageable) {
@@ -179,6 +105,9 @@ public class InstrumentServiceImpl implements InstrumentService {
         });
     }
 
+    /**
+     * Belirtilen tipe göre enstrümanları sayfalı olarak döner.
+     */
     @Override
     @Transactional(readOnly = true)
     public Page<InstrumentResponseDTO> getInstrumentsByType(
@@ -208,6 +137,9 @@ public class InstrumentServiceImpl implements InstrumentService {
         });
     }
 
+    /**
+     * Sembol veya isim bazlı enstrüman araması yapar.
+     */
     @Override
     @Transactional(readOnly = true)
     public Page<InstrumentResponseDTO> searchInstruments(String search, Pageable pageable) {
@@ -224,6 +156,10 @@ public class InstrumentServiceImpl implements InstrumentService {
         });
     }
 
+    /**
+     * Enstrümanın en güncel fiyat verisini döner.
+     * Sonuç cache'lenir.
+     */
     @Override
     @Transactional(readOnly = true)
     @Cacheable(value = "instrumentPrices", key = "#instrumentId")
@@ -242,6 +178,9 @@ public class InstrumentServiceImpl implements InstrumentService {
         return instrumentMapper.toPriceDataDTO(price);
     }
 
+    /**
+     * Enstrümanın belirtilen tarih aralığındaki geçmiş fiyat verilerini döner.
+     */
     @Override
     @Transactional(readOnly = true)
     public List<HistoricalPriceDTO> getHistoricalPrices(
