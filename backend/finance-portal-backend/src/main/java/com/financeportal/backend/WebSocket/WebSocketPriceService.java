@@ -1,13 +1,13 @@
 package com.financeportal.backend.WebSocket;
 
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import lombok.extern.log4j.Log4j2;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
-@Slf4j
+@Log4j2
 public class WebSocketPriceService {
 
     private final SimpMessagingTemplate messagingTemplate;

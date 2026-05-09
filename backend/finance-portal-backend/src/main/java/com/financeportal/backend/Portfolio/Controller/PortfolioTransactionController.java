@@ -10,7 +10,7 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import lombok.extern.log4j.Log4j2;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -26,7 +26,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/portfolios/{portfolioId}/transactions")
 @RequiredArgsConstructor
-@Slf4j
+@Log4j2
 @Tag(name = "Portfolio Transactions", description = "Portfolio transaction management APIs")
 public class PortfolioTransactionController {
 

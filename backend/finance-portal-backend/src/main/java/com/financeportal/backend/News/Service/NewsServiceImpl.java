@@ -8,7 +8,7 @@ import com.financeportal.backend.News.Mapper.NewsMapper;
 import com.financeportal.backend.News.Repository.NewsRepository;
 import com.financeportal.backend.News.Service.ExternalNewsService;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import lombok.extern.log4j.Log4j2;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.cache.annotation.Caching;
@@ -25,7 +25,7 @@ import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
-@Slf4j
+@Log4j2
 public class NewsServiceImpl implements NewsService {
 
     private final NewsRepository newsRepository;

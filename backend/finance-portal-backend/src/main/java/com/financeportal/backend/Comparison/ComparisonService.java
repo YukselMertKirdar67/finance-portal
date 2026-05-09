@@ -8,7 +8,7 @@ import com.financeportal.backend.Instrument.Repository.InstrumentPriceRepository
 import com.financeportal.backend.Instrument.Repository.InstrumentRepository;
 import com.financeportal.backend.Instrument.Repository.PriceHistoryRepository;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import lombok.extern.log4j.Log4j2;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -19,7 +19,7 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor
-@Slf4j
+@Log4j2
 public class ComparisonService {
 
     private final InstrumentRepository instrumentRepository;
@@ -30,7 +30,6 @@ public class ComparisonService {
      * İki enstrümanı belirtilen zaman dilimine göre karşılaştırır.
      * Anlık fiyatlar, tarihsel veriler ve performans metrikleri hesaplanır.
      */
-
     public ComparisonDTO compareInstruments(Long id1, Long id2, String period) {
 
         // Period'a göre tarih aralığını hesapla

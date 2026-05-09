@@ -3,7 +3,7 @@ package com.financeportal.backend.PriceAlert;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import lombok.extern.log4j.Log4j2;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -13,7 +13,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/price-alerts")
 @RequiredArgsConstructor
-@Slf4j
+@Log4j2
 public class PriceAlertController {
 
     private final PriceAlertService priceAlertService;
@@ -21,7 +21,6 @@ public class PriceAlertController {
     /**
      * Yeni fiyat alarmı oluşturur.
      */
-
     @PostMapping
     public ResponseEntity<PriceAlertDTO> createAlert(
             @Valid @RequestBody CreatePriceAlertRequestDTO request) {
@@ -32,7 +31,6 @@ public class PriceAlertController {
     /**
      * Giriş yapmış kullanıcının tüm alarmlarını getirir.
      */
-
     @GetMapping
     public ResponseEntity<List<PriceAlertDTO>> getUserAlerts() {
         log.info("Fetching all user alerts");
@@ -42,7 +40,6 @@ public class PriceAlertController {
     /**
      * Giriş yapmış kullanıcının aktif alarmlarını getirir.
      */
-
     @GetMapping("/active")
     public ResponseEntity<List<PriceAlertDTO>> getActiveUserAlerts() {
         log.info("Fetching active user alerts");
@@ -52,7 +49,6 @@ public class PriceAlertController {
     /**
      * Belirtilen alarmı siler.
      */
-
     @DeleteMapping("/{id}")
     public ResponseEntity<?> deleteAlert(@PathVariable Long id) {
         log.info("Deleting price alert: {}", id);

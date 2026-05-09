@@ -7,7 +7,7 @@ import com.financeportal.backend.User.UserMapper;
 import com.financeportal.backend.User.Service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import lombok.extern.log4j.Log4j2;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -23,7 +23,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/me")
 @RequiredArgsConstructor
-@Slf4j
+@Log4j2
 public class UserController {
 
     private final UserService userService;
@@ -100,7 +100,6 @@ public class UserController {
     /**
      * Giriş yapmış kullanıcının kullanıcı adını günceller.
      */
-
     @PutMapping("/username")
     public ResponseEntity<?> updateUsername(
             @AuthenticationPrincipal Jwt jwt,
@@ -128,7 +127,6 @@ public class UserController {
      * Giriş yapmış kullanıcının e-posta adresini günceller.
      * Doğrulama e-postası gönderilir.
      */
-
     @PutMapping("/email")
     public ResponseEntity<?> updateEmail(
             @AuthenticationPrincipal Jwt jwt,
@@ -155,7 +153,6 @@ public class UserController {
     /**
      * Kullanıcının son şifre değişim tarihini getirir.
      */
-
     @GetMapping("/password-last-changed")
     public ResponseEntity<PasswordLastChangedDTO> getPasswordLastChanged(
             @AuthenticationPrincipal Jwt jwt) {
@@ -200,7 +197,6 @@ public class UserController {
     /**
      * Kullanıcının tüm verilerini JSON formatında dışa aktarır.
      */
-
     @GetMapping("/export")
     public ResponseEntity<byte[]> exportUserData(@AuthenticationPrincipal Jwt jwt) {
         try {
@@ -221,7 +217,6 @@ public class UserController {
      * Kullanıcının hesabını kalıcı olarak siler.
      * Tüm portföy, işlem ve watchlist verileri de silinir.
      */
-
     @DeleteMapping("/account")
     public ResponseEntity<?> deleteAccount(@AuthenticationPrincipal Jwt jwt) {
         try {
@@ -243,7 +238,6 @@ public class UserController {
     /**
      * Kullanıcı kimlik doğrulamasını test eder.
      */
-
     @GetMapping("/ping")
     public String ping() {
         return "User authenticated";
@@ -253,7 +247,6 @@ public class UserController {
     /**
      * Admin yetkisini test eder.
      */
-
     @GetMapping("/admin-check")
     @PreAuthorize("hasRole('ADMIN')")
     public String adminCheck() {

@@ -7,7 +7,7 @@ import com.financeportal.backend.Portfolio.Repository.PortfolioTransactionReposi
 import com.financeportal.backend.User.DTO.*;
 import com.financeportal.backend.Watchlist.WatchlistRepository;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import lombok.extern.log4j.Log4j2;
 import org.keycloak.admin.client.Keycloak;
 import org.keycloak.admin.client.resource.RealmResource;
 import org.keycloak.admin.client.resource.UsersResource;
@@ -25,7 +25,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
-@Slf4j
+@Log4j2
 public class AdminServiceImpl implements AdminService {
 
     private final Keycloak keycloakAdminClient;

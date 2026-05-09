@@ -5,7 +5,7 @@ import com.financeportal.backend.Instrument.Entity.InstrumentPrice;
 import com.financeportal.backend.Instrument.Repository.PriceHistoryRepository;
 import com.financeportal.backend.Instrument.Service.*;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import lombok.extern.log4j.Log4j2;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -14,7 +14,7 @@ import java.time.LocalDateTime;
 
 import java.util.Map;
 
-@Slf4j
+@Log4j2
 @RestController
 @RequestMapping("/api/admin/instruments")
 @RequiredArgsConstructor

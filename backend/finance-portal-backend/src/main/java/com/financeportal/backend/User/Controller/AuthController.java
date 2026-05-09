@@ -7,7 +7,7 @@ import com.financeportal.backend.User.Service.AuthService;
 import com.financeportal.backend.User.Service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import lombok.extern.log4j.Log4j2;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -19,7 +19,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
-@Slf4j
+@Log4j2
 public class AuthController {
 
     private final AuthService authService;
@@ -30,7 +30,6 @@ public class AuthController {
     /**
      * Yeni kullanıcı kaydı oluşturur.
      */
-
     @PostMapping("/register")
     public ResponseEntity<RegisterResponseDTO> register(@Valid @RequestBody RegisterRequestDTO request) {
         RegisterResponseDTO response = authService.registerUser(request);
@@ -45,7 +44,6 @@ public class AuthController {
     /**
      * Kullanıcıya e-posta doğrulama maili gönderir.
      */
-
     @PostMapping("/send-verification-email")
     public ResponseEntity<EmailVerificationResponseDTO> sendVerificationEmail(
             @Valid @RequestBody EmailVerificationRequestDTO request) {
@@ -62,7 +60,6 @@ public class AuthController {
     /**
      * Kullanıcının e-posta doğrulama durumunu kontrol eder.
      */
-
     @GetMapping("/check-email-verification")
     public ResponseEntity<EmailVerificationResponseDTO> checkEmailVerification(
             @RequestParam String email) {
@@ -74,7 +71,6 @@ public class AuthController {
     /**
      * Auth servisinin çalışıp çalışmadığını kontrol eder.
      */
-
     @GetMapping("/health")
     public String health() {
         return "Auth service is running";
@@ -83,8 +79,6 @@ public class AuthController {
     /**
      * Kullanıcıya şifre sıfırlama e-postası gönderir.
      */
-
-
     @PostMapping("/forgot-password")
     public ResponseEntity<PasswordResetResponseDTO> forgotPassword(
             @Valid @RequestBody ForgotPasswordRequestDTO request) {
@@ -96,7 +90,6 @@ public class AuthController {
     /**
      * Token ile şifre sıfırlama işlemini gerçekleştirir.
      */
-
     @PostMapping("/reset-password")
     public ResponseEntity<PasswordResetResponseDTO> resetPassword(
             @Valid @RequestBody ResetPasswordRequestDTO request) {
@@ -114,8 +107,6 @@ public class AuthController {
      * Kullanıcı girişi yapar. Başarılı girişte kullanıcı DB'ye kaydedilir.
      * OTP gerekliyse OTP_REQUIRED mesajı döner.
      */
-
-
     @PostMapping("/login")
     public ResponseEntity<LoginResponseDTO> login(@Valid @RequestBody LoginRequestDTO request) {
         log.info("Login attempt for user: {}", request.getUsername());
@@ -145,7 +136,6 @@ public class AuthController {
     /**
      * Kullanıcının Keycloak oturumunu sonlandırır.
      */
-
     @PostMapping("/logout")
     public ResponseEntity<LogoutResponseDTO> logout(
             @Valid @RequestBody LogoutRequestDTO request) {
@@ -158,7 +148,6 @@ public class AuthController {
     /**
      * Refresh token kullanarak yeni access token alır.
      */
-
     @PostMapping("/refresh")
     public ResponseEntity<RefreshTokenResponseDTO> refreshToken(
             @Valid @RequestBody RefreshTokenRequestDTO request) {
@@ -176,7 +165,6 @@ public class AuthController {
      * Authorization code ile access token alır.
      * Başarılı olursa kullanıcı DB'ye kaydedilir.
      */
-
     @PostMapping("/token-exchange")
     public ResponseEntity<LoginResponseDTO> tokenExchange(@RequestBody TokenExchangeRequestDTO request) {
         log.info("Token exchange request");

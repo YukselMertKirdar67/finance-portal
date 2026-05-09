@@ -3,7 +3,7 @@ package com.financeportal.backend.Comparison;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import lombok.extern.log4j.Log4j2;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/comparison")
 @RequiredArgsConstructor
-@Slf4j
+@Log4j2
 @Tag(name = "Comparison API", description = "Enstrüman karşılaştırma")
 public class ComparisonController {
 
@@ -24,7 +24,6 @@ public class ComparisonController {
      * İki enstrümanı belirtilen zaman dilimine göre karşılaştırır.
      * Anlık fiyatlar, tarihsel veriler ve performans metrikleri döner.
      */
-
     @GetMapping
     @Operation(summary = "İki enstrümanı karşılaştır")
     public ResponseEntity<ComparisonDTO> compareInstruments(

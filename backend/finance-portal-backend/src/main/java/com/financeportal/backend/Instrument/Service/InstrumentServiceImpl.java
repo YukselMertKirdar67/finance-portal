@@ -7,7 +7,7 @@ import com.financeportal.backend.Instrument.Enum.InstrumentType;
 import com.financeportal.backend.Instrument.Mapper.InstrumentMapper;
 import com.financeportal.backend.Instrument.Repository.*;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import lombok.extern.log4j.Log4j2;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
@@ -21,7 +21,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
-@Slf4j
+@Log4j2
 @Transactional
 public class InstrumentServiceImpl implements InstrumentService {
 

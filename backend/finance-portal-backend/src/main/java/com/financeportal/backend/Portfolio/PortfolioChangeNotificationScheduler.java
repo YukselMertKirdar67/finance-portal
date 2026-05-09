@@ -5,7 +5,7 @@ import com.financeportal.backend.Portfolio.Entity.Portfolio;
 import com.financeportal.backend.Portfolio.Repository.PortfolioRepository;
 import com.financeportal.backend.Portfolio.Service.PortfolioHoldingService;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import lombok.extern.log4j.Log4j2;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -17,7 +17,7 @@ import java.util.Map;
 
 @Component
 @RequiredArgsConstructor
-@Slf4j
+@Log4j2
 public class PortfolioChangeNotificationScheduler {
 
     private final PortfolioRepository portfolioRepository;

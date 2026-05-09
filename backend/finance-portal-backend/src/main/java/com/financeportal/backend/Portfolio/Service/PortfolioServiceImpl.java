@@ -18,7 +18,7 @@ import com.financeportal.backend.Portfolio.Repository.PortfolioHoldingRepository
 import com.financeportal.backend.Portfolio.Repository.PortfolioRepository;
 import com.financeportal.backend.Util.SecurityUtils;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import lombok.extern.log4j.Log4j2;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -32,7 +32,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
-@Slf4j
+@Log4j2
 public class PortfolioServiceImpl implements PortfolioService {
 
     private final PortfolioRepository portfolioRepository;
@@ -46,7 +46,6 @@ public class PortfolioServiceImpl implements PortfolioService {
     /**
      * Yeni portföy oluşturur ve başlangıç değerlerini sıfır olarak ayarlar.
      */
-
     @Override
     @Transactional
     public PortfolioDTO createPortfolio(CreatePortfolioRequestDTO request) {
@@ -72,7 +71,6 @@ public class PortfolioServiceImpl implements PortfolioService {
     /**
      * Portföy adını, açıklamasını veya aktiflik durumunu günceller.
      */
-
     @Override
     @Transactional
     public PortfolioDTO updatePortfolio(Long portfolioId, UpdatePortfolioRequestDTO request) {
@@ -93,7 +91,6 @@ public class PortfolioServiceImpl implements PortfolioService {
     /**
      * Portföyü soft delete ile pasif hale getirir (active = false).
      */
-
     @Override
     @Transactional
     public void deletePortfolio(Long portfolioId) {
@@ -107,7 +104,6 @@ public class PortfolioServiceImpl implements PortfolioService {
     /**
      * Portföyü kalıcı olarak siler.
      */
-
     @Override
     @Transactional
     public void hardDeletePortfolio(Long portfolioId) {
@@ -120,7 +116,6 @@ public class PortfolioServiceImpl implements PortfolioService {
     /**
      * Kullanıcının tüm portföylerini getirir.
      */
-
     @Override
     @Transactional(readOnly = true)
     public List<PortfolioDTO> getUserPortfolios() {
@@ -137,7 +132,6 @@ public class PortfolioServiceImpl implements PortfolioService {
     /**
      * Kullanıcının portföylerini sayfalı olarak getirir.
      */
-
     @Override
     @Transactional(readOnly = true)
     public Page<PortfolioDTO> getUserPortfolios(Pageable pageable) {
@@ -152,8 +146,6 @@ public class PortfolioServiceImpl implements PortfolioService {
     /**
      * Kullanıcının sadece aktif portföylerini getirir.
      */
-
-
     @Override
     @Transactional(readOnly = true)
     public List<PortfolioDTO> getActivePortfolios() {
@@ -171,7 +163,6 @@ public class PortfolioServiceImpl implements PortfolioService {
      * Portföyün detay bilgilerini getirir.
      * Holding listesi, toplam yatırım, güncel değer ve kâr/zarar içerir.
      */
-
     @Override
     @Transactional(readOnly = true)
     public PortfolioDetailDTO getPortfolioDetail(Long portfolioId) {
@@ -238,7 +229,6 @@ public class PortfolioServiceImpl implements PortfolioService {
     /**
      * ID'ye göre portföy getirir.
      */
-
     @Override
     @Transactional(readOnly = true)
     public PortfolioDTO getPortfolioById(Long portfolioId) {
@@ -252,7 +242,6 @@ public class PortfolioServiceImpl implements PortfolioService {
      * Tüm değerler TRY'ye çevrilerek toplanır.
      * En iyi ve en kötü performanslı portföyler listelenir.
      */
-
     @Override
     @Transactional(readOnly = true)
     public PortfolioSummaryDTO getPortfolioSummary() {
@@ -327,7 +316,6 @@ public class PortfolioServiceImpl implements PortfolioService {
      * Portföyün belirli tarih aralığındaki performans verilerini hesaplar.
      * Her gün için portföy değeri ve getiri yüzdesi hesaplanır.
      */
-
     @Override
     @Transactional(readOnly = true)
     public PortfolioPerformanceDTO getPortfolioPerformance(Long portfolioId, LocalDate startDate, LocalDate endDate) {
@@ -360,6 +348,187 @@ public class PortfolioServiceImpl implements PortfolioService {
                 .totalReturn(totalReturn)
                 .historicalData(historicalData)
                 .build();
+    }
+
+    /**
+     * Kullanıcının tüm portföylerinin toplam güncel değerini TRY cinsinden hesaplar.
+     */
+    @Override
+    @Transactional(readOnly = true)
+    public BigDecimal calculateTotalPortfolioValue() {
+        String currentUserId = SecurityUtils.getCurrentUserKeycloakId();
+        List<Portfolio> portfolios = portfolioRepository.findByUserId(currentUserId);
+        return portfolios.stream()
+                .map(p -> holdingService.calculateCurrentValue(p.getId()))
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
+    /**
+     * Kullanıcının tüm portföylerinin toplam gerçekleşmemiş kâr/zararını hesaplar.
+     */
+    @Override
+    @Transactional(readOnly = true)
+    public BigDecimal calculateTotalUnrealizedPnL() {
+        String currentUserId = SecurityUtils.getCurrentUserKeycloakId();
+        List<Portfolio> portfolios = portfolioRepository.findByUserId(currentUserId);
+        return portfolios.stream()
+                .map(p -> holdingService.calculateUnrealizedPnL(p.getId()))
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
+    /**
+     * Portföyü aktif hale getirir.
+     */
+    @Override
+    @Transactional
+    public void activatePortfolio(Long portfolioId) {
+        log.info("Activating portfolio ID: {}", portfolioId);
+        Portfolio portfolio = getPortfolioEntityWithOwnershipCheck(portfolioId);
+        portfolio.setActive(true);
+        portfolioRepository.save(portfolio);
+        log.info("Portfolio activated: {}", portfolioId);
+    }
+
+    /**
+     * Portföyü pasif hale getirir.
+     */
+    @Override
+    @Transactional
+    public void deactivatePortfolio(Long portfolioId) {
+        log.info("Deactivating portfolio ID: {}", portfolioId);
+        Portfolio portfolio = getPortfolioEntityWithOwnershipCheck(portfolioId);
+        portfolio.setActive(false);
+        portfolioRepository.save(portfolio);
+        log.info("Portfolio deactivated: {}", portfolioId);
+    }
+
+    /**
+     * Portföyleri isme göre arar.
+     */
+    @Override
+    @Transactional(readOnly = true)
+    public List<PortfolioDTO> searchPortfoliosByName(String searchTerm) {
+        String currentUserId = SecurityUtils.getCurrentUserKeycloakId();
+        List<Portfolio> portfolios = portfolioRepository.searchByName(currentUserId, searchTerm);
+        return portfolios.stream()
+                .map(p -> enrichPortfolioDTO(portfolioMapper.toDTO(p), p))
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Portföyleri türe göre filtreler.
+     */
+    @Override
+    @Transactional(readOnly = true)
+    public List<PortfolioDTO> getPortfoliosByType(String portfolioType) {
+        String currentUserId = SecurityUtils.getCurrentUserKeycloakId();
+        PortfolioType type = PortfolioType.valueOf(portfolioType.toUpperCase());
+        List<Portfolio> portfolios = portfolioRepository.findByUserIdAndPortfolioType(currentUserId, type);
+        return portfolios.stream()
+                .map(p -> enrichPortfolioDTO(portfolioMapper.toDTO(p), p))
+                .collect(Collectors.toList());
+    }
+
+    // ========== PRIVATE HELPER METHODS ==========
+
+    /**
+     * Portföy sahipliğini doğrular. Yetkisiz erişimde exception fırlatır.
+     */
+
+    private Portfolio getPortfolioEntityWithOwnershipCheck(Long portfolioId) {
+        Portfolio portfolio = portfolioRepository.findById(portfolioId)
+                .orElseThrow(() -> new ResourceNotFoundException("Portfolio not found with id: " + portfolioId));
+
+        String currentUserId = SecurityUtils.getCurrentUserKeycloakId();
+        if (!portfolio.getUserId().equals(currentUserId)) {
+            log.error("Unauthorized access attempt to portfolio: {} by user: {}", portfolioId, currentUserId);
+            throw new UnauthorizedException("You don't have permission to access this portfolio");
+        }
+
+        return portfolio;
+    }
+
+    /**
+     * PortfolioDTO'yu güncel değer, yatırım ve kâr/zarar bilgileriyle zenginleştirir.
+     */
+
+    private PortfolioDTO enrichPortfolioDTO(PortfolioDTO dto, Portfolio portfolio) {
+        String currency = portfolio.getCurrency() != null ? portfolio.getCurrency() : "TRY";
+
+        BigDecimal totalInvested = holdingService.calculateTotalInvestment(portfolio.getId(), currency);
+        BigDecimal holdingsValue = holdingService.calculateCurrentValue(portfolio.getId(), currency);
+
+        BigDecimal unrealizedPnL = holdingsValue.subtract(totalInvested);
+
+        BigDecimal pnlPercent = BigDecimal.ZERO;
+        if (totalInvested.compareTo(BigDecimal.ZERO) > 0) {
+            pnlPercent = unrealizedPnL
+                    .divide(totalInvested, 4, RoundingMode.HALF_UP)
+                    .multiply(new BigDecimal("100"))
+                    .setScale(2, RoundingMode.HALF_UP);
+        }
+
+        dto.setTotalValue(holdingsValue);
+        dto.setTotalInvested(totalInvested);
+        dto.setUnrealizedPnL(unrealizedPnL);
+        dto.setPnlPercent(pnlPercent);
+        dto.setHoldingCount(portfolio.getHoldings().size());
+
+        return dto;
+    }
+
+    /**
+     * Tüm portföylerin varlık dağılımını hesaplar.
+     * Her enstrüman türü için toplam değer ve yüzde hesaplanır.
+     */
+
+    private List<AssetAllocationDTO> calculateAggregateAssetAllocation(List<Portfolio> portfolios) {
+        log.debug("Calculating aggregate asset allocation for {} portfolios", portfolios.size());
+
+        Map<String, AssetAllocationDTO> allocationMap = new HashMap<>();
+
+        for (Portfolio portfolio : portfolios) {
+            List<PortfolioHolding> holdings = holdingRepository.findByPortfolioId(portfolio.getId());
+
+            for (PortfolioHolding holding : holdings) {
+                String instrumentType = holding.getInstrument().getInstrumentType().name();
+
+                // TRY cinsinden fiyat al
+                BigDecimal currentPriceInTRY = getCurrentPriceForInstrumentInTRY(holding.getInstrument().getId());
+                BigDecimal currentValue = holding.getQuantity().multiply(currentPriceInTRY);
+
+                if (allocationMap.containsKey(instrumentType)) {
+                    AssetAllocationDTO existing = allocationMap.get(instrumentType);
+                    existing.setTotalValue(existing.getTotalValue().add(currentValue));
+                    existing.setCount(existing.getCount() + 1);
+                } else {
+                    allocationMap.put(instrumentType, AssetAllocationDTO.builder()
+                            .instrumentType(instrumentType)
+                            .totalValue(currentValue)
+                            .count(1)
+                            .percentage(BigDecimal.ZERO)
+                            .build());
+                }
+            }
+        }
+
+        BigDecimal grandTotal = allocationMap.values().stream()
+                .map(AssetAllocationDTO::getTotalValue)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        if (grandTotal.compareTo(BigDecimal.ZERO) > 0) {
+            for (AssetAllocationDTO allocation : allocationMap.values()) {
+                BigDecimal percentage = allocation.getTotalValue()
+                        .divide(grandTotal, 4, RoundingMode.HALF_UP)
+                        .multiply(new BigDecimal("100"))
+                        .setScale(2, RoundingMode.HALF_UP);
+                allocation.setPercentage(percentage);
+            }
+        }
+
+        return allocationMap.values().stream()
+                .sorted((a, b) -> b.getTotalValue().compareTo(a.getTotalValue()))
+                .collect(Collectors.toList());
     }
 
     /**
@@ -518,192 +687,5 @@ public class PortfolioServiceImpl implements PortfolioService {
 
     private BigDecimal getCurrentPriceForInstrument(Long instrumentId) {
         return getCurrentPriceForInstrumentInTRY(instrumentId);
-    }
-
-    /**
-     * Kullanıcının tüm portföylerinin toplam güncel değerini TRY cinsinden hesaplar.
-     */
-
-    @Override
-    @Transactional(readOnly = true)
-    public BigDecimal calculateTotalPortfolioValue() {
-        String currentUserId = SecurityUtils.getCurrentUserKeycloakId();
-        List<Portfolio> portfolios = portfolioRepository.findByUserId(currentUserId);
-        return portfolios.stream()
-                .map(p -> holdingService.calculateCurrentValue(p.getId()))
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-    }
-
-    /**
-     * Kullanıcının tüm portföylerinin toplam gerçekleşmemiş kâr/zararını hesaplar.
-     */
-
-    @Override
-    @Transactional(readOnly = true)
-    public BigDecimal calculateTotalUnrealizedPnL() {
-        String currentUserId = SecurityUtils.getCurrentUserKeycloakId();
-        List<Portfolio> portfolios = portfolioRepository.findByUserId(currentUserId);
-        return portfolios.stream()
-                .map(p -> holdingService.calculateUnrealizedPnL(p.getId()))
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-    }
-
-    /**
-     * Portföyü aktif hale getirir.
-     */
-
-    @Override
-    @Transactional
-    public void activatePortfolio(Long portfolioId) {
-        log.info("Activating portfolio ID: {}", portfolioId);
-        Portfolio portfolio = getPortfolioEntityWithOwnershipCheck(portfolioId);
-        portfolio.setActive(true);
-        portfolioRepository.save(portfolio);
-        log.info("Portfolio activated: {}", portfolioId);
-    }
-
-    /**
-     * Portföyü pasif hale getirir.
-     */
-
-    @Override
-    @Transactional
-    public void deactivatePortfolio(Long portfolioId) {
-        log.info("Deactivating portfolio ID: {}", portfolioId);
-        Portfolio portfolio = getPortfolioEntityWithOwnershipCheck(portfolioId);
-        portfolio.setActive(false);
-        portfolioRepository.save(portfolio);
-        log.info("Portfolio deactivated: {}", portfolioId);
-    }
-
-    /**
-     * Portföyleri isme göre arar.
-     */
-
-    @Override
-    @Transactional(readOnly = true)
-    public List<PortfolioDTO> searchPortfoliosByName(String searchTerm) {
-        String currentUserId = SecurityUtils.getCurrentUserKeycloakId();
-        List<Portfolio> portfolios = portfolioRepository.searchByName(currentUserId, searchTerm);
-        return portfolios.stream()
-                .map(p -> enrichPortfolioDTO(portfolioMapper.toDTO(p), p))
-                .collect(Collectors.toList());
-    }
-
-    /**
-     * Portföyleri türe göre filtreler.
-     */
-
-    @Override
-    @Transactional(readOnly = true)
-    public List<PortfolioDTO> getPortfoliosByType(String portfolioType) {
-        String currentUserId = SecurityUtils.getCurrentUserKeycloakId();
-        PortfolioType type = PortfolioType.valueOf(portfolioType.toUpperCase());
-        List<Portfolio> portfolios = portfolioRepository.findByUserIdAndPortfolioType(currentUserId, type);
-        return portfolios.stream()
-                .map(p -> enrichPortfolioDTO(portfolioMapper.toDTO(p), p))
-                .collect(Collectors.toList());
-    }
-
-    // ========== PRIVATE HELPER METHODS ==========
-
-    /**
-     * Portföy sahipliğini doğrular. Yetkisiz erişimde exception fırlatır.
-     */
-
-    private Portfolio getPortfolioEntityWithOwnershipCheck(Long portfolioId) {
-        Portfolio portfolio = portfolioRepository.findById(portfolioId)
-                .orElseThrow(() -> new ResourceNotFoundException("Portfolio not found with id: " + portfolioId));
-
-        String currentUserId = SecurityUtils.getCurrentUserKeycloakId();
-        if (!portfolio.getUserId().equals(currentUserId)) {
-            log.error("Unauthorized access attempt to portfolio: {} by user: {}", portfolioId, currentUserId);
-            throw new UnauthorizedException("You don't have permission to access this portfolio");
-        }
-
-        return portfolio;
-    }
-
-    /**
-     * PortfolioDTO'yu güncel değer, yatırım ve kâr/zarar bilgileriyle zenginleştirir.
-     */
-
-    private PortfolioDTO enrichPortfolioDTO(PortfolioDTO dto, Portfolio portfolio) {
-        String currency = portfolio.getCurrency() != null ? portfolio.getCurrency() : "TRY";
-
-        BigDecimal totalInvested = holdingService.calculateTotalInvestment(portfolio.getId(), currency);
-        BigDecimal holdingsValue = holdingService.calculateCurrentValue(portfolio.getId(), currency);
-
-        BigDecimal unrealizedPnL = holdingsValue.subtract(totalInvested);
-
-        BigDecimal pnlPercent = BigDecimal.ZERO;
-        if (totalInvested.compareTo(BigDecimal.ZERO) > 0) {
-            pnlPercent = unrealizedPnL
-                    .divide(totalInvested, 4, RoundingMode.HALF_UP)
-                    .multiply(new BigDecimal("100"))
-                    .setScale(2, RoundingMode.HALF_UP);
-        }
-
-        dto.setTotalValue(holdingsValue);
-        dto.setTotalInvested(totalInvested);
-        dto.setUnrealizedPnL(unrealizedPnL);
-        dto.setPnlPercent(pnlPercent);
-        dto.setHoldingCount(portfolio.getHoldings().size());
-
-        return dto;
-    }
-
-    /**
-     * Tüm portföylerin varlık dağılımını hesaplar.
-     * Her enstrüman türü için toplam değer ve yüzde hesaplanır.
-     */
-
-    private List<AssetAllocationDTO> calculateAggregateAssetAllocation(List<Portfolio> portfolios) {
-        log.debug("Calculating aggregate asset allocation for {} portfolios", portfolios.size());
-
-        Map<String, AssetAllocationDTO> allocationMap = new HashMap<>();
-
-        for (Portfolio portfolio : portfolios) {
-            List<PortfolioHolding> holdings = holdingRepository.findByPortfolioId(portfolio.getId());
-
-            for (PortfolioHolding holding : holdings) {
-                String instrumentType = holding.getInstrument().getInstrumentType().name();
-
-                // TRY cinsinden fiyat al
-                BigDecimal currentPriceInTRY = getCurrentPriceForInstrumentInTRY(holding.getInstrument().getId());
-                BigDecimal currentValue = holding.getQuantity().multiply(currentPriceInTRY);
-
-                if (allocationMap.containsKey(instrumentType)) {
-                    AssetAllocationDTO existing = allocationMap.get(instrumentType);
-                    existing.setTotalValue(existing.getTotalValue().add(currentValue));
-                    existing.setCount(existing.getCount() + 1);
-                } else {
-                    allocationMap.put(instrumentType, AssetAllocationDTO.builder()
-                            .instrumentType(instrumentType)
-                            .totalValue(currentValue)
-                            .count(1)
-                            .percentage(BigDecimal.ZERO)
-                            .build());
-                }
-            }
-        }
-
-        BigDecimal grandTotal = allocationMap.values().stream()
-                .map(AssetAllocationDTO::getTotalValue)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-        if (grandTotal.compareTo(BigDecimal.ZERO) > 0) {
-            for (AssetAllocationDTO allocation : allocationMap.values()) {
-                BigDecimal percentage = allocation.getTotalValue()
-                        .divide(grandTotal, 4, RoundingMode.HALF_UP)
-                        .multiply(new BigDecimal("100"))
-                        .setScale(2, RoundingMode.HALF_UP);
-                allocation.setPercentage(percentage);
-            }
-        }
-
-        return allocationMap.values().stream()
-                .sorted((a, b) -> b.getTotalValue().compareTo(a.getTotalValue()))
-                .collect(Collectors.toList());
     }
 }

@@ -3,7 +3,7 @@ package com.financeportal.backend.Watchlist;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import lombok.extern.slf4j.Slf4j;
+import lombok.extern.log4j.Log4j2;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.MediaType;
@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/watchlist")
 @RequiredArgsConstructor
-@Slf4j
+@Log4j2
 @Tag(name = "Watchlist API", description = "Takip listesi yönetimi")
 public class WatchlistController {
 

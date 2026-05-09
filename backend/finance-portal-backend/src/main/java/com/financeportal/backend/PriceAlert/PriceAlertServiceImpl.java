@@ -8,7 +8,7 @@ import com.financeportal.backend.Instrument.Repository.InstrumentRepository;
 import com.financeportal.backend.Notification.NotificationService;
 import com.financeportal.backend.Util.SecurityUtils;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import lombok.extern.log4j.Log4j2;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,7 +20,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
-@Slf4j
+@Log4j2
 public class PriceAlertServiceImpl implements PriceAlertService {
 
     private final PriceAlertRepository priceAlertRepository;
@@ -32,7 +32,6 @@ public class PriceAlertServiceImpl implements PriceAlertService {
      * Kullanıcı için yeni fiyat alarmı oluşturur.
      * Alarm oluşturulduğunda aktif ve tetiklenmemiş olarak kaydedilir.
      */
-
     @Override
     @Transactional
     public PriceAlertDTO createAlert(CreatePriceAlertRequestDTO request) {
@@ -65,7 +64,6 @@ public class PriceAlertServiceImpl implements PriceAlertService {
     /**
      * Giriş yapmış kullanıcının tüm alarmlarını getirir (aktif + tetiklenmiş).
      */
-
     @Override
     @Transactional(readOnly = true)
     public List<PriceAlertDTO> getUserAlerts() {
@@ -78,7 +76,6 @@ public class PriceAlertServiceImpl implements PriceAlertService {
     /**
      * Giriş yapmış kullanıcının sadece aktif alarmlarını getirir.
      */
-
     @Override
     @Transactional(readOnly = true)
     public List<PriceAlertDTO> getActiveUserAlerts() {
@@ -91,7 +88,6 @@ public class PriceAlertServiceImpl implements PriceAlertService {
     /**
      * Belirtilen alarmı siler. Sadece kendi alarmını silebilir.
      */
-
     @Override
     @Transactional
     public void deleteAlert(Long alertId) {
@@ -105,7 +101,6 @@ public class PriceAlertServiceImpl implements PriceAlertService {
      * Her 15 dakikada bir aktif alarmları kontrol eder.
      * Fiyat koşulu sağlanırsa bildirim gönderir ve alarmı devre dışı bırakır.
      */
-
     @Override
     @Scheduled(fixedRate = 900000)
     @Transactional

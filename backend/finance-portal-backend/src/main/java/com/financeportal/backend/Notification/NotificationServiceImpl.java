@@ -3,7 +3,7 @@ package com.financeportal.backend.Notification;
 import com.financeportal.backend.User.Repository.UserRepository;
 import com.financeportal.backend.Util.SecurityUtils;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import lombok.extern.log4j.Log4j2;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -15,7 +15,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
-@Slf4j
+@Log4j2
 public class NotificationServiceImpl implements NotificationService {
     private final NotificationRepository notificationRepository;
     private final UserRepository userRepository;
@@ -23,7 +23,7 @@ public class NotificationServiceImpl implements NotificationService {
     /**
      * Yeni bildirim oluşturur ve veritabanına kaydeder.
      */
-
+    @Override
     public Notification createNotification(String userId, String title, String message,
                                            NotificationType type, String relatedId) {
         Notification notification = Notification.builder()
@@ -43,7 +43,7 @@ public class NotificationServiceImpl implements NotificationService {
     /**
      * Kullanıcının bildirimlerini sayfalı olarak getirir.
      */
-
+    @Override
     @Transactional(readOnly = true)
     public Page<NotificationDTO> getNotifications(int page, int size) {
         String userId = SecurityUtils.getCurrentUserKeycloakId();
@@ -56,7 +56,7 @@ public class NotificationServiceImpl implements NotificationService {
     /**
      * Kullanıcının okunmamış bildirimlerini getirir.
      */
-
+    @Override
     @Transactional(readOnly = true)
     public List<NotificationDTO> getUnreadNotifications() {
         String userId = SecurityUtils.getCurrentUserKeycloakId();
@@ -68,7 +68,7 @@ public class NotificationServiceImpl implements NotificationService {
     /**
      * Kullanıcının okunmamış bildirim sayısını döner.
      */
-
+    @Override
     @Transactional(readOnly = true)
     public long getUnreadCount() {
         String userId = SecurityUtils.getCurrentUserKeycloakId();
@@ -79,7 +79,7 @@ public class NotificationServiceImpl implements NotificationService {
     /**
      * Tüm bildirimleri okundu olarak işaretler.
      */
-
+    @Override
     @Transactional
     public void markAllAsRead() {
         String userId = SecurityUtils.getCurrentUserKeycloakId();
@@ -90,7 +90,7 @@ public class NotificationServiceImpl implements NotificationService {
     /**
      * Belirtilen bildirimi okundu olarak işaretler.
      */
-
+    @Override
     @Transactional
     public void markAsRead(Long notificationId) {
         String userId = SecurityUtils.getCurrentUserKeycloakId();
@@ -102,7 +102,7 @@ public class NotificationServiceImpl implements NotificationService {
      * Portföy değer değişimi bildirimi gönderir.
      * Kullanıcının bildirim tercihi kapalıysa gönderilmez.
      */
-
+    @Override
     public void notifyPortfolioChange(String userId, String portfolioName,
                                       double changePercent, Long portfolioId) {
         // Kullanıcı tercihi kontrol et
@@ -122,7 +122,7 @@ public class NotificationServiceImpl implements NotificationService {
      * Alış/satış işlemi bildirimi gönderir.
      * Kullanıcının bildirim tercihi kapalıysa gönderilmez.
      */
-
+    @Override
     public void notifyTransaction(String userId, String instrumentSymbol,
                                   String transactionType, double quantity, Long portfolioId) {
 
@@ -143,7 +143,7 @@ public class NotificationServiceImpl implements NotificationService {
      * Fiyat alarmı tetiklendiğinde bildirim gönderir.
      * Kullanıcının bildirim tercihi kapalıysa gönderilmez.
      */
-
+    @Override
     public void notifyPriceAlert(String userId, String instrumentSymbol,
                                  double currentPrice, String currency) {
 
@@ -162,7 +162,7 @@ public class NotificationServiceImpl implements NotificationService {
      * Yeni haber eklendiğinde bildirim gönderir.
      * Kullanıcının bildirim tercihi kapalıysa gönderilmez.
      */
-
+    @Override
     public void notifyNews(String userId, String newsTitle, Long newsId) {
 
         com.financeportal.backend.User.Entity.User user = userRepository.findByKeycloakId(userId).orElse(null);

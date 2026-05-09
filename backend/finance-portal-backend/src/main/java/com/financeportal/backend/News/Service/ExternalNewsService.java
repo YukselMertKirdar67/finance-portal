@@ -5,7 +5,7 @@ import com.financeportal.backend.News.Entity.News;
 import com.financeportal.backend.News.Repository.NewsRepository;
 import com.financeportal.backend.Notification.NotificationService;
 import com.financeportal.backend.User.Repository.UserRepository;
-import lombok.extern.slf4j.Slf4j;
+import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Caching;
@@ -21,7 +21,7 @@ import java.util.List;
 import java.util.Map;
 
 @Service
-@Slf4j
+@Log4j2
 public class ExternalNewsService {
 
     @Value("${newsapi.api.key}")

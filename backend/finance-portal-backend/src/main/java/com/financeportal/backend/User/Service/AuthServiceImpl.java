@@ -8,7 +8,7 @@ import com.financeportal.backend.User.Entity.User;
 import com.financeportal.backend.User.Repository.UserRepository;
 import jakarta.ws.rs.core.Response;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import lombok.extern.log4j.Log4j2;
 import org.keycloak.admin.client.Keycloak;
 import org.keycloak.admin.client.resource.RealmResource;
 import org.keycloak.admin.client.resource.UsersResource;
@@ -35,7 +35,7 @@ import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
-@Slf4j
+@Log4j2
 public class AuthServiceImpl implements AuthService {
 
     private final Keycloak keycloakAdminClient;

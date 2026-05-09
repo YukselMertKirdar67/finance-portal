@@ -1,6 +1,6 @@
 package com.financeportal.backend.Portfolio.Service;
 
-import lombok.extern.slf4j.Slf4j;
+import lombok.extern.log4j.Log4j2;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -9,7 +9,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
-@Slf4j
+@Log4j2
 public class PortfolioCalculationServiceImpl implements PortfolioCalculationService {
 
     private static final int PRICE_SCALE = 6;       // 6 decimal places for prices
@@ -21,7 +21,6 @@ public class PortfolioCalculationServiceImpl implements PortfolioCalculationServ
      * Mevcut pozisyona yeni alış eklendikten sonra yeni ortalama alış fiyatını hesaplar.
      * Formül: ((mevcut_miktar × mevcut_ort_fiyat) + (yeni_miktar × yeni_fiyat)) / toplam_miktar
      */
-
     @Override
     public BigDecimal calculateNewAverageBuyPrice(BigDecimal existingQuantity, BigDecimal existingAvgPrice,
                                                   BigDecimal newQuantity, BigDecimal newPrice) {
@@ -49,7 +48,6 @@ public class PortfolioCalculationServiceImpl implements PortfolioCalculationServ
      * Gerçekleşmemiş kâr/zararı hesaplar.
      * Formül: (güncel_fiyat - ortalama_alış_fiyatı) × miktar
      */
-
     @Override
     public BigDecimal calculateUnrealizedPnL(BigDecimal quantity, BigDecimal avgBuyPrice, BigDecimal currentPrice) {
         log.debug("Calculating unrealized P&L. Qty: {}, Avg Buy: {}, Current: {}",
@@ -73,7 +71,6 @@ public class PortfolioCalculationServiceImpl implements PortfolioCalculationServ
      * Kâr/zarar yüzdesini hesaplar.
      * Formül: ((güncel_fiyat - ortalama_alış_fiyatı) / ortalama_alış_fiyatı) × 100
      */
-
     @Override
     public BigDecimal calculatePnLPercent(BigDecimal avgBuyPrice, BigDecimal currentPrice) {
         log.debug("Calculating P&L percent. Avg Buy: {}, Current: {}", avgBuyPrice, currentPrice);
@@ -98,7 +95,6 @@ public class PortfolioCalculationServiceImpl implements PortfolioCalculationServ
      * Toplam yatırım tutarını hesaplar.
      * Formül: miktar × ortalama_alış_fiyatı
      */
-
     @Override
     public BigDecimal calculateTotalInvestment(BigDecimal quantity, BigDecimal avgBuyPrice) {
         log.debug("Calculating total investment. Qty: {}, Avg Buy: {}", quantity, avgBuyPrice);
@@ -120,7 +116,6 @@ public class PortfolioCalculationServiceImpl implements PortfolioCalculationServ
      * Güncel portföy değerini hesaplar.
      * Formül: miktar × güncel_fiyat
      */
-
     @Override
     public BigDecimal calculateCurrentValue(BigDecimal quantity, BigDecimal currentPrice) {
         log.debug("Calculating current value. Qty: {}, Current Price: {}", quantity, currentPrice);
@@ -142,7 +137,6 @@ public class PortfolioCalculationServiceImpl implements PortfolioCalculationServ
      * Komisyon ve vergi dahil net tutarı hesaplar.
      * Formül: toplam_tutar + komisyon + vergi
      */
-
     @Override
     public BigDecimal calculateNetAmount(BigDecimal totalAmount, BigDecimal commission, BigDecimal tax) {
         log.debug("Calculating net amount. Total: {}, Commission: {}, Tax: {}", totalAmount, commission, tax);
@@ -168,7 +162,6 @@ public class PortfolioCalculationServiceImpl implements PortfolioCalculationServ
      * Satış miktarının geçerli olup olmadığını doğrular.
      * Sıfır veya negatif miktar ve mevcut miktarı aşan satış reddedilir.
      */
-
     @Override
     public boolean validateSellQuantity(BigDecimal availableQuantity, BigDecimal sellQuantity) {
         log.debug("Validating sell quantity. Available: {}, Sell: {}", availableQuantity, sellQuantity);
@@ -195,7 +188,6 @@ public class PortfolioCalculationServiceImpl implements PortfolioCalculationServ
      * Portföy getirisini yüzde olarak hesaplar.
      * Formül: ((güncel_değer - başlangıç_bakiye) / başlangıç_bakiye) × 100
      */
-
     @Override
     public BigDecimal calculatePortfolioReturn(BigDecimal initialBalance, BigDecimal currentValue) {
         log.debug("Calculating portfolio return. Initial: {}, Current: {}", initialBalance, currentValue);

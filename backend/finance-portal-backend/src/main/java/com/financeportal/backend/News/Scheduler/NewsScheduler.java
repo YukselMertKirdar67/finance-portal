@@ -2,7 +2,7 @@ package com.financeportal.backend.News.Scheduler;
 
 import com.financeportal.backend.News.Service.ExternalNewsService;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import lombok.extern.log4j.Log4j2;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -11,7 +11,7 @@ import java.util.Map;
 
 @Component
 @RequiredArgsConstructor
-@Slf4j
+@Log4j2
 public class NewsScheduler {
 
     private final ExternalNewsService externalNewsService;

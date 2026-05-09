@@ -1,7 +1,7 @@
 package com.financeportal.backend.Totp;
 
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import lombok.extern.log4j.Log4j2;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -12,7 +12,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/totp")
 @RequiredArgsConstructor
-@Slf4j
+@Log4j2
 public class TotpController {
 
     private final TotpService totpService;

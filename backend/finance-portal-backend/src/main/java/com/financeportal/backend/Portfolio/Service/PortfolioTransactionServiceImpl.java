@@ -19,7 +19,7 @@ import com.financeportal.backend.Portfolio.Repository.PortfolioRepository;
 import com.financeportal.backend.Portfolio.Repository.PortfolioTransactionRepository;
 import com.financeportal.backend.Util.SecurityUtils;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import lombok.extern.log4j.Log4j2;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -33,7 +33,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
-@Slf4j
+@Log4j2
 public class PortfolioTransactionServiceImpl implements PortfolioTransactionService {
 
     private final PortfolioTransactionRepository transactionRepository;
@@ -49,7 +49,6 @@ public class PortfolioTransactionServiceImpl implements PortfolioTransactionServ
     /**
      * İşlem türüne göre alış veya satış işlemi oluşturur.
      */
-
     @Override
     @Transactional
     public TransactionDTO createTransaction(Long portfolioId, CreateTransactionRequestDTO request) {
@@ -70,7 +69,6 @@ public class PortfolioTransactionServiceImpl implements PortfolioTransactionServ
      * Enstrüman fiyatını döviz kuruyla çevirir, işlemi kaydeder,
      * holding günceller ve işlem bildirimi gönderir.
      */
-
     @Override
     @Transactional
     public TransactionDTO createBuyTransaction(Long portfolioId, CreateTransactionRequestDTO request) {
@@ -116,7 +114,6 @@ public class PortfolioTransactionServiceImpl implements PortfolioTransactionServ
      * Yeterli miktar kontrolü yapar, işlemi kaydeder,
      * holding miktarını düşürür ve işlem bildirimi gönderir.
      */
-
     @Override
     @Transactional
     public TransactionDTO createSellTransaction(Long portfolioId, CreateTransactionRequestDTO request) {
@@ -170,7 +167,6 @@ public class PortfolioTransactionServiceImpl implements PortfolioTransactionServ
     /**
      * ID'ye göre işlem getirir.
      */
-
     @Override
     @Transactional(readOnly = true)
     public TransactionDTO getTransactionById(Long transactionId) {
@@ -185,7 +181,6 @@ public class PortfolioTransactionServiceImpl implements PortfolioTransactionServ
     /**
      * Portföyün tüm işlem geçmişini getirir (liste).
      */
-
     @Override
     @Transactional(readOnly = true)
     public List<TransactionDTO> getTransactionHistory(Long portfolioId) {
@@ -202,7 +197,6 @@ public class PortfolioTransactionServiceImpl implements PortfolioTransactionServ
     /**
      * Portföyün tüm işlem geçmişini sayfalı olarak getirir.
      */
-
     @Override
     @Transactional(readOnly = true)
     public Page<TransactionDTO> getTransactionHistory(Long portfolioId, Pageable pageable) {
@@ -217,7 +211,6 @@ public class PortfolioTransactionServiceImpl implements PortfolioTransactionServ
     /**
      * Portföydeki işlemleri türe göre filtreler (BUY/SELL).
      */
-
     @Override
     @Transactional(readOnly = true)
     public List<TransactionDTO> getTransactionsByType(Long portfolioId, TransactionType transactionType) {
@@ -236,7 +229,6 @@ public class PortfolioTransactionServiceImpl implements PortfolioTransactionServ
     /**
      * Belirli bir enstrümana ait işlemleri getirir.
      */
-
     @Override
     @Transactional(readOnly = true)
     public List<TransactionDTO> getTransactionsByInstrument(Long portfolioId, Long instrumentId) {
@@ -255,7 +247,6 @@ public class PortfolioTransactionServiceImpl implements PortfolioTransactionServ
     /**
      * Belirtilen tarih aralığındaki işlemleri getirir.
      */
-
     @Override
     @Transactional(readOnly = true)
     public List<TransactionDTO> getTransactionsByDateRange(Long portfolioId, LocalDateTime startDate, LocalDateTime endDate) {
@@ -274,7 +265,6 @@ public class PortfolioTransactionServiceImpl implements PortfolioTransactionServ
     /**
      * Son N gün içindeki işlemleri getirir.
      */
-
     @Override
     @Transactional(readOnly = true)
     public List<TransactionDTO> getRecentTransactions(Long portfolioId, int days) {
@@ -296,7 +286,6 @@ public class PortfolioTransactionServiceImpl implements PortfolioTransactionServ
      * Portföy için işlem özeti hesaplar.
      * Toplam alış/satış tutarı, komisyon, vergi ve gerçekleşmiş kâr/zarar içerir.
      */
-
     @Override
     @Transactional(readOnly = true)
     public TransactionSummaryDTO getTransactionSummary(Long portfolioId) {
@@ -330,7 +319,6 @@ public class PortfolioTransactionServiceImpl implements PortfolioTransactionServ
     /**
      * Portföydeki toplam alış tutarını hesaplar.
      */
-
     @Override
     @Transactional(readOnly = true)
     public BigDecimal calculateTotalBuyAmount(Long portfolioId) {
@@ -340,7 +328,6 @@ public class PortfolioTransactionServiceImpl implements PortfolioTransactionServ
     /**
      * Portföydeki toplam satış tutarını hesaplar.
      */
-
     @Override
     @Transactional(readOnly = true)
     public BigDecimal calculateTotalSellAmount(Long portfolioId) {
@@ -350,7 +337,6 @@ public class PortfolioTransactionServiceImpl implements PortfolioTransactionServ
     /**
      * Portföydeki toplam komisyon tutarını hesaplar.
      */
-
     @Override
     @Transactional(readOnly = true)
     public BigDecimal calculateTotalCommission(Long portfolioId) {
@@ -360,7 +346,6 @@ public class PortfolioTransactionServiceImpl implements PortfolioTransactionServ
     /**
      * Portföydeki toplam vergi tutarını hesaplar.
      */
-
     @Override
     @Transactional(readOnly = true)
     public BigDecimal calculateTotalTax(Long portfolioId) {
@@ -370,7 +355,6 @@ public class PortfolioTransactionServiceImpl implements PortfolioTransactionServ
     /**
      * Portföydeki gerçekleşmiş kâr/zararı hesaplar.
      */
-
     @Override
     @Transactional(readOnly = true)
     public BigDecimal calculateRealizedPnL(Long portfolioId) {
@@ -381,7 +365,6 @@ public class PortfolioTransactionServiceImpl implements PortfolioTransactionServ
      * İşlemi soft delete ile siler (deleted = true).
      * Veriler korunur ancak hesaplamalara dahil edilmez.
      */
-
     @Override
     @Transactional
     public void deleteTransaction(Long transactionId) {
@@ -403,7 +386,6 @@ public class PortfolioTransactionServiceImpl implements PortfolioTransactionServ
     /**
      * Portföydeki toplam işlem sayısını döner.
      */
-
     @Override
     @Transactional(readOnly = true)
     public long countTransactions(Long portfolioId) {
@@ -413,7 +395,6 @@ public class PortfolioTransactionServiceImpl implements PortfolioTransactionServ
     /**
      * Portföydeki toplam alış işlemi sayısını döner.
      */
-
     @Override
     @Transactional(readOnly = true)
     public long countBuyTransactions(Long portfolioId) {
@@ -423,7 +404,6 @@ public class PortfolioTransactionServiceImpl implements PortfolioTransactionServ
     /**
      * Portföydeki toplam satış işlemi sayısını döner.
      */
-
     @Override
     @Transactional(readOnly = true)
     public long countSellTransactions(Long portfolioId) {

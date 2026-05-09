@@ -3,7 +3,7 @@ package com.financeportal.backend.News.Controller;
 import com.financeportal.backend.News.Entity.News;
 import com.financeportal.backend.News.Repository.NewsRepository;
 import com.financeportal.backend.News.Service.ExternalNewsService;
-import lombok.extern.slf4j.Slf4j;
+import lombok.extern.log4j.Log4j2;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
 import org.springframework.http.HttpStatus;
@@ -17,7 +17,7 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/admin/news")
-@Slf4j
+@Log4j2
 public class AdminNewsController {
 
     private final ExternalNewsService externalNewsService;
