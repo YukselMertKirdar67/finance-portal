@@ -183,7 +183,6 @@ public class HomeService {
                 case STOCK -> StockInstrument.class;
                 case CRYPTO -> CryptoInstrument.class;
                 case BOND -> BondInstrument.class;
-                case EUROBOND -> EurobondInstrument.class;
                 case PRECIOUS -> PreciousInstrument.class;
                 case FUND -> FundInstrument.class;
             };
@@ -287,7 +286,6 @@ public class HomeService {
             case STOCK -> "Hisse Senedi";
             case CRYPTO -> "Kripto";
             case BOND -> "Tahvil";
-            case EUROBOND -> "Eurobond";
             case PRECIOUS -> "Kıymetli Maden";
             case FUND -> "Yatırım Fonu";
         };
@@ -303,7 +301,6 @@ public class HomeService {
             case STOCK -> "TrendingUp";
             case CRYPTO -> "Bitcoin";
             case BOND -> "FileText";
-            case EUROBOND -> "Globe";
             case PRECIOUS -> "Gem";
             case FUND -> "Briefcase";
         };
