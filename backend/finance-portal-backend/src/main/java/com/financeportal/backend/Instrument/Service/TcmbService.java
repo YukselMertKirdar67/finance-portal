@@ -5,7 +5,7 @@ import com.financeportal.backend.Instrument.Repository.*;
 import com.financeportal.backend.WebSocket.PriceUpdateMessage;
 import com.financeportal.backend.WebSocket.WebSocketPriceService;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import lombok.extern.log4j.Log4j2;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.CacheEvict;
@@ -28,7 +28,7 @@ import java.util.*;
 
 @Service
 @RequiredArgsConstructor
-@Slf4j
+@Log4j2
 public class TcmbService {
 
     private static final String TCMB_TODAY_URL = "https://www.tcmb.gov.tr/kurlar/today.xml";
