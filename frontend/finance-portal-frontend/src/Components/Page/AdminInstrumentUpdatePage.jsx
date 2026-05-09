@@ -8,7 +8,7 @@ import {
 import {
     getUpdateStatus, updateAllInstruments, updateTcmb,
     updateUsStocks, updateBist, updateCrypto, updatePrecious,
-    updateBonds, fetchAllHistoricalData, fetchForexHistoricalData, updateEtfs
+    updateBonds, fetchAllHistoricalData, fetchForexHistoricalData, updateEtfs, updateTrBonds, fetchTrBondsHistorical
 } from '../../API/adminInstrumentApi';
 import { useAuth } from '../../context/AuthContext';
 
@@ -188,7 +188,7 @@ const AdminInstrumentUpdatePage = () => {
                     </div>
                 </div>
 
-                {/* Stats — Yahoo olarak güncellendi */}
+                {/* Stats */}
                 {status?.totalUpdated > 0 && (
                     <div className="border-t pt-6">
                         <h3 className="text-sm font-semibold text-gray-700 mb-4">Detaylı İstatistikler</h3>
@@ -251,6 +251,32 @@ const AdminInstrumentUpdatePage = () => {
                             <><Loader2 className="w-5 h-5 animate-spin" /><span>Çekiliyor...</span></>
                         ) : (
                             <><History className="w-5 h-5" /><span>TCMB Döviz Geçmiş Veri (1 Yıl)</span></>
+                        )}
+                    </button>
+                    <button
+                        onClick={async () => {
+                            setUpdating(true);
+                            setError(''); setSuccess('');
+                            try {
+                                const result = await fetchTrBondsHistorical(365);
+                                if (result.success) {
+                                    setSuccess('✅ TR Tahvil geçmiş verileri çekildi!');
+                                } else {
+                                    setError('TR Tahvil geçmiş veri çekilemedi');
+                                }
+                            } catch {
+                                setError('TR Tahvil geçmiş veri çekilirken hata oluştu');
+                            } finally {
+                                setUpdating(false);
+                            }
+                        }}
+                        disabled={updating || status?.updating}
+                        className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-gradient-to-r from-red-500 to-rose-500 hover:from-red-600 hover:to-rose-600 disabled:from-gray-400 disabled:to-gray-500 text-white font-semibold rounded-lg transition shadow-lg"
+                    >
+                        {(updating || status?.updating) ? (
+                            <><Loader2 className="w-5 h-5 animate-spin" /><span>Çekiliyor...</span></>
+                        ) : (
+                            <><History className="w-5 h-5" /><span>EVDS TR Tahvil Geçmiş Veri (1 Yıl)</span></>
                         )}
                     </button>
                 </div>
@@ -324,6 +350,15 @@ const AdminInstrumentUpdatePage = () => {
                     onUpdate={() => handleSingleUpdate(updateEtfs, 'ETF\'ler')}
                     disabled={updating || status?.updating}
                 />
+                <UpdateCard
+                    title="EVDS - TR Tahvil/Faiz"
+                    description="TCMB AOFM, TLREF ve diğer Türkiye faiz oranları"
+                    icon={<FileText className="w-6 h-6" />}
+                    iconBg="bg-red-100" iconColor="text-red-600"
+                    limit="Sınırsız"
+                    onUpdate={() => handleSingleUpdate(updateTrBonds, 'TR Tahvil/Faiz')}
+                    disabled={updating || status?.updating}
+                />
             </div>
 
             {/* Info Box */}
@@ -335,7 +370,7 @@ const AdminInstrumentUpdatePage = () => {
                         <ul className="space-y-2 text-sm text-blue-800">
                             <li className="flex items-start gap-2">
                                 <span className="text-blue-600 mt-1">•</span>
-                                <span><strong>Tümünü Güncelle:</strong> TCMB + Yahoo Finance + Tahvil/Bono verilerini çeker.</span>
+                                <span><strong>Tümünü Güncelle:</strong> TCMB + Yahoo Finance + EVDS Tahvil verilerini çeker.</span>
                             </li>
                             <li className="flex items-start gap-2">
                                 <span className="text-blue-600 mt-1">•</span>
