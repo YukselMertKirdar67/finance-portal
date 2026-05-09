@@ -2,8 +2,13 @@ package com.financeportal.backend.Instrument.Service;
 
 import com.financeportal.backend.Instrument.Entity.*;
 import com.financeportal.backend.Instrument.Repository.*;
+import com.financeportal.backend.WebSocket.PriceUpdateMessage;
+import com.financeportal.backend.WebSocket.WebSocketPriceService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.Cache;
+import org.springframework.cache.CacheManager;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import org.w3c.dom.Document;
@@ -33,7 +38,11 @@ public class TcmbService {
     private final InstrumentRepository instrumentRepository;
     private final InstrumentPriceRepository priceRepository;
     private final PriceHistoryRepository historyRepository;
+    private final WebSocketPriceService webSocketPriceService;
+    private final CacheManager cacheManager;
 
+
+    @CacheEvict(value = {"instrumentDetails", "instrumentPrices"}, allEntries = true)
     public List<InstrumentPrice> fetchDailyRates() {
         log.info("Fetching TCMB rates...");
 
@@ -61,6 +70,7 @@ public class TcmbService {
                 Element currency = (Element) currencies.item(i);
 
                 String code = currency.getAttribute("Kod");
+                if ("XDR".equals(code)) continue;
                 String name = getElementValue(currency, "Isim");
                 String forexBuyingStr = getElementValue(currency, "ForexBuying");
                 String forexSellingStr = getElementValue(currency, "ForexSelling");
@@ -94,6 +104,23 @@ public class TcmbService {
                         .build();
 
                 priceRepository.save(price);
+                Cache cache = cacheManager.getCache("instrumentDetails");
+                if (cache != null) {
+                    cache.evict(instrument.getId());
+                }
+                Cache priceCache = cacheManager.getCache("instrumentPrices");
+                if (priceCache != null) {
+                    priceCache.evict(instrument.getId());
+                }
+                webSocketPriceService.sendPriceUpdate(PriceUpdateMessage.builder()
+                        .instrumentId(instrument.getId())
+                        .symbol(symbol)
+                        .name(instrument.getName())
+                        .type("FOREX")
+                        .currentPrice(avgPrice)
+                        .previousClose(previousClose)
+                        .timestamp(LocalDateTime.now())
+                        .build());
                 prices.add(price);
 
                 log.info("Updated TCMB: {} = {} (prev: {}, change: {}%)",
