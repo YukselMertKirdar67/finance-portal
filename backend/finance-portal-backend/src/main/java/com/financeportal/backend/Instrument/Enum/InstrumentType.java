@@ -5,7 +5,6 @@ public enum InstrumentType {
     STOCK,        // Borsa - Hisse Senetleri (AAPL, THYAO)
     PRECIOUS,     // Değerli Madenler (GOLD, SILVER, XAU/USD)
     CRYPTO,       // Kripto (BTC, ETH)
-    EUROBOND,     // EuroBond
     BOND,         // Tahvil/Bono
-    FUND
+    FUND          // Yatırım Fonu/EFT
 }
