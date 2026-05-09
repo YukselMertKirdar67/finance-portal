@@ -115,7 +115,6 @@ export default function InstrumentDetailPage() {
     const [instrument, setInstrument] = useState(null);
     const [history, setHistory] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [refreshing, setRefreshing] = useState(false);
     const [error, setError] = useState(null);
     const [inWatchlist, setInWatchlist] = useState(false);
     const [watchlistLoading, setWatchlistLoading] = useState(false);
@@ -219,12 +218,6 @@ export default function InstrumentDetailPage() {
         } catch (e) {
             console.error('History fetch error:', e);
         }
-    };
-
-    const handleRefresh = async () => {
-        setRefreshing(true);
-        await fetchInstrument();
-        setRefreshing(false);
     };
 
     const handleCreateAlert = async () => {
@@ -338,10 +331,6 @@ export default function InstrumentDetailPage() {
                             Geri
                         </Button>
                         <div className="flex gap-2">
-                            <Button variant="outline" size="sm" onClick={handleRefresh} disabled={refreshing}>
-                                <RefreshCw className={`w-4 h-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
-                                Yenile
-                            </Button>
                             <Button variant="outline" size="sm" onClick={() => setShowAlertModal(true)}>
                                 <Bell className="w-4 h-4 mr-2" />
                                 Fiyat Alarmı
