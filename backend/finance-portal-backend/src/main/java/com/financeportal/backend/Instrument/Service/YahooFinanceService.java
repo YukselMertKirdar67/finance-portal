@@ -124,6 +124,12 @@ public class YahooFinanceService {
             Map.of("yahoo", "VNQ",  "db", "VNQ",  "name", "Vanguard Real Estate ETF")
     );
 
+
+    /**
+     * Yahoo Finance API'den belirtilen sembolün anlık fiyatını çeker ve veritabanına kaydeder.
+     * Redis cache kontrolü yapar, cache'de varsa DB'den döner.
+     * Fiyat güncellendikten sonra WebSocket ile bağlı kullanıcılara bildirim gönderir.
+     */
     @CacheEvict(value = {"instrumentDetails", "instrumentPrices"}, allEntries = true)
     public InstrumentPrice fetchQuote(String yahooSymbol, String dbSymbol) {
         String cacheKey = "yahoo:quote:" + dbSymbol;
@@ -252,7 +258,10 @@ public class YahooFinanceService {
         }
     }
 
-
+    /**
+     * Yahoo Finance API'den belirtilen sembolün geçmiş fiyat verilerini çeker.
+     * Mevcut kayıtları günceller, yeni kayıtları ekler.
+     */
     public List<PriceHistory> fetchHistoricalData(String yahooSymbol, String dbSymbol,
                                                   String interval, String range) {
         List<PriceHistory> historyList = new ArrayList<>();
@@ -344,7 +353,9 @@ public class YahooFinanceService {
         return historyList;
     }
 
-
+    /**
+     * ABD hisse senetlerinin anlık fiyatlarını günceller.
+     */
     public int updateUsStocks() {
         log.info("📊 Updating US stocks via Yahoo Finance...");
         int updated = 0;
@@ -361,6 +372,9 @@ public class YahooFinanceService {
         return updated;
     }
 
+    /**
+     * BIST hisse senetlerinin anlık fiyatlarını günceller.
+     */
     public int updateBistStocks() {
         log.info("📊 Updating BIST stocks via Yahoo Finance...");
         int updated = 0;
@@ -377,6 +391,9 @@ public class YahooFinanceService {
         return updated;
     }
 
+    /**
+     * Kripto paraların anlık fiyatlarını günceller.
+     */
     public int updateCryptos() {
         log.info("📊 Updating cryptos via Yahoo Finance...");
         int updated = 0;
@@ -393,6 +410,9 @@ public class YahooFinanceService {
         return updated;
     }
 
+    /**
+     * Kıymetli metallerin anlık fiyatlarını günceller.
+     */
     public int updatePreciousMetals() {
         log.info("📊 Updating precious metals via Yahoo Finance...");
         int updated = 0;
@@ -410,7 +430,7 @@ public class YahooFinanceService {
     }
 
     /**
-     * Yahoo Finance'den tahvil faiz oranlarını günceller.
+     * ABD tahvil ve hazine bonolarının faiz oranlarını günceller.
      */
     public int updateBonds() {
         log.info("📊 Updating bonds via Yahoo Finance...");
@@ -428,6 +448,9 @@ public class YahooFinanceService {
         return updated;
     }
 
+    /**
+     * Global ETF'lerin anlık fiyatlarını günceller.
+     */
     public int updateEtfs() {
         log.info("📊 Updating ETFs via Yahoo Finance...");
         int updated = 0;
@@ -444,6 +467,10 @@ public class YahooFinanceService {
         return updated;
     }
 
+    /**
+     * Tüm enstrümanların anlık fiyatlarını sırayla günceller.
+     * ABD hisseleri, BIST, kripto, kıymetli metaller, tahvil ve ETF'leri kapsar.
+     */
     public int updateAll() {
         log.info("📊 Updating ALL instruments via Yahoo Finance...");
         int total = 0;
@@ -457,6 +484,9 @@ public class YahooFinanceService {
         return total;
     }
 
+    /**
+     * Tüm enstrümanlar için 1 yıllık geçmiş fiyat verilerini çeker.
+     */
     public void fetchAllHistoricalData() {
         log.info("📊 Fetching historical data for all instruments...");
 
@@ -483,11 +513,18 @@ public class YahooFinanceService {
 
     // ========== PRIVATE HELPER METHODS ==========
 
+    /**
+     * Sembolü veritabanında arar, yoksa yeni enstrüman oluşturur.
+     */
     private BaseInstrument getOrCreateInstrument(String dbSymbol, String yahooSymbol, JsonNode meta) {
         return instrumentRepository.findBySymbol(dbSymbol)
                 .orElseGet(() -> createInstrument(dbSymbol, yahooSymbol, meta));
     }
 
+    /**
+     * Sembol tipine göre uygun enstrüman entity'sini oluşturur ve veritabanına kaydeder.
+     * Kıymetli metal, BIST, kripto, tahvil, ETF ve hisse senedi tiplerini destekler.
+     */
     private BaseInstrument createInstrument(String dbSymbol, String yahooSymbol, JsonNode meta) {
         String currency  = meta.path("currency").asText("USD");
         String exchange  = meta.path("exchangeName").asText("NASDAQ");
@@ -558,12 +595,19 @@ public class YahooFinanceService {
         return instrument;
     }
 
+    /**
+     * Veritabanından en son fiyat kaydını döner.
+     */
     private InstrumentPrice getLatestPriceFromDb(String dbSymbol) {
         return instrumentRepository.findBySymbol(dbSymbol)
                 .flatMap(priceRepository::findTopByInstrumentOrderByTimestampDesc)
                 .orElse(null);
     }
 
+    /**
+     * Günlük fiyat geçmişini kaydeder.
+     * Aynı gün için kayıt varsa günceller, yoksa yeni kayıt oluşturur.
+     */
     private void savePriceHistory(BaseInstrument instrument,
                                   BigDecimal open, BigDecimal high,
                                   BigDecimal low, BigDecimal close) {
