@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
     DollarSign, Building2, FileText,
-    Landmark, Coins, Bitcoin, ChevronRight, RefreshCw
+    Coins, Bitcoin, ChevronRight, RefreshCw, BarChart3
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent } from '../UI/Card';
@@ -30,11 +30,11 @@ const CATEGORIES = [
         description: 'Devlet tahvilleri ve hazine bonoları',
     },
     {
-        title: 'EuroBond',
-        apiType: 'EUROBOND',
-        icon: Landmark,
-        color: 'bg-indigo-500',
-        description: 'Uluslararası tahviller',
+        title: 'Fonlar / ETF',
+        apiType: 'FUND',
+        icon: BarChart3,
+        color: 'bg-green-500',
+        description: 'SPY, QQQ, GLD ve diğer global ETF\'ler',
     },
     {
         title: 'Altın/Gümüş',
