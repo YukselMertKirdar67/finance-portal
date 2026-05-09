@@ -44,6 +44,7 @@ public class SecurityConfig {
 
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/api/totp/verify-login").permitAll()
+                        .requestMatchers("/ws/**").permitAll()
 
                         // Admin endpoints
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
