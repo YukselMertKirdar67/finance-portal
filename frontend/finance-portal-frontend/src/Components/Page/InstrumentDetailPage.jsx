@@ -14,12 +14,13 @@ import {
 import { getInstrumentById, getHistoricalPrices } from '../../API/instrumentsApi';
 import { addToWatchlist, removeFromWatchlist, isInWatchlist } from '../../API/watchlistApi';
 import { createPriceAlert, getActiveUserAlerts, deletePriceAlert } from '../../API/priceAlertApi';
+import { useInstrumentWebSocket } from '../../Hooks/useWebSocket';
 
 const TYPE_COLORS = {
     FOREX: '#3B82F6',
     STOCK: '#8B5CF6',
     BOND: '#F59E0B',
-    EUROBOND: '#6366F1',
+    FUND: '#F97316',
     PRECIOUS: '#EAB308',
     CRYPTO: '#EC4899',
 };
@@ -28,7 +29,7 @@ const TYPE_LABELS = {
     FOREX: 'Döviz',
     STOCK: 'Hisse Senedi',
     BOND: 'Tahvil/Bono',
-    EUROBOND: 'EuroBond',
+    FUND: 'Fon / ETF',
     PRECIOUS: 'Kıymetli Metal',
     CRYPTO: 'Kripto Para',
 };
@@ -126,6 +127,7 @@ export default function InstrumentDetailPage() {
     const [alertCondition, setAlertCondition] = useState('ABOVE');
     const [alertLoading, setAlertLoading] = useState(false);
     const [activeAlerts, setActiveAlerts] = useState([]);
+    const [livePrice, setLivePrice] = useState(null);
 
     useEffect(() => {
         fetchInstrument();
@@ -138,6 +140,11 @@ export default function InstrumentDetailPage() {
             fetchActiveAlerts();
         }
     }, [instrument, timeframe]);
+
+    useInstrumentWebSocket(instrument?.id, (priceUpdate) => {
+        console.log('🔴 Live price update:', priceUpdate);
+        setLivePrice(priceUpdate);
+    });
 
     const fetchInstrument = async () => {
         try {
@@ -276,7 +283,17 @@ export default function InstrumentDetailPage() {
         );
     }
 
-    const price = instrument.currentPrice;
+    const price = livePrice ? {
+        current: livePrice.currentPrice,
+        changeAmount: livePrice.changeAmount,
+        changePercent: livePrice.changePercent,
+        previousClose: livePrice.previousClose,
+        open: instrument.currentPrice?.open,
+        high: instrument.currentPrice?.high,
+        low: instrument.currentPrice?.low,
+        timestamp: livePrice.timestamp,
+        yieldRate: instrument.currentPrice?.yieldRate,
+    } : instrument.currentPrice;
     const isPositive = (price?.changePercent || 0) >= 0;
     const accentColor = TYPE_COLORS[instrument.type] || '#3B82F6';
 
@@ -298,9 +315,12 @@ export default function InstrumentDetailPage() {
         if (instrument.couponRate) fields.push({ label: 'Kupon Oranı', value: `%${instrument.couponRate}` });
         if (instrument.faceValue) fields.push({ label: 'Nominal Değer', value: instrument.faceValue.toLocaleString('tr-TR') });
         if (instrument.issuer) fields.push({ label: 'İhraçcı', value: instrument.issuer });
-        if (instrument.issueCurrency) fields.push({ label: 'İhraç Para Birimi', value: instrument.issueCurrency });
         if (instrument.metalType) fields.push({ label: 'Metal Türü', value: instrument.metalType });
         if (instrument.unit) fields.push({ label: 'Birim', value: instrument.unit });
+        if (instrument.fundCode) fields.push({ label: 'Fon Kodu', value: instrument.fundCode });
+        if (instrument.fundType) fields.push({ label: 'Fon Türü', value: instrument.fundType });
+        if (instrument.totalValue) fields.push({ label: 'Portföy Büyüklüğü', value: instrument.totalValue.toLocaleString('tr-TR') + ' USD' });
+        if (instrument.investorCount) fields.push({ label: 'Yatırımcı Sayısı', value: instrument.investorCount.toLocaleString('tr-TR') });
         return fields;
     };
 
