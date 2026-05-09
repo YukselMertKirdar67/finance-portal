@@ -41,7 +41,7 @@ public class RedisConfig {
         ) {}
     }
 
-    // ✅ REDIS için ObjectMapper (Tip bilgisi VAR)
+    // REDIS için ObjectMapper (Tip bilgisi VAR)
     @Bean(name = "redisObjectMapper")
     public ObjectMapper redisObjectMapper() {
         ObjectMapper objectMapper = new ObjectMapper();
@@ -50,7 +50,7 @@ public class RedisConfig {
         objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
         objectMapper.addMixIn(PageImpl.class, PageImplMixin.class);
 
-        // ✅ Tip bilgisi (sadece Redis için)
+        // Tip bilgisi (sadece Redis için)
         PolymorphicTypeValidator ptv = BasicPolymorphicTypeValidator.builder()
                 .allowIfSubType(Object.class)
                 .build();
@@ -64,7 +64,7 @@ public class RedisConfig {
         return objectMapper;
     }
 
-    // ✅ API için ObjectMapper (Tip bilgisi YOK) - PRIMARY
+    // API için ObjectMapper (Tip bilgisi YOK) - PRIMARY
     @Bean
     @Primary
     public ObjectMapper objectMapper() {
@@ -88,7 +88,7 @@ public class RedisConfig {
         template.setKeySerializer(new StringRedisSerializer());
         template.setHashKeySerializer(new StringRedisSerializer());
 
-        // ✅ Redis için özel ObjectMapper
+        // Redis için özel ObjectMapper
         ObjectMapper redisMapper = redisObjectMapper();
         GenericJackson2JsonRedisSerializer serializer =
                 new GenericJackson2JsonRedisSerializer(redisMapper);
@@ -133,7 +133,7 @@ public class RedisConfig {
         RedisCacheConfiguration instrumentDetailsConfig =
                 defaultConfig.entryTtl(Duration.ofHours(1));
 
-        // ===== WATCHLIST CACHE ===== ✅ EKLE
+        // ===== WATCHLIST CACHE =====
         RedisCacheConfiguration watchlistConfig =
                 defaultConfig.entryTtl(Duration.ofMinutes(5));
 
@@ -149,7 +149,7 @@ public class RedisConfig {
                 // Instruments
                 .withCacheConfiguration("instrumentPrices", instrumentPricesConfig)
                 .withCacheConfiguration("instrumentDetails", instrumentDetailsConfig)
-                // Watchlist ✅ EKLE
+                // Watchlist
                 .withCacheConfiguration("watchlist", watchlistConfig)
                 .withCacheConfiguration("watchlistCheck", watchlistCheckConfig)
                 .build();
