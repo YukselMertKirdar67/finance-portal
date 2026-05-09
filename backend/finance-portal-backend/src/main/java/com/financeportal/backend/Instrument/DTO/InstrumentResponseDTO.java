@@ -33,9 +33,6 @@ public class InstrumentResponseDTO implements Serializable {
     private BigDecimal faceValue;
     private String issuer;  // İhraççı
 
-    // ====== EUROBOND Alanları ======
-    private String issueCurrency;  // USD, EUR
-
     // ====== FOREX (Döviz) Alanları ======
     private String baseCurrency;   // USD
     private String quoteCurrency;  // TRY

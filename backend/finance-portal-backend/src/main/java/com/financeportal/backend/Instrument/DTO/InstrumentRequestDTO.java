@@ -37,9 +37,6 @@ public class InstrumentRequestDTO {
     private BigDecimal faceValue;
     private String issuer;
 
-    // ====== EUROBOND Alanları ======
-    private String issueCurrency;
-
     // ====== FOREX (Döviz) Alanları ======
     private String baseCurrency;
     private String quoteCurrency;
