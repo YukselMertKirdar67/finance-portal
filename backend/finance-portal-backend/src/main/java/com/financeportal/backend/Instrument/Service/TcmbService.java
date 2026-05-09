@@ -41,7 +41,11 @@ public class TcmbService {
     private final WebSocketPriceService webSocketPriceService;
     private final CacheManager cacheManager;
 
-
+    /**
+     * TCMB'den günlük döviz kurlarını çeker ve veritabanına kaydeder.
+     * XDR kuru atlanır. Önceki kapanış için önce arşivden, yoksa DB'den alınır.
+     * Fiyat güncellendikten sonra WebSocket ile bağlı kullanıcılara bildirim gönderir.
+     */
     @CacheEvict(value = {"instrumentDetails", "instrumentPrices"}, allEntries = true)
     public List<InstrumentPrice> fetchDailyRates() {
         log.info("Fetching TCMB rates...");
@@ -140,6 +144,7 @@ public class TcmbService {
     /**
      * TCMB arşivinden belirtilen tarih aralığındaki tüm döviz kurlarının
      * geçmiş verilerini çeker ve PriceHistory'e kaydeder.
+     * Hafta sonları atlanır, mevcut kayıtlar güncellenmez.
      */
     public void fetchHistoricalRates(LocalDate startDate, LocalDate endDate) {
         log.info("Fetching historical TCMB rates from {} to {}", startDate, endDate);
@@ -228,6 +233,10 @@ public class TcmbService {
         log.info("✅ Historical TCMB rates completed. Saved: {}, Skipped: {}", saved, skipped);
     }
 
+    /**
+     * Belirtilen para biriminin TRY karşılığı kur oranını döner.
+     * TRY için 1, stablecoin'ler için USD kuru kullanılır.
+     */
     public BigDecimal getExchangeRate(String currency) {
         if (currency == null || currency.equals("TRY")) {
             return BigDecimal.ONE;
@@ -250,6 +259,9 @@ public class TcmbService {
         return rate;
     }
 
+    /**
+     * TRY cinsinden tutarı hedef para birimine çevirir.
+     */
     public BigDecimal convertFromTRY(BigDecimal amountInTRY, String targetCurrency) {
         if (targetCurrency == null || targetCurrency.equals("TRY")) {
             return amountInTRY;
@@ -263,6 +275,10 @@ public class TcmbService {
         return amountInTRY.divide(exchangeRate, 6, RoundingMode.HALF_UP);
     }
 
+    /**
+     * Bir önceki iş gününün döviz kurlarını TCMB arşivinden çeker.
+     * İlk denemede veri gelmezse bir gün daha geri gider.
+     */
     private Map<String, BigDecimal> fetchYesterdayRates() {
         Map<String, BigDecimal> rates = new HashMap<>();
 
@@ -318,12 +334,20 @@ public class TcmbService {
         return rates;
     }
 
+    /**
+     * Belirtilen tarihe göre TCMB arşiv URL'si oluşturur.
+     * Format: /YYYYMM/DDMMYYYY.xml
+     */
     private String buildArchiveUrl(LocalDate date) {
         String monthYear = date.format(DateTimeFormatter.ofPattern("yyyyMM"));
         String dateStr   = date.format(DateTimeFormatter.ofPattern("ddMMyyyy"));
         return String.format(TCMB_ARCHIVE_URL, monthYear, dateStr);
     }
 
+    /**
+     * Verilen tarihin bir önceki iş gününü döner.
+     * Cumartesi ve Pazar günlerini atlayarak Cuma'ya gider.
+     */
     private LocalDate getPreviousBusinessDay(LocalDate date) {
         LocalDate previous = date.minusDays(1);
         while (previous.getDayOfWeek() == DayOfWeek.SATURDAY ||
@@ -333,6 +357,10 @@ public class TcmbService {
         return previous;
     }
 
+    /**
+     * Enstrümanın veritabanındaki en son fiyat kaydından önceki kapanış değerini döner.
+     * Aynı gün kaydı varsa o kaydın previousClose'unu, yoksa currentPrice'ını döner.
+     */
     private BigDecimal getPreviousCloseFromDb(BaseInstrument instrument, BigDecimal fallback) {
         return priceRepository
                 .findTopByInstrumentOrderByTimestampDesc(instrument)
@@ -347,6 +375,9 @@ public class TcmbService {
                 .orElse(fallback);
     }
 
+    /**
+     * İki fiyat arasındaki değişim yüzdesini hesaplar ve string olarak döner.
+     */
     private String calcChangePercent(BigDecimal current, BigDecimal previous) {
         if (previous == null || previous.compareTo(BigDecimal.ZERO) == 0) return "N/A";
         return current.subtract(previous)
@@ -355,6 +386,9 @@ public class TcmbService {
                 .setScale(2, RoundingMode.HALF_UP) + "%";
     }
 
+    /**
+     * Yeni bir ForexInstrument entity'si oluşturur ve veritabanına kaydeder.
+     */
     private BaseInstrument createForexInstrument(String symbol, String name, String code) {
         ForexInstrument forex = ForexInstrument.builder()
                 .symbol(symbol)
@@ -370,6 +404,9 @@ public class TcmbService {
         return forex;
     }
 
+    /**
+     * XML element'inden belirtilen tag'in değerini döner.
+     */
     private String getElementValue(Element parent, String tagName) {
         NodeList nodes = parent.getElementsByTagName(tagName);
         if (nodes.getLength() > 0) {
