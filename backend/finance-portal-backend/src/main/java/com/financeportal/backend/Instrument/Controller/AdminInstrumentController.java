@@ -30,7 +30,9 @@ public class AdminInstrumentController {
             .build();
 
     // ========== STATUS ==========
-
+    /**
+     * Güncelleme durumunu döner.
+     */
     @GetMapping("/update-status")
     public ResponseEntity<InstrumentUpdateStatusDTO> getUpdateStatus() {
         return ResponseEntity.ok(lastUpdateStatus);
@@ -38,6 +40,9 @@ public class AdminInstrumentController {
 
     // ========== TCMB ==========
 
+    /**
+     * TCMB'den günlük döviz kurlarını günceller.
+     */
     @PostMapping("/update-tcmb")
     public ResponseEntity<?> updateTcmbRates() {
         lastUpdateStatus = InstrumentUpdateStatusDTO.builder()
@@ -60,141 +65,10 @@ public class AdminInstrumentController {
         }
     }
 
-    // ========== TAHVIL/BONO ==========
-
-    @PostMapping("/update-bonds")
-    public ResponseEntity<?> updateBondYields() {
-        lastUpdateStatus = InstrumentUpdateStatusDTO.builder()
-                .updating(true).message("Tahvil/Bono güncelleniyor...").build();
-        try {
-            int updated = yahooFinanceService.updateBonds();
-            lastUpdateStatus = InstrumentUpdateStatusDTO.builder()
-                    .updating(false).lastUpdateTime(LocalDateTime.now())
-                    .totalUpdated(updated).bondsUpdated(updated)
-                    .message("Tahvil/Bono getiri oranları güncellendi").build();
-            return ResponseEntity.ok(Map.of(
-                    "success", true,
-                    "message", "Tahvil/Bono getiri oranları güncellendi",
-                    "updatedCount", updated,
-                    "note", "ABD 10Y, 30Y, 5Y tahvil ve 3 aylık hazine bonosu"));
-        } catch (Exception e) {
-            log.error("❌ Bonds update failed: {}", e.getMessage());
-            lastUpdateStatus = InstrumentUpdateStatusDTO.builder()
-                    .updating(false).message("Tahvil güncellemesi başarısız: " + e.getMessage()).build();
-            return ResponseEntity.status(500).body(Map.of("success", false, "message", "Tahvil güncellemesi başarısız"));
-        }
-    }
-
-    // ========== YAHOO FINANCE ==========
-
-    @PostMapping("/update-us-stocks")
-    public ResponseEntity<?> updateUsStocks() {
-        lastUpdateStatus = InstrumentUpdateStatusDTO.builder()
-                .updating(true).message("ABD hisseleri güncelleniyor...").build();
-        try {
-            int updated = yahooFinanceService.updateUsStocks();
-            lastUpdateStatus = InstrumentUpdateStatusDTO.builder()
-                    .updating(false).lastUpdateTime(LocalDateTime.now())
-                    .totalUpdated(updated).message("ABD hisseleri güncellendi").build();
-            return ResponseEntity.ok(Map.of(
-                    "success", true,
-                    "message", "ABD hisse senetleri güncellendi",
-                    "updatedCount", updated));
-        } catch (Exception e) {
-            log.error("❌ US stocks update failed: {}", e.getMessage());
-            lastUpdateStatus = InstrumentUpdateStatusDTO.builder()
-                    .updating(false).message("ABD hisse güncellemesi başarısız: " + e.getMessage()).build();
-            return ResponseEntity.status(500).body(Map.of("success", false, "message", "ABD hisse güncellemesi başarısız"));
-        }
-    }
-
-    @PostMapping("/update-bist")
-    public ResponseEntity<?> updateBistStocks() {
-        lastUpdateStatus = InstrumentUpdateStatusDTO.builder()
-                .updating(true).message("BIST hisseleri güncelleniyor...").build();
-        try {
-            int updated = yahooFinanceService.updateBistStocks();
-            lastUpdateStatus = InstrumentUpdateStatusDTO.builder()
-                    .updating(false).lastUpdateTime(LocalDateTime.now())
-                    .totalUpdated(updated).bistUpdated(updated)
-                    .message("BIST hisseleri güncellendi").build();
-            return ResponseEntity.ok(Map.of(
-                    "success", true,
-                    "message", "BIST hisseleri güncellendi",
-                    "updatedCount", updated));
-        } catch (Exception e) {
-            log.error("❌ BIST update failed: {}", e.getMessage());
-            lastUpdateStatus = InstrumentUpdateStatusDTO.builder()
-                    .updating(false).message("BIST güncellemesi başarısız: " + e.getMessage()).build();
-            return ResponseEntity.status(500).body(Map.of("success", false, "message", "BIST güncellemesi başarısız"));
-        }
-    }
-
-    @PostMapping("/update-crypto")
-    public ResponseEntity<?> updateCryptos() {
-        lastUpdateStatus = InstrumentUpdateStatusDTO.builder()
-                .updating(true).message("Kripto paralar güncelleniyor...").build();
-        try {
-            int updated = yahooFinanceService.updateCryptos();
-            lastUpdateStatus = InstrumentUpdateStatusDTO.builder()
-                    .updating(false).lastUpdateTime(LocalDateTime.now())
-                    .totalUpdated(updated).message("Kripto paralar güncellendi").build();
-            return ResponseEntity.ok(Map.of(
-                    "success", true,
-                    "message", "Kripto paralar güncellendi",
-                    "updatedCount", updated));
-        } catch (Exception e) {
-            log.error("❌ Crypto update failed: {}", e.getMessage());
-            lastUpdateStatus = InstrumentUpdateStatusDTO.builder()
-                    .updating(false).message("Kripto güncellemesi başarısız: " + e.getMessage()).build();
-            return ResponseEntity.status(500).body(Map.of("success", false, "message", "Kripto güncellemesi başarısız"));
-        }
-    }
-
-    @PostMapping("/update-precious")
-    public ResponseEntity<?> updatePreciousMetals() {
-        lastUpdateStatus = InstrumentUpdateStatusDTO.builder()
-                .updating(true).message("Kıymetli metaller güncelleniyor...").build();
-        try {
-            int updated = yahooFinanceService.updatePreciousMetals();
-            lastUpdateStatus = InstrumentUpdateStatusDTO.builder()
-                    .updating(false).lastUpdateTime(LocalDateTime.now())
-                    .totalUpdated(updated).preciousUpdated(updated)
-                    .message("Kıymetli metaller güncellendi").build();
-            return ResponseEntity.ok(Map.of(
-                    "success", true,
-                    "message", "Kıymetli metaller güncellendi",
-                    "updatedCount", updated));
-        } catch (Exception e) {
-            log.error("❌ Precious metals update failed: {}", e.getMessage());
-            lastUpdateStatus = InstrumentUpdateStatusDTO.builder()
-                    .updating(false).message("Kıymetli metal güncellemesi başarısız: " + e.getMessage()).build();
-            return ResponseEntity.status(500).body(Map.of("success", false, "message", "Kıymetli metal güncellemesi başarısız"));
-        }
-    }
-
-    @PostMapping("/update-etfs")
-    public ResponseEntity<?> updateEtfs() {
-        lastUpdateStatus = InstrumentUpdateStatusDTO.builder()
-                .updating(true).message("ETF'ler güncelleniyor...").build();
-        try {
-            int updated = yahooFinanceService.updateEtfs();
-            lastUpdateStatus = InstrumentUpdateStatusDTO.builder()
-                    .updating(false).lastUpdateTime(LocalDateTime.now())
-                    .totalUpdated(updated)
-                    .message("ETF'ler güncellendi").build();
-            return ResponseEntity.ok(Map.of(
-                    "success", true,
-                    "message", "ETF'ler güncellendi",
-                    "updatedCount", updated));
-        } catch (Exception e) {
-            log.error("❌ ETF update failed: {}", e.getMessage());
-            lastUpdateStatus = InstrumentUpdateStatusDTO.builder()
-                    .updating(false).message("ETF güncellemesi başarısız").build();
-            return ResponseEntity.status(500).body(Map.of("success", false, "message", e.getMessage()));
-        }
-    }
-
+    /**
+     * TCMB arşivinden belirtilen gün sayısı kadar döviz geçmiş verisi çeker.
+     * Varsayılan olarak son 365 günü çeker.
+     */
     @PostMapping("/fetch-forex-historical")
     public ResponseEntity<?> fetchForexHistoricalData(
             @RequestParam(defaultValue = "365") int days) {
@@ -219,6 +93,205 @@ public class AdminInstrumentController {
         }
     }
 
+    /**
+     * TCMB EVDS'den Türkiye tahvil ve faiz oranlarını günceller.
+     */
+    @PostMapping("/update-tr-bonds")
+    public ResponseEntity<?> updateTrBondYields() {
+        lastUpdateStatus = InstrumentUpdateStatusDTO.builder()
+                .updating(true).message("TR Tahvil/Faiz güncelleniyor...").build();
+        try {
+            int updated = tcmbEvdsService.fetchBondYields().size();
+            lastUpdateStatus = InstrumentUpdateStatusDTO.builder()
+                    .updating(false).lastUpdateTime(LocalDateTime.now())
+                    .totalUpdated(updated).bondsUpdated(updated)
+                    .message("TR Tahvil/Faiz oranları güncellendi").build();
+            return ResponseEntity.ok(Map.of(
+                    "success", true,
+                    "message", "TR Tahvil/Faiz oranları güncellendi",
+                    "updatedCount", updated));
+        } catch (Exception e) {
+            log.error("❌ TR Bonds update failed: {}", e.getMessage());
+            lastUpdateStatus = InstrumentUpdateStatusDTO.builder()
+                    .updating(false).message("TR Tahvil güncellemesi başarısız").build();
+            return ResponseEntity.status(500).body(Map.of("success", false, "message", e.getMessage()));
+        }
+    }
+
+    /**
+     * EVDS'den TR tahvil geçmiş verilerini çeker.
+     */
+    @PostMapping("/fetch-tr-bonds-historical")
+    public ResponseEntity<?> fetchTrBondsHistorical(
+            @RequestParam(defaultValue = "365") int days) {
+        try {
+            LocalDate endDate   = LocalDate.now();
+            LocalDate startDate = endDate.minusDays(days);
+            tcmbEvdsService.fetchBondYieldsHistorical(startDate, endDate);
+            return ResponseEntity.ok(Map.of(
+                    "success", true,
+                    "message", "TR Tahvil geçmiş verileri çekildi",
+                    "days", days));
+        } catch (Exception e) {
+            log.error("❌ TR Bonds historical failed: {}", e.getMessage());
+            return ResponseEntity.status(500).body(Map.of("success", false, "message", e.getMessage()));
+        }
+    }
+
+    // ========== YAHOO FINANCE ==========
+
+    /**
+     * Yahoo Finance'den ABD tahvil ve hazine bonosu faiz oranlarını günceller.
+     */
+    @PostMapping("/update-bonds")
+    public ResponseEntity<?> updateBondYields() {
+        lastUpdateStatus = InstrumentUpdateStatusDTO.builder()
+                .updating(true).message("Tahvil/Bono güncelleniyor...").build();
+        try {
+            int updated = yahooFinanceService.updateBonds();
+            lastUpdateStatus = InstrumentUpdateStatusDTO.builder()
+                    .updating(false).lastUpdateTime(LocalDateTime.now())
+                    .totalUpdated(updated).bondsUpdated(updated)
+                    .message("Tahvil/Bono getiri oranları güncellendi").build();
+            return ResponseEntity.ok(Map.of(
+                    "success", true,
+                    "message", "Tahvil/Bono getiri oranları güncellendi",
+                    "updatedCount", updated,
+                    "note", "ABD 10Y, 30Y, 5Y tahvil ve 3 aylık hazine bonosu"));
+        } catch (Exception e) {
+            log.error("❌ Bonds update failed: {}", e.getMessage());
+            lastUpdateStatus = InstrumentUpdateStatusDTO.builder()
+                    .updating(false).message("Tahvil güncellemesi başarısız: " + e.getMessage()).build();
+            return ResponseEntity.status(500).body(Map.of("success", false, "message", "Tahvil güncellemesi başarısız"));
+        }
+    }
+
+    /**
+     * Yahoo Finance'den ABD hisse senetlerini günceller.
+     */
+    @PostMapping("/update-us-stocks")
+    public ResponseEntity<?> updateUsStocks() {
+        lastUpdateStatus = InstrumentUpdateStatusDTO.builder()
+                .updating(true).message("ABD hisseleri güncelleniyor...").build();
+        try {
+            int updated = yahooFinanceService.updateUsStocks();
+            lastUpdateStatus = InstrumentUpdateStatusDTO.builder()
+                    .updating(false).lastUpdateTime(LocalDateTime.now())
+                    .totalUpdated(updated).message("ABD hisseleri güncellendi").build();
+            return ResponseEntity.ok(Map.of(
+                    "success", true,
+                    "message", "ABD hisse senetleri güncellendi",
+                    "updatedCount", updated));
+        } catch (Exception e) {
+            log.error("❌ US stocks update failed: {}", e.getMessage());
+            lastUpdateStatus = InstrumentUpdateStatusDTO.builder()
+                    .updating(false).message("ABD hisse güncellemesi başarısız: " + e.getMessage()).build();
+            return ResponseEntity.status(500).body(Map.of("success", false, "message", "ABD hisse güncellemesi başarısız"));
+        }
+    }
+
+    /**
+     * Yahoo Finance'den BIST hisse senetlerini günceller.
+     */
+    @PostMapping("/update-bist")
+    public ResponseEntity<?> updateBistStocks() {
+        lastUpdateStatus = InstrumentUpdateStatusDTO.builder()
+                .updating(true).message("BIST hisseleri güncelleniyor...").build();
+        try {
+            int updated = yahooFinanceService.updateBistStocks();
+            lastUpdateStatus = InstrumentUpdateStatusDTO.builder()
+                    .updating(false).lastUpdateTime(LocalDateTime.now())
+                    .totalUpdated(updated).bistUpdated(updated)
+                    .message("BIST hisseleri güncellendi").build();
+            return ResponseEntity.ok(Map.of(
+                    "success", true,
+                    "message", "BIST hisseleri güncellendi",
+                    "updatedCount", updated));
+        } catch (Exception e) {
+            log.error("❌ BIST update failed: {}", e.getMessage());
+            lastUpdateStatus = InstrumentUpdateStatusDTO.builder()
+                    .updating(false).message("BIST güncellemesi başarısız: " + e.getMessage()).build();
+            return ResponseEntity.status(500).body(Map.of("success", false, "message", "BIST güncellemesi başarısız"));
+        }
+    }
+
+    /**
+     * Yahoo Finance'den kripto para fiyatlarını günceller.
+     */
+    @PostMapping("/update-crypto")
+    public ResponseEntity<?> updateCryptos() {
+        lastUpdateStatus = InstrumentUpdateStatusDTO.builder()
+                .updating(true).message("Kripto paralar güncelleniyor...").build();
+        try {
+            int updated = yahooFinanceService.updateCryptos();
+            lastUpdateStatus = InstrumentUpdateStatusDTO.builder()
+                    .updating(false).lastUpdateTime(LocalDateTime.now())
+                    .totalUpdated(updated).message("Kripto paralar güncellendi").build();
+            return ResponseEntity.ok(Map.of(
+                    "success", true,
+                    "message", "Kripto paralar güncellendi",
+                    "updatedCount", updated));
+        } catch (Exception e) {
+            log.error("❌ Crypto update failed: {}", e.getMessage());
+            lastUpdateStatus = InstrumentUpdateStatusDTO.builder()
+                    .updating(false).message("Kripto güncellemesi başarısız: " + e.getMessage()).build();
+            return ResponseEntity.status(500).body(Map.of("success", false, "message", "Kripto güncellemesi başarısız"));
+        }
+    }
+
+    /**
+     * Yahoo Finance'den kıymetli metal fiyatlarını günceller.
+     */
+    @PostMapping("/update-precious")
+    public ResponseEntity<?> updatePreciousMetals() {
+        lastUpdateStatus = InstrumentUpdateStatusDTO.builder()
+                .updating(true).message("Kıymetli metaller güncelleniyor...").build();
+        try {
+            int updated = yahooFinanceService.updatePreciousMetals();
+            lastUpdateStatus = InstrumentUpdateStatusDTO.builder()
+                    .updating(false).lastUpdateTime(LocalDateTime.now())
+                    .totalUpdated(updated).preciousUpdated(updated)
+                    .message("Kıymetli metaller güncellendi").build();
+            return ResponseEntity.ok(Map.of(
+                    "success", true,
+                    "message", "Kıymetli metaller güncellendi",
+                    "updatedCount", updated));
+        } catch (Exception e) {
+            log.error("❌ Precious metals update failed: {}", e.getMessage());
+            lastUpdateStatus = InstrumentUpdateStatusDTO.builder()
+                    .updating(false).message("Kıymetli metal güncellemesi başarısız: " + e.getMessage()).build();
+            return ResponseEntity.status(500).body(Map.of("success", false, "message", "Kıymetli metal güncellemesi başarısız"));
+        }
+    }
+
+    /**
+     * Yahoo Finance'den ETF fiyatlarını günceller.
+     */
+    @PostMapping("/update-etfs")
+    public ResponseEntity<?> updateEtfs() {
+        lastUpdateStatus = InstrumentUpdateStatusDTO.builder()
+                .updating(true).message("ETF'ler güncelleniyor...").build();
+        try {
+            int updated = yahooFinanceService.updateEtfs();
+            lastUpdateStatus = InstrumentUpdateStatusDTO.builder()
+                    .updating(false).lastUpdateTime(LocalDateTime.now())
+                    .totalUpdated(updated)
+                    .message("ETF'ler güncellendi").build();
+            return ResponseEntity.ok(Map.of(
+                    "success", true,
+                    "message", "ETF'ler güncellendi",
+                    "updatedCount", updated));
+        } catch (Exception e) {
+            log.error("❌ ETF update failed: {}", e.getMessage());
+            lastUpdateStatus = InstrumentUpdateStatusDTO.builder()
+                    .updating(false).message("ETF güncellemesi başarısız").build();
+            return ResponseEntity.status(500).body(Map.of("success", false, "message", e.getMessage()));
+        }
+    }
+
+    /**
+     * Belirtilen Yahoo Finance sembolü için anlık fiyatı günceller.
+     */
     @PostMapping("/update-symbol/{yahooSymbol}/{dbSymbol}")
     public ResponseEntity<?> updateSymbol(@PathVariable String yahooSymbol,
                                           @PathVariable String dbSymbol) {
@@ -234,6 +307,9 @@ public class AdminInstrumentController {
                 "price", price.getCurrentPrice()));
     }
 
+    /**
+     * Belirtilen enstrüman için geçmiş fiyat verisi çeker.
+     */
     @PostMapping("/fetch-historical/{yahooSymbol}/{dbSymbol}")
     public ResponseEntity<?> fetchHistoricalData(
             @PathVariable String yahooSymbol,
@@ -254,6 +330,9 @@ public class AdminInstrumentController {
         }
     }
 
+    /**
+     * Tüm enstrümanlar için 1 yıllık geçmiş fiyat verisi çeker.
+     */
     @PostMapping("/fetch-all-historical")
     public ResponseEntity<?> fetchAllHistoricalData() {
         try {
@@ -268,8 +347,11 @@ public class AdminInstrumentController {
         }
     }
 
-    // ========== TÜMÜNÜ GÜNCELLE ==========
 
+    /**
+     * Tüm enstrümanların fiyatlarını tek seferde günceller.
+     * TCMB, Yahoo Finance ve tahvil verilerini kapsar.
+     */
     @PostMapping("/update-all")
     public ResponseEntity<?> updateAllPrices() {
         lastUpdateStatus = InstrumentUpdateStatusDTO.builder()
@@ -278,7 +360,8 @@ public class AdminInstrumentController {
             int tcmbUpdated    = tcmbService.fetchDailyRates().size();
             int yahooUpdated   = yahooFinanceService.updateAll();
             int bondsUpdated = yahooFinanceService.updateBonds();
-            int totalUpdated = tcmbUpdated + bondsUpdated + yahooUpdated;
+            int evdsUpdated = tcmbEvdsService.fetchBondYields().size();
+            int totalUpdated = tcmbUpdated + bondsUpdated + yahooUpdated + evdsUpdated;
 
             lastUpdateStatus = InstrumentUpdateStatusDTO.builder()
                     .updating(false).lastUpdateTime(LocalDateTime.now())
@@ -286,6 +369,7 @@ public class AdminInstrumentController {
                     .tcmbUpdated(tcmbUpdated)
                     .bondsUpdated(bondsUpdated)
                     .yahooUpdated(yahooUpdated)
+                    .evdsUpdated(evdsUpdated)
                     .message("Tüm fiyatlar başarıyla güncellendi").build();
 
             return ResponseEntity.ok(Map.of(
@@ -294,6 +378,7 @@ public class AdminInstrumentController {
                     "tcmbUpdated", tcmbUpdated,
                     "bondsUpdated", bondsUpdated,
                     "yahooUpdated", yahooUpdated,
+                    "evdsUpdated", evdsUpdated,
                     "totalUpdated", totalUpdated));
         } catch (Exception e) {
             log.error("❌ Update all failed: {}", e.getMessage(), e);
@@ -305,8 +390,10 @@ public class AdminInstrumentController {
         }
     }
 
-    // ========== STATS ==========
 
+    /**
+     * Kullanılan API kaynaklarının istatistiklerini döner.
+     */
     @GetMapping("/stats")
     public ResponseEntity<?> getApiStats() {
         return ResponseEntity.ok(Map.of(
