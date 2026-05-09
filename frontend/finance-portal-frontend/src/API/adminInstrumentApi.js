@@ -84,6 +84,16 @@ export const updateBonds = async () => {
     }
 };
 
+export const updateTrBonds = async () => {
+    try {
+        const response = await api.post('/admin/instruments/update-tr-bonds');
+        return response.data;
+    } catch (error) {
+        console.error('Error updating TR bonds:', error);
+        throw error;
+    }
+};
+
 export const updateEtfs = async () => {
     try {
         const response = await api.post('/admin/instruments/update-etfs');
@@ -111,6 +121,16 @@ export const fetchForexHistoricalData = async (days = 365) => {
         return response.data;
     } catch (error) {
         console.error('Error fetching forex historical data:', error);
+        throw error;
+    }
+};
+
+export const fetchTrBondsHistorical = async (days = 365) => {
+    try {
+        const response = await api.post(`/admin/instruments/fetch-tr-bonds-historical?days=${days}`);
+        return response.data;
+    } catch (error) {
+        console.error('Error fetching TR bonds historical:', error);
         throw error;
     }
 };
