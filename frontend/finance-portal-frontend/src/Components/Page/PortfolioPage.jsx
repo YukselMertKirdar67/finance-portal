@@ -147,6 +147,10 @@ export default function PortfolioPage() {
 
     const filteredInstruments = (() => {
         let instruments = availableInstruments;
+
+        instruments = instruments.filter(inst =>
+            inst.type !== 'BOND' );
+
         if (transactionType === 'SELL') {
             const holdingInstrumentIds = holdings.map(h => h.instrumentId);
             instruments = instruments.filter(inst => holdingInstrumentIds.includes(inst.id));
