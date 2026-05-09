@@ -80,11 +80,6 @@ public class InstrumentServiceImpl implements InstrumentService {
             bond.setCouponRate(requestDTO.getCouponRate());
             bond.setFaceValue(requestDTO.getFaceValue());
             bond.setIssuer(requestDTO.getIssuer());
-        } else if (existing instanceof EurobondInstrument eurobond) {
-            eurobond.setMaturityDate(requestDTO.getMaturityDate());
-            eurobond.setCouponRate(requestDTO.getCouponRate());
-            eurobond.setFaceValue(requestDTO.getFaceValue());
-            eurobond.setIssueCurrency(requestDTO.getIssueCurrency());
         } else if (existing instanceof ForexInstrument forex) {
             forex.setBaseCurrency(requestDTO.getBaseCurrency());
             forex.setQuoteCurrency(requestDTO.getQuoteCurrency());
@@ -200,7 +195,6 @@ public class InstrumentServiceImpl implements InstrumentService {
             case FOREX -> instrumentRepository.findAllForex(pageable);
             case CRYPTO -> instrumentRepository.findAllCryptos(pageable);
             case BOND -> instrumentRepository.findAllBonds(pageable);
-            case EUROBOND -> instrumentRepository.findAllEurobonds(pageable);
             case PRECIOUS -> instrumentRepository.findAllPrecious(pageable);
             case FUND -> instrumentRepository.findAllFunds(pageable);
             default -> Page.empty(pageable);
