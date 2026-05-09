@@ -10,25 +10,16 @@ import java.util.List;
 
 public interface InstrumentService {
 
-    // CRUD operations
-    InstrumentResponseDTO createInstrument(InstrumentRequestDTO requestDTO);
-
-    InstrumentResponseDTO updateInstrument(Long id, InstrumentRequestDTO requestDTO);
-
-    void deleteInstrument(Long id);
-
     InstrumentResponseDTO getInstrumentById(Long id);
 
     InstrumentResponseDTO getInstrumentBySymbol(String symbol);
 
-    // Listing & Filtering
     Page<InstrumentResponseDTO> getAllInstruments(Pageable pageable);
 
     Page<InstrumentResponseDTO> getInstrumentsByType(InstrumentType type, Pageable pageable);
 
     Page<InstrumentResponseDTO> searchInstruments(String search, Pageable pageable);
 
-    // Price operations
     PriceDataDTO getCurrentPrice(Long instrumentId);
 
     List<HistoricalPriceDTO> getHistoricalPrices(
