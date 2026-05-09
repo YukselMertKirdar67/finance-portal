@@ -1,7 +1,6 @@
 package com.financeportal.backend.Instrument.Mapper;
 
 import com.financeportal.backend.Instrument.DTO.HistoricalPriceDTO;
-import com.financeportal.backend.Instrument.DTO.InstrumentRequestDTO;
 import com.financeportal.backend.Instrument.DTO.InstrumentResponseDTO;
 import com.financeportal.backend.Instrument.DTO.PriceDataDTO;
 import com.financeportal.backend.Instrument.Entity.*;
@@ -62,84 +61,6 @@ public class InstrumentMapper {
             dto.setCurrentPrice(toPriceDataDTO(price));
         }
         return dto;
-    }
-
-    // InstrumentRequestDTO → Entity
-    public BaseInstrument toEntity(InstrumentRequestDTO dto) {
-        // Tip bazlı entity oluştur
-        return switch (dto.getType()) {
-            case STOCK -> StockInstrument.builder()
-                    .symbol(dto.getSymbol())
-                    .name(dto.getName())
-                    .exchange(dto.getExchange())
-                    .description(dto.getDescription())
-                    .currency(dto.getCurrency())
-                    .sector(dto.getSector())
-                    .marketCap(dto.getMarketCap())
-                    .active(true)
-                    .build();
-
-            case BOND -> BondInstrument.builder()
-                    .symbol(dto.getSymbol())
-                    .name(dto.getName())
-                    .exchange(dto.getExchange())
-                    .description(dto.getDescription())
-                    .currency(dto.getCurrency())
-                    .maturityDate(dto.getMaturityDate())
-                    .couponRate(dto.getCouponRate())
-                    .faceValue(dto.getFaceValue())
-                    .issuer(dto.getIssuer())
-                    .active(true)
-                    .build();
-
-            case FOREX -> ForexInstrument.builder()
-                    .symbol(dto.getSymbol())
-                    .name(dto.getName())
-                    .exchange(dto.getExchange())
-                    .description(dto.getDescription())
-                    .currency(dto.getCurrency())
-                    .baseCurrency(dto.getBaseCurrency())
-                    .quoteCurrency(dto.getQuoteCurrency())
-                    .active(true)
-                    .build();
-
-            case CRYPTO -> CryptoInstrument.builder()
-                    .symbol(dto.getSymbol())
-                    .name(dto.getName())
-                    .exchange(dto.getExchange())
-                    .description(dto.getDescription())
-                    .currency(dto.getCurrency())
-                    .blockchain(dto.getBlockchain())
-                    .totalSupply(dto.getTotalSupply())
-                    .circulatingSupply(dto.getCirculatingSupply())
-                    .active(true)
-                    .build();
-
-            case PRECIOUS -> PreciousInstrument.builder()
-                    .symbol(dto.getSymbol())
-                    .name(dto.getName())
-                    .exchange(dto.getExchange())
-                    .description(dto.getDescription())
-                    .currency(dto.getCurrency())
-                    .metalType(dto.getMetalType())
-                    .unit(dto.getUnit())
-                    .active(true)
-                    .build();
-
-            case FUND -> FundInstrument.builder()
-                    .symbol(dto.getSymbol())
-                    .name(dto.getName())
-                    .exchange(dto.getExchange())
-                    .description(dto.getDescription())
-                    .currency(dto.getCurrency())
-                    .fundCode(dto.getFundCode())
-                    .fundType(dto.getFundType())
-                    .umbrella(dto.getUmbrella())
-                    .totalValue(dto.getTotalValue())
-                    .investorCount(dto.getInvestorCount())
-                    .active(true)
-                    .build();
-        };
     }
 
     // InstrumentPrice → PriceDataDTO
