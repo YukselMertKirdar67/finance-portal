@@ -4,16 +4,27 @@ import { Card, CardContent, CardHeader, CardTitle } from '../UI/Card';
 import { Button } from '../UI/Button';
 import { useNavigate } from 'react-router-dom';
 import { getHomePageData } from '../../API/homeApi';
+import { useWebSocket } from '../../Hooks/useWebSocket';
+
 
 export default function HomePage() {
     const navigate = useNavigate();
     const [homeData, setHomeData] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [livePrices, setLivePrices] = useState({});
 
     useEffect(() => {
         fetchHomeData();
     }, []);
+
+    useWebSocket((priceUpdate) => {
+        setLivePrices(prev => ({
+            ...prev,
+            [priceUpdate.instrumentId]: priceUpdate
+        }));
+    });
+
 
     const fetchHomeData = async () => {
         try {
@@ -89,7 +100,11 @@ export default function HomePage() {
                                     <div className="flex justify-between items-start mb-2">
                                         <div>
                                             <p className="text-sm text-gray-600 mb-1">{item.name}</p>
-                                            <p className="text-2xl font-bold text-gray-900">{item.currentPrice}</p>
+                                            <p className="text-2xl font-bold text-gray-900">
+                                                {livePrices[item.id]
+                                                    ? livePrices[item.id].currentPrice
+                                                    : item.currentPrice}
+                                            </p>
                                         </div>
                                     </div>
                                     <div className={`flex items-center gap-1 ${
