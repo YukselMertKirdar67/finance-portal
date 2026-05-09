@@ -18,5 +18,6 @@ public class InstrumentUpdateStatusDTO {
     private Integer bistUpdated;
     private Integer preciousUpdated;
     private Integer bondsUpdated;
+    private Integer evdsUpdated;
     private String message;
 }
