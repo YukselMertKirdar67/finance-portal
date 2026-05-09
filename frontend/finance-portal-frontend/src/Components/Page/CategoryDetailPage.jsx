@@ -6,12 +6,13 @@ import { Button } from '../UI/Button';
 import Pagination from '../UI/Pagination';
 import { getInstrumentsByType, searchInstruments } from '../../API/instrumentsApi';
 import { addToWatchlist, removeFromWatchlist, isInWatchlist } from '../../API/watchlistApi';
+import { useWebSocket } from '../../Hooks/useWebSocket';
 
 const TYPE_META = {
     FOREX:    { title: 'Döviz Piyasası',       description: 'Majör ve minör döviz çiftlerinin anlık fiyatları' },
     STOCK:    { title: 'Hisse Senetleri',       description: 'BIST ve ABD hisse senetleri' },
     BOND:     { title: 'Tahvil ve Bonolar',     description: 'Devlet tahvilleri ve hazine bonoları' },
-    EUROBOND: { title: 'EuroBond',              description: 'Türkiye uluslararası tahvilleri' },
+    FUND:     { title: 'Fon ve EFTler',         description: 'Global fonler ve EFTler' },
     PRECIOUS: { title: 'Altın ve Gümüş',        description: 'Kıymetli metaller ve emtia piyasaları' },
     CRYPTO:   { title: 'Kripto Paralar',        description: 'Bitcoin, Ethereum ve altcoinler' },
 };
@@ -28,6 +29,7 @@ export default function CategoryDetailPage() {
     const [totalElements, setTotalElements] = useState(0);
     const [searchQuery, setSearchQuery] = useState('');
     const [watchlistStatus, setWatchlistStatus] = useState({});
+    const [livePrices, setLivePrices] = useState({});
     const pageSize = 20;
 
     const meta = TYPE_META[type] || { title: type, description: '' };
@@ -92,6 +94,13 @@ export default function CategoryDetailPage() {
         return () => { cancelled = true; };
 
     }, [type, currentPage, searchQuery]);
+
+    useWebSocket((priceUpdate) => {
+        setLivePrices(prev => ({
+            ...prev,
+            [priceUpdate.instrumentId]: priceUpdate
+        }));
+    });
 
     const checkWatchlistStatus = async (instrumentsList) => {
         const status = {};
@@ -245,7 +254,14 @@ export default function CategoryDetailPage() {
                                             </tr>
                                         ) : (
                                             instruments.map((instrument, index) => {
-                                                const price = instrument.currentPrice;
+                                                const livePrice = livePrices[instrument.id];
+                                                const price = livePrice ? {
+                                                    current: livePrice.currentPrice,
+                                                    changeAmount: livePrice.changeAmount,
+                                                    changePercent: livePrice.changePercent,
+                                                    high: instrument.currentPrice?.high,
+                                                    low: instrument.currentPrice?.low,
+                                                } : instrument.currentPrice;
                                                 const isPositive = (price?.changePercent ?? 0) >= 0;
 
                                                 return (
