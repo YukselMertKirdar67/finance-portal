@@ -50,7 +50,7 @@ public class InstrumentPrice {
     @Column
     private Long volume;
 
-    // ✅ Tahvil için ek alan
+
     @Column(precision = 10, scale = 4)
     private BigDecimal yieldRate;  // Getiri oranı
 
