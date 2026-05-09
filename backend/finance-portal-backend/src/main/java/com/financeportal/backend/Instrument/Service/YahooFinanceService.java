@@ -5,8 +5,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.financeportal.backend.Instrument.DTO.External.YahooPriceDTO;
 import com.financeportal.backend.Instrument.Entity.*;
 import com.financeportal.backend.Instrument.Repository.*;
+import com.financeportal.backend.WebSocket.PriceUpdateMessage;
+import com.financeportal.backend.WebSocket.WebSocketPriceService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.Cache;
+import org.springframework.cache.CacheManager;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -36,6 +41,8 @@ public class YahooFinanceService {
     private final PriceHistoryRepository historyRepository;
     private final ObjectMapper objectMapper;
     private final RedisTemplate<String, Object> redisTemplate;
+    private final WebSocketPriceService webSocketPriceService;
+    private final CacheManager cacheManager;
 
     private static final List<Map<String, String>> US_STOCKS = List.of(
             Map.of("yahoo", "AAPL",  "db", "AAPL",  "name", "Apple Inc.",       "sector", "Teknoloji"),
@@ -117,7 +124,7 @@ public class YahooFinanceService {
             Map.of("yahoo", "VNQ",  "db", "VNQ",  "name", "Vanguard Real Estate ETF")
     );
 
-
+    @CacheEvict(value = {"instrumentDetails", "instrumentPrices"}, allEntries = true)
     public InstrumentPrice fetchQuote(String yahooSymbol, String dbSymbol) {
         String cacheKey = "yahoo:quote:" + dbSymbol;
 
@@ -196,6 +203,25 @@ public class YahooFinanceService {
                     .build();
 
             priceRepository.save(price);
+            Cache cache = cacheManager.getCache("instrumentDetails");
+            if (cache != null) {
+                cache.evict(instrument.getId());
+            }
+            Cache priceCache = cacheManager.getCache("instrumentPrices");
+            if (priceCache != null) {
+                priceCache.evict(instrument.getId());
+            }
+            webSocketPriceService.sendPriceUpdate(PriceUpdateMessage.builder()
+                    .instrumentId(instrument.getId())
+                    .symbol(instrument.getSymbol())
+                    .name(instrument.getName())
+                    .type(instrument.getInstrumentType().name())
+                    .currentPrice(currentPrice)
+                    .changeAmount(changeAmount)
+                    .changePercent(changePercent)
+                    .previousClose(previousClose)
+                    .timestamp(LocalDateTime.now())
+                    .build());
             savePriceHistory(instrument, openPrice, highPrice, lowPrice, currentPrice);
 
             // Redis'e kaydet (5 dakika TTL)
