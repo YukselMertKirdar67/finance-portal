@@ -32,12 +32,8 @@ public class InstrumentMapper {
             dto.setCouponRate(bond.getCouponRate());
             dto.setFaceValue(bond.getFaceValue());
             dto.setIssuer(bond.getIssuer());
-        } else if (instrument instanceof EurobondInstrument eurobond) {
-            dto.setMaturityDate(eurobond.getMaturityDate());
-            dto.setCouponRate(eurobond.getCouponRate());
-            dto.setFaceValue(eurobond.getFaceValue());
-            dto.setIssueCurrency(eurobond.getIssueCurrency());
-        } else if (instrument instanceof ForexInstrument forex) {
+        }
+          else if (instrument instanceof ForexInstrument forex) {
             dto.setBaseCurrency(forex.getBaseCurrency());
             dto.setQuoteCurrency(forex.getQuoteCurrency());
         } else if (instrument instanceof CryptoInstrument crypto) {
@@ -93,19 +89,6 @@ public class InstrumentMapper {
                     .couponRate(dto.getCouponRate())
                     .faceValue(dto.getFaceValue())
                     .issuer(dto.getIssuer())
-                    .active(true)
-                    .build();
-
-            case EUROBOND -> EurobondInstrument.builder()
-                    .symbol(dto.getSymbol())
-                    .name(dto.getName())
-                    .exchange(dto.getExchange())
-                    .description(dto.getDescription())
-                    .currency(dto.getCurrency())
-                    .maturityDate(dto.getMaturityDate())
-                    .couponRate(dto.getCouponRate())
-                    .faceValue(dto.getFaceValue())
-                    .issueCurrency(dto.getIssueCurrency())
                     .active(true)
                     .build();
 
