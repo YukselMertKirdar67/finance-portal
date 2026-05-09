@@ -42,9 +42,6 @@ public interface InstrumentRepository extends JpaRepository<BaseInstrument, Long
     @Query("SELECT i FROM BondInstrument i WHERE i.active = true")
     Page<BaseInstrument> findAllBonds(Pageable pageable);
 
-    @Query("SELECT i FROM EurobondInstrument i WHERE i.active = true")
-    Page<BaseInstrument> findAllEurobonds(Pageable pageable);
-
     @Query("SELECT i FROM PreciousInstrument i WHERE i.active = true")
     Page<BaseInstrument> findAllPrecious(Pageable pageable);
 
