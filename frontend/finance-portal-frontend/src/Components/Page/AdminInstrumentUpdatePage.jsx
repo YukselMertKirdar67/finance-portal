@@ -8,7 +8,7 @@ import {
 import {
     getUpdateStatus, updateAllInstruments, updateTcmb,
     updateUsStocks, updateBist, updateCrypto, updatePrecious,
-    updateBonds, fetchAllHistoricalData
+    updateBonds, fetchAllHistoricalData, fetchForexHistoricalData, updateEtfs
 } from '../../API/adminInstrumentApi';
 import { useAuth } from '../../context/AuthContext';
 
@@ -227,6 +227,32 @@ const AdminInstrumentUpdatePage = () => {
                             <><History className="w-5 h-5" /><span>Geçmiş Verileri Çek (1 Yıl)</span></>
                         )}
                     </button>
+                    <button
+                        onClick={async () => {
+                            setUpdating(true);
+                            setError(''); setSuccess('');
+                            try {
+                                const result = await fetchForexHistoricalData(365);
+                                if (result.success) {
+                                    setSuccess('✅ Döviz geçmiş verileri başarıyla çekildi!');
+                                } else {
+                                    setError('Döviz geçmiş veri çekilemedi');
+                                }
+                            } catch {
+                                setError('Döviz geçmiş veri çekilirken hata oluştu');
+                            } finally {
+                                setUpdating(false);
+                            }
+                        }}
+                        disabled={updating || status?.updating}
+                        className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 disabled:from-gray-400 disabled:to-gray-500 text-white font-semibold rounded-lg transition shadow-lg"
+                    >
+                        {(updating || status?.updating) ? (
+                            <><Loader2 className="w-5 h-5 animate-spin" /><span>Çekiliyor...</span></>
+                        ) : (
+                            <><History className="w-5 h-5" /><span>TCMB Döviz Geçmiş Veri (1 Yıl)</span></>
+                        )}
+                    </button>
                 </div>
                 <p className="text-sm text-gray-500 text-center mt-3">
                     ⚠️ Geçmiş veri çekme işlemi uzun sürebilir (5-10 dakika)
@@ -289,6 +315,15 @@ const AdminInstrumentUpdatePage = () => {
                     onUpdate={() => handleSingleUpdate(updateBonds, 'Tahvil/Bono')}
                     disabled={updating || status?.updating}
                 />
+                <UpdateCard
+                    title="Yahoo - ETF'ler"
+                    description="SPY, QQQ, GLD ve diğer global ETF'ler"
+                    icon={<BarChart3 className="w-6 h-6" />}
+                    iconBg="bg-orange-100" iconColor="text-orange-600"
+                    limit="Sınırsız"
+                    onUpdate={() => handleSingleUpdate(updateEtfs, 'ETF\'ler')}
+                    disabled={updating || status?.updating}
+                />
             </div>
 
             {/* Info Box */}
@@ -304,11 +339,15 @@ const AdminInstrumentUpdatePage = () => {
                             </li>
                             <li className="flex items-start gap-2">
                                 <span className="text-blue-600 mt-1">•</span>
-                                <span><strong>Geçmiş Verileri Çek:</strong> Tüm enstrümanlar için 1 yıllık geçmiş fiyat verisi çeker. Grafiklerde gösterilir.</span>
+                                <span><strong>Geçmiş Verileri Çek:</strong> Döviz kurları hariç 1 yıllık geçmiş fiyat verisi çeker.</span>
                             </li>
                             <li className="flex items-start gap-2">
                                 <span className="text-blue-600 mt-1">•</span>
-                                <span><strong>Yahoo Finance:</strong> ABD hisseleri, BIST, kripto ve kıymetli metaller için sınırsız ücretsiz veri.</span>
+                                <span><strong>TCMB Döviz Geçmiş:</strong> Döviz kurlarının 1 yıllık geçmiş verisi TCMB arşivinden çekilir.</span>
+                            </li>
+                            <li className="flex items-start gap-2">
+                                <span className="text-blue-600 mt-1">•</span>
+                                <span><strong>Yahoo Finance:</strong> ABD hisseleri, BIST, kripto, tahvil, EFT ve kıymetli metaller için sınırsız ücretsiz veri.</span>
                             </li>
                             <li className="flex items-start gap-2">
                                 <span className="text-blue-600 mt-1">•</span>
