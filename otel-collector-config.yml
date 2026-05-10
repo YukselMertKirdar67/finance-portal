@@ -8,16 +8,16 @@ processors:
   batch:
 
 exporters:
-  logging:
-    verbosity: detailed
-
-  elasticsearch:
-    endpoints:
-      - http://opensearch:9200
-    index: otel-traces
+  otlp/dataprepper:
+    endpoint: data-prepper:21890
+    tls:
+      insecure: true
 
   prometheus:
-    endpoint: 0.0.0.0:8888
+    endpoint: 0.0.0.0:8889
+
+  logging:
+    verbosity: detailed
 
 extensions:
   health_check:
@@ -30,12 +30,7 @@ service:
     traces:
       receivers: [otlp]
       processors: [batch]
-      exporters: [elasticsearch, logging]
-
-    logs:
-      receivers: [otlp]
-      processors: [batch]
-      exporters: [elasticsearch, logging]
+      exporters: [otlp/dataprepper, logging]
 
     metrics:
       receivers: [otlp]
