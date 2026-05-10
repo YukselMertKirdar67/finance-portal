@@ -168,6 +168,34 @@ services:
       interval: 30s
       timeout: 10s
       retries: 5
+  opensearch-dashboards:
+    image: opensearchproject/opensearch-dashboards:2.11.0
+    container_name: finance-opensearch-dashboards
+    ports:
+      - "5601:5601"
+    environment:
+      - OPENSEARCH_HOSTS=["http://finance-opensearch:9200"]
+      - DISABLE_SECURITY_DASHBOARDS_PLUGIN=true
+    depends_on:
+      opensearch:
+        condition: service_healthy
+    networks:
+      - finance-network
+
+  data-prepper:
+    image: opensearchproject/data-prepper:2.6.0
+    container_name: finance-data-prepper
+    ports:
+      - "21890:21890"
+      - "4900:4900"
+    volumes:
+      - ./data-prepper-config.yml:/usr/share/data-prepper/pipelines/pipelines.yaml
+      - ./data-prepper-server.yml:/usr/share/data-prepper/config/data-prepper-config.yaml
+    depends_on:
+      opensearch:
+        condition: service_healthy
+    networks:
+      - finance-network
 
   otel-collector:
     image: otel/opentelemetry-collector-contrib:0.91.0
@@ -188,9 +216,6 @@ services:
       context: ./backend/finance-portal-backend
       dockerfile: Dockerfile
     container_name: finance-backend
-    dns:
-      - 8.8.8.8
-      - 8.8.4.4
     ports:
       - "8080:8080"
     environment:
@@ -209,8 +234,11 @@ services:
         -javaagent:/app/opentelemetry-javaagent.jar
         -Dotel.service.name=finance-backend
         -Dotel.exporter.otlp.endpoint=http://otel-collector:4318
+        -Dotel.exporter.otlp.traces.endpoint=http://data-prepper:21890
+        -Dotel.exporter.otlp.traces.protocol=grpc
         -Dotel.metrics.exporter=otlp
-        -Dotel.logs.exporter=otlp
+        -Dotel.logs.exporter=none
+        -Dotel.traces.exporter=otlp
 
     depends_on:
       postgres:
