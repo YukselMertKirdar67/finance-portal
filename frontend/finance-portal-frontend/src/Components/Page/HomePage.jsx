@@ -108,15 +108,19 @@ export default function HomePage() {
                                         </div>
                                     </div>
                                     <div className={`flex items-center gap-1 ${
-                                        item.isPositive ? 'text-emerald-600' : 'text-red-500'
+                                        item.changePercent === '0.00%' || item.changePercent === '0%'
+                                            ? 'text-gray-500'
+                                            : item.isPositive ? 'text-emerald-600' : 'text-red-500'
                                     }`}>
-                                        {item.isPositive ? (
+                                        {item.changePercent === '0.00%' || item.changePercent === '0%' ? (
+                                            <span>—</span>
+                                        ) : item.isPositive ? (
                                             <TrendingUp className="w-4 h-4" />
                                         ) : (
                                             <TrendingDown className="w-4 h-4" />
                                         )}
                                         <span className="text-sm font-semibold">
-                                            {item.change} ({item.changePercent})
+                                           {item.change} ({item.changePercent})
                                         </span>
                                     </div>
                                 </CardContent>

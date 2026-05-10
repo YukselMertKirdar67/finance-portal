@@ -245,7 +245,9 @@ export default function WatchlistPage() {
                                     {watchlistItems.map((item) => {
                                         const inst = item.instrument;
                                         const price = inst.currentPrice;
-                                        const isPositive = price?.changePercent && parseFloat(price.changePercent) >= 0;
+                                        const changePercent = price?.changePercent ? parseFloat(price.changePercent) : 0;
+                                        const isPositive = changePercent > 0;
+                                        const isNeutral = changePercent === 0;
 
                                         return (
                                             <tr
@@ -280,9 +282,12 @@ export default function WatchlistPage() {
                                                 </td>
                                                 <td className="py-4 px-4 text-right">
                                                     <div className={`flex items-center justify-end gap-1 ${
-                                                        isPositive ? 'text-emerald-600' : 'text-red-500'
+                                                        isNeutral ? 'text-gray-500' :
+                                                            isPositive ? 'text-emerald-600' : 'text-red-500'
                                                     }`}>
-                                                        {isPositive ? (
+                                                        {isNeutral ? (
+                                                            <span>—</span>
+                                                        ) : isPositive ? (
                                                             <TrendingUp className="w-4 h-4" />
                                                         ) : (
                                                             <TrendingDown className="w-4 h-4" />
@@ -292,7 +297,7 @@ export default function WatchlistPage() {
                                                                 {formatPrice(price?.changeAmount)}
                                                             </p>
                                                             <p className="text-xs">
-                                                                {price?.changePercent ? `${parseFloat(price.changePercent).toFixed(2)}%` : '0.00%'}
+                                                                {changePercent.toFixed(2)}%
                                                             </p>
                                                         </div>
                                                     </div>

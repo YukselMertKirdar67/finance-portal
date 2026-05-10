@@ -239,10 +239,12 @@ export default function PortfolioListPage() {
                                             <div>
                                                 <p className="text-xs text-gray-500 mb-1">Kar/Zarar</p>
                                                 <p className={`text-lg font-semibold flex items-center gap-1 ${
-                                                    portfolio.unrealizedPnL >= 0 ? 'text-green-600' : 'text-red-600'
+                                                    portfolio.unrealizedPnL === 0 ? 'text-gray-500' :
+                                                        portfolio.unrealizedPnL > 0 ? 'text-green-600' : 'text-red-600'
                                                 }`}>
-                                                    {portfolio.unrealizedPnL >= 0 ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}
-                                                    {portfolio.unrealizedPnL >= 0 ? '+' : ''}
+                                                    {portfolio.unrealizedPnL === 0 ? <span>—</span> :
+                                                        portfolio.unrealizedPnL > 0 ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}
+                                                    {portfolio.unrealizedPnL > 0 ? '+' : ''}
                                                     {portfolio.currency === 'TRY' ? '₺' : '$'}
                                                     {portfolio.unrealizedPnL?.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}
                                                 </p>
@@ -250,9 +252,10 @@ export default function PortfolioListPage() {
                                             <div className="text-right">
                                                 <p className="text-xs text-gray-500 mb-1">Getiri</p>
                                                 <p className={`text-lg font-semibold ${
-                                                    portfolio.pnlPercent >= 0 ? 'text-green-600' : 'text-red-600'
+                                                    portfolio.pnlPercent === 0 ? 'text-gray-500' :
+                                                        portfolio.pnlPercent > 0 ? 'text-green-600' : 'text-red-600'
                                                 }`}>
-                                                    {portfolio.pnlPercent >= 0 ? '+' : ''}{portfolio.pnlPercent?.toFixed(2)}%
+                                                    {portfolio.pnlPercent > 0 ? '+' : ''}{portfolio.pnlPercent?.toFixed(2)}%
                                                 </p>
                                             </div>
                                         </div>

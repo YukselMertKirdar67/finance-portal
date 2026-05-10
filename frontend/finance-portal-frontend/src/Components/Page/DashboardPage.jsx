@@ -184,13 +184,12 @@ export default function DashboardPage() {
                     </CardHeader>
                     <CardContent>
                         <p className={`text-3xl font-bold flex items-center gap-2 ${
-                            (summary.totalUnrealizedPnL || 0) >= 0 ? 'text-green-600' : 'text-red-600'
+                            (summary.totalUnrealizedPnL || 0) === 0 ? 'text-gray-500' :
+                                (summary.totalUnrealizedPnL || 0) > 0 ? 'text-green-600' : 'text-red-600'
                         }`}>
-                            {(summary.totalUnrealizedPnL || 0) >= 0 ? <TrendingUp className="w-6 h-6" /> : <TrendingDown className="w-6 h-6" />}
-                            {(summary.totalUnrealizedPnL || 0) >= 0 ? '+' : ''}₺{Math.abs(summary.totalUnrealizedPnL || 0).toLocaleString('tr-TR', { minimumFractionDigits: 2 })}
-                        </p>
-                        <p className={`text-xs mt-1 ${(summary.totalPnLPercent || 0) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                            {(summary.totalPnLPercent || 0) >= 0 ? '+' : ''}{(summary.totalPnLPercent || 0).toFixed(2)}%
+                            {(summary.totalUnrealizedPnL || 0) === 0 ? <span>—</span> :
+                                (summary.totalUnrealizedPnL || 0) > 0 ? <TrendingUp className="w-6 h-6" /> : <TrendingDown className="w-6 h-6" />}
+                            {(summary.totalUnrealizedPnL || 0) > 0 ? '+' : ''}₺{Math.abs(summary.totalUnrealizedPnL || 0).toLocaleString('tr-TR', { minimumFractionDigits: 2 })}
                         </p>
                     </CardContent>
                 </Card>
@@ -322,25 +321,28 @@ export default function DashboardPage() {
                                                     {index === 0 && (portfolio.pnlPercent || 0) > 0 && <span className="text-lg">🏆</span>}
                                                     {index === portfolios.length - 1 && (portfolio.pnlPercent || 0) < 0 && <span className="text-lg">📉</span>}
                                                     <p className="text-sm font-medium text-gray-600">{portfolio.name}</p>
-                                                    {/* ✅ Para birimi badge */}
+                                                    {/* Para birimi badge */}
                                                     <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
                                                         {portfolio.currency || 'TRY'}
                                                     </span>
                                                 </div>
-                                                {(portfolio.pnlPercent || 0) >= 0
-                                                    ? <TrendingUp className="w-5 h-5 text-green-600" />
-                                                    : <TrendingDown className="w-5 h-5 text-red-600" />
+                                                {(portfolio.pnlPercent || 0) === 0
+                                                    ? <span className="text-gray-500">—</span>
+                                                    : (portfolio.pnlPercent || 0) > 0
+                                                        ? <TrendingUp className="w-5 h-5 text-green-600" />
+                                                        : <TrendingDown className="w-5 h-5 text-red-600" />
                                                 }
                                             </div>
                                             <div className="flex items-center justify-between">
-                                                {/* ✅ Portföy currency'siyle göster */}
+                                                {/* Portföy currency'siyle göster */}
                                                 <p className="text-sm text-gray-600">
                                                     {sym}{(portfolio.totalValue || 0).toLocaleString('tr-TR', { minimumFractionDigits: 2 })}
                                                 </p>
                                                 <p className={`text-sm font-semibold ${
-                                                    (portfolio.pnlPercent || 0) >= 0 ? 'text-green-600' : 'text-red-600'
+                                                    (portfolio.pnlPercent || 0) === 0 ? 'text-gray-500' :
+                                                        (portfolio.pnlPercent || 0) > 0 ? 'text-green-600' : 'text-red-600'
                                                 }`}>
-                                                    {(portfolio.pnlPercent || 0) >= 0 ? '+' : ''}{(portfolio.pnlPercent || 0).toFixed(2)}%
+                                                    {(portfolio.pnlPercent || 0) > 0 ? '+' : ''}{(portfolio.pnlPercent || 0).toFixed(2)}%
                                                 </p>
                                             </div>
                                             <div className="mt-2 pt-2 border-t border-gray-200">

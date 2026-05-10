@@ -303,9 +303,13 @@ export default function PortfolioPage() {
                 <Card>
                     <CardHeader className="pb-2"><CardTitle className="text-sm text-gray-600">Kar/Zarar</CardTitle></CardHeader>
                     <CardContent>
-                        <p className={`text-3xl font-semibold flex items-center gap-2 ${portfolio.unrealizedPnL >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                            {portfolio.unrealizedPnL >= 0 ? <TrendingUp className="w-6 h-6" /> : <TrendingDown className="w-6 h-6" />}
-                            {portfolio.unrealizedPnL >= 0 ? '+' : ''}
+                        <p className={`text-3xl font-semibold flex items-center gap-2 ${
+                            portfolio.unrealizedPnL === 0 ? 'text-gray-500' :
+                                portfolio.unrealizedPnL > 0 ? 'text-green-600' : 'text-red-600'
+                        }`}>
+                            {portfolio.unrealizedPnL === 0 ? <span>—</span> :
+                                portfolio.unrealizedPnL > 0 ? <TrendingUp className="w-6 h-6" /> : <TrendingDown className="w-6 h-6" />}
+                            {portfolio.unrealizedPnL > 0 ? '+' : ''}
                             {sym}{portfolio.unrealizedPnL?.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </p>
                     </CardContent>
@@ -313,9 +317,13 @@ export default function PortfolioPage() {
                 <Card>
                     <CardHeader className="pb-2"><CardTitle className="text-sm text-gray-600">Getiri Oranı</CardTitle></CardHeader>
                     <CardContent>
-                        <p className={`text-3xl font-semibold flex items-center gap-2 ${portfolio.pnlPercent >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                            {portfolio.pnlPercent >= 0 ? <TrendingUp className="w-6 h-6" /> : <TrendingDown className="w-6 h-6" />}
-                            {portfolio.pnlPercent >= 0 ? '+' : ''}{portfolio.pnlPercent?.toFixed(2)}%
+                        <p className={`text-3xl font-semibold flex items-center gap-2 ${
+                            portfolio.pnlPercent === 0 ? 'text-gray-500' :
+                                portfolio.pnlPercent > 0 ? 'text-green-600' : 'text-red-600'
+                        }`}>
+                            {portfolio.pnlPercent === 0 ? <span>—</span> :
+                                portfolio.pnlPercent > 0 ? <TrendingUp className="w-6 h-6" /> : <TrendingDown className="w-6 h-6" />}
+                            {portfolio.pnlPercent > 0 ? '+' : ''}{portfolio.pnlPercent?.toFixed(2)}%
                         </p>
                     </CardContent>
                 </Card>
@@ -476,8 +484,12 @@ export default function PortfolioPage() {
                                         </td>
                                         {/* Kar/Zarar — portföy currency */}
                                         <td className="py-4 px-4 text-right">
-                                            <div className={`flex items-center justify-end gap-1 ${holding.unrealizedPnL >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                                                {holding.unrealizedPnL >= 0 ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}
+                                            <div className={`flex items-center justify-end gap-1 ${
+                                                holding.unrealizedPnL === 0 ? 'text-gray-500' :
+                                                    holding.unrealizedPnL > 0 ? 'text-green-600' : 'text-red-600'
+                                            }`}>
+                                                {holding.unrealizedPnL === 0 ? <span>—</span> :
+                                                    holding.unrealizedPnL > 0 ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}
                                                 <div className="text-right">
                                                     <p className="text-sm font-semibold">
                                                         {holding.unrealizedPnL >= 0 ? '+' : ''}

@@ -287,7 +287,8 @@ export default function InstrumentDetailPage() {
         timestamp: livePrice.timestamp,
         yieldRate: instrument.currentPrice?.yieldRate,
     } : instrument.currentPrice;
-    const isPositive = (price?.changePercent || 0) >= 0;
+    const isPositive = (price?.changePercent || 0) > 0;
+    const isNeutral = (price?.changePercent || 0) === 0;
     const accentColor = TYPE_COLORS[instrument.type] || '#3B82F6';
 
     const areaChartData = history.map(h => ({
@@ -380,11 +381,14 @@ export default function InstrumentDetailPage() {
                                         <span className="text-lg text-gray-400 ml-2">{instrument.currency}</span>
                                     </p>
                                 )}
-                                <div className={`flex items-center justify-end gap-2 text-lg font-semibold ${isPositive ? 'text-emerald-600' : 'text-red-500'}`}>
-                                    {isPositive ? <TrendingUp className="w-5 h-5" /> : <TrendingDown className="w-5 h-5" />}
+                                <div className={`flex items-center justify-end gap-2 text-lg font-semibold ${
+                                    isNeutral ? 'text-gray-500' :
+                                        isPositive ? 'text-emerald-600' : 'text-red-500'
+                                }`}>
+                                    {isNeutral ? <span>—</span> : isPositive ? <TrendingUp className="w-5 h-5" /> : <TrendingDown className="w-5 h-5" />}
                                     <span>
-                {isPositive ? '+' : ''}{formatPrice(price.changeAmount)} ({Math.abs(price.changePercent).toFixed(2)}%)
-            </span>
+                                          {isPositive ? '+' : ''}{formatPrice(price.changeAmount)} ({Math.abs(price.changePercent).toFixed(2)}%)
+                                    </span>
                                 </div>
                                 <p className="text-xs text-gray-400 mt-2">{formatDate(price.timestamp)}</p>
                             </div>

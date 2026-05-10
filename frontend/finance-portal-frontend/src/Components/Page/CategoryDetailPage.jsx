@@ -262,7 +262,8 @@ export default function CategoryDetailPage() {
                                                     high: instrument.currentPrice?.high,
                                                     low: instrument.currentPrice?.low,
                                                 } : instrument.currentPrice;
-                                                const isPositive = (price?.changePercent ?? 0) >= 0;
+                                                const isPositive = (price?.changePercent ?? 0) > 0;
+                                                const isNeutral = (price?.changePercent ?? 0) === 0;
 
                                                 return (
                                                     <tr
@@ -297,23 +298,28 @@ export default function CategoryDetailPage() {
 
                                                         <td className="py-4 px-6 text-right">
                                                             {price ? (
-                                                                <span className={isPositive ? 'text-green-600' : 'text-red-600'}>
-                                                                    {isPositive ? '+' : ''}{formatPrice(price.changeAmount)}
+                                                                <span className={isNeutral ? 'text-gray-500' : isPositive ? 'text-green-600' : 'text-red-600'}>
+                                                                      {isPositive ? '+' : ''}{formatPrice(price.changeAmount)}
                                                                 </span>
+
                                                             ) : '-'}
                                                         </td>
 
                                                         <td className="py-4 px-6 text-right">
                                                             {price ? (
                                                                 <div className={`flex items-center justify-end gap-1 ${
-                                                                    isPositive ? 'text-green-600' : 'text-red-600'
+                                                                    isNeutral ? 'text-gray-500' :
+                                                                        isPositive ? 'text-green-600' : 'text-red-600'
                                                                 }`}>
-                                                                    {isPositive
-                                                                        ? <TrendingUp className="w-4 h-4" />
-                                                                        : <TrendingDown className="w-4 h-4" />
-                                                                    }
+                                                                    {isNeutral ? (
+                                                                        <span>—</span>
+                                                                    ) : isPositive ? (
+                                                                        <TrendingUp className="w-4 h-4" />
+                                                                    ) : (
+                                                                        <TrendingDown className="w-4 h-4" />
+                                                                    )}
                                                                     <span className="font-medium">
-                                                                        {Math.abs(price.changePercent).toFixed(2)}%
+                                                                         {Math.abs(price.changePercent).toFixed(2)}%
                                                                     </span>
                                                                 </div>
                                                             ) : '-'}
