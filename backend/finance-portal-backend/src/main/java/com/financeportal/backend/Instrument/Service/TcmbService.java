@@ -6,6 +6,7 @@ import com.financeportal.backend.WebSocket.PriceUpdateMessage;
 import com.financeportal.backend.WebSocket.WebSocketPriceService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.CacheEvict;
@@ -31,8 +32,11 @@ import java.util.*;
 @Log4j2
 public class TcmbService {
 
-    private static final String TCMB_TODAY_URL = "https://www.tcmb.gov.tr/kurlar/today.xml";
-    private static final String TCMB_ARCHIVE_URL = "https://www.tcmb.gov.tr/kurlar/%s/%s.xml";
+    @Value("${tcmb.api.url}")
+    private String tcmbTodayUrl;
+
+    @Value("${tcmb.archive.url}")
+    private String tcmbArchiveUrl;
 
     private final RestTemplate restTemplate;
     private final InstrumentRepository instrumentRepository;
@@ -53,7 +57,7 @@ public class TcmbService {
         List<InstrumentPrice> prices = new ArrayList<>();
 
         try {
-            String todayXml = restTemplate.getForObject(TCMB_TODAY_URL, String.class);
+            String todayXml = restTemplate.getForObject(tcmbTodayUrl, String.class);
             if (todayXml == null || todayXml.isEmpty()) {
                 log.error("TCMB XML is empty");
                 return prices;
@@ -341,7 +345,7 @@ public class TcmbService {
     private String buildArchiveUrl(LocalDate date) {
         String monthYear = date.format(DateTimeFormatter.ofPattern("yyyyMM"));
         String dateStr   = date.format(DateTimeFormatter.ofPattern("ddMMyyyy"));
-        return String.format(TCMB_ARCHIVE_URL, monthYear, dateStr);
+        return String.format(tcmbArchiveUrl, monthYear, dateStr);
     }
 
     /**

@@ -9,6 +9,7 @@ import com.financeportal.backend.WebSocket.PriceUpdateMessage;
 import com.financeportal.backend.WebSocket.WebSocketPriceService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.CacheEvict;
@@ -32,8 +33,11 @@ import java.util.*;
 @Log4j2
 public class YahooFinanceService {
 
-    private static final String YAHOO_QUOTE_URL = "https://query1.finance.yahoo.com/v8/finance/chart/%s";
-    private static final String YAHOO_HISTORY_URL = "https://query1.finance.yahoo.com/v8/finance/chart/%s?interval=%s&range=%s";
+    @Value("${yahoo.finance.quote.url}")
+    private String yahooQuoteUrl;
+
+    @Value("${yahoo.finance.history.url}")
+    private String yahooHistoryUrl;
 
     private final RestTemplate restTemplate;
     private final InstrumentRepository instrumentRepository;
@@ -144,7 +148,7 @@ public class YahooFinanceService {
         log.info("🔍 Cache MISS - Fetching Yahoo Finance: {}", yahooSymbol);
 
         try {
-            String url = String.format(YAHOO_QUOTE_URL, yahooSymbol);
+            String url = String.format(yahooQuoteUrl, yahooSymbol);
 
             HttpHeaders headers = new HttpHeaders();
             headers.set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
@@ -267,7 +271,7 @@ public class YahooFinanceService {
         List<PriceHistory> historyList = new ArrayList<>();
 
         try {
-            String url = String.format(YAHOO_HISTORY_URL, yahooSymbol, interval, range);
+            String url = String.format(yahooHistoryUrl, yahooSymbol, interval, range);
             log.info("DEBUG - URL: {}", url);
 
             HttpHeaders headers = new HttpHeaders();

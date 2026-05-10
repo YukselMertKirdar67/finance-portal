@@ -35,7 +35,8 @@ public class TcmbEvdsService {
     @Value("${tcmb.evds.api.key}")
     private String apiKey;
 
-    private static final String EVDS_URL = "https://evds3.tcmb.gov.tr/igmevdsms-dis/";
+    @Value("${tcmb.evds.base-url}")
+    private String evdsUrl;
 
     private final RestTemplate restTemplate;
     private final InstrumentRepository instrumentRepository;
@@ -118,7 +119,7 @@ public class TcmbEvdsService {
      */
     private boolean testConnection(String date) {
         try {
-            String url = EVDS_URL +
+            String url = evdsUrl +
                     "series=TP.DK.USD.A.YTL" +
                     "&startDate=" + date +
                     "&endDate=" + date +
@@ -177,7 +178,7 @@ public class TcmbEvdsService {
         List<InstrumentPrice> prices = new ArrayList<>();
 
         try {
-            String url = EVDS_URL +
+            String url = evdsUrl +
                     "series=" + seriesCode +
                     "&startDate=" + date +
                     "&endDate=" + date +
@@ -300,7 +301,7 @@ public class TcmbEvdsService {
     private void fetchBondYieldHistorical(String seriesCode, String symbol,
                                           String startDate, String endDate) {
         try {
-            String url = EVDS_URL +
+            String url = evdsUrl +
                     "series=" + seriesCode +
                     "&startDate=" + startDate +
                     "&endDate=" + endDate +
