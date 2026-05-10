@@ -1,0 +1,13 @@
+otel-traces-pipeline:
+  source:
+    otel_trace_source:
+      port: 21890
+      ssl: false
+  processor:
+    - otel_traces:
+        trace_flush_interval: 10
+  sink:
+    - opensearch:
+        hosts: ["http://finance-opensearch:9200"]
+        index_type: trace-analytics-raw
+        insecure: true
