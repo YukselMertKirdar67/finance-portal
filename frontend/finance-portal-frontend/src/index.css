@@ -2,3 +2,85 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* ===== DARK MODE GLOBAL OVERRIDES ===== */
+
+/* Arka planlar */
+.dark .bg-gray-50 { background-color: rgb(3 7 18); }
+.dark .bg-white { background-color: rgb(17 24 39); }
+.dark .bg-gray-100 { background-color: rgb(31 41 55); }
+
+/* Metinler */
+.dark .text-gray-900 { color: rgb(255 255 255); }
+.dark .text-gray-800 { color: rgb(243 244 246); }
+.dark .text-gray-700 { color: rgb(209 213 219); }
+.dark .text-gray-600 { color: rgb(156 163 175); }
+.dark .text-gray-500 { color: rgb(107 114 128); }
+
+/* Border */
+.dark .border-gray-200 { border-color: rgb(55 65 81); }
+.dark .border-gray-100 { border-color: rgb(31 41 55); }
+.dark .divide-gray-200 > * { border-color: rgb(55 65 81); }
+
+/* Input / Form */
+.dark input:not([type="checkbox"]):not([type="radio"]),
+.dark textarea,
+.dark select {
+    background-color: rgb(31 41 55);
+    border-color: rgb(55 65 81);
+    color: rgb(255 255 255);
+}
+
+.dark input::placeholder,
+.dark textarea::placeholder {
+    color: rgb(107 114 128);
+}
+
+/* Table */
+.dark thead { background-color: rgb(17 24 39); }
+.dark tbody tr:hover { background-color: rgb(31 41 55) !important; }
+.dark .divide-y > * { border-color: rgb(55 65 81); }
+
+/* Modal overlay arka planları */
+.dark .bg-blue-50 { background-color: rgb(23 37 84 / 0.3); }
+.dark .bg-green-50 { background-color: rgb(5 46 22 / 0.3); }
+.dark .bg-red-50 { background-color: rgb(69 10 10 / 0.3); }
+.dark .bg-yellow-50 { background-color: rgb(66 32 6 / 0.3); }
+.dark .bg-orange-50 { background-color: rgb(67 20 7 / 0.3); }
+.dark .bg-purple-50 { background-color: rgb(59 7 100 / 0.3); }
+.dark .bg-indigo-50 { background-color: rgb(30 27 75 / 0.3); }
+
+/* Border renkleri */
+.dark .border-blue-200 { border-color: rgb(30 58 138 / 0.5); }
+.dark .border-green-200 { border-color: rgb(20 83 45 / 0.5); }
+.dark .border-red-200 { border-color: rgb(127 29 29 / 0.5); }
+.dark .border-yellow-200 { border-color: rgb(113 63 18 / 0.5); }
+.dark .border-gray-300 { border-color: rgb(55 65 81); }
+
+/* Text renkleri */
+.dark .text-blue-800 { color: rgb(147 197 253); }
+.dark .text-green-800 { color: rgb(134 239 172); }
+.dark .text-red-800 { color: rgb(252 165 165); }
+.dark .text-yellow-800 { color: rgb(253 224 71); }
+.dark .text-blue-900 { color: rgb(191 219 254); }
+
+/* Hover durumları */
+.dark .hover\:bg-gray-50:hover { background-color: rgb(31 41 55) !important; }
+.dark .hover\:bg-gray-100:hover { background-color: rgb(55 65 81) !important; }
+
+/* Shadow */
+.dark .shadow-md { box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.4); }
+.dark .shadow-lg { box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.5); }
+
+/* Stat card bg'leri */
+.dark .bg-blue-100 { background-color: rgb(30 58 138 / 0.3); }
+.dark .bg-green-100 { background-color: rgb(20 83 45 / 0.3); }
+.dark .bg-red-100 { background-color: rgb(127 29 29 / 0.3); }
+.dark .bg-purple-100 { background-color: rgb(88 28 135 / 0.3); }
+.dark .bg-orange-100 { background-color: rgb(124 45 18 / 0.3); }
+.dark .bg-yellow-100 { background-color: rgb(113 63 18 / 0.3); }
+.dark .bg-indigo-100 { background-color: rgb(49 46 129 / 0.3); }
+
+/* Gradient bg (LandingPage, ForgotPassword) */
+.dark .from-blue-50 { --tw-gradient-from: rgb(23 37 84 / 0.5); }
+.dark .to-indigo-100 { --tw-gradient-to: rgb(49 46 129 / 0.5); }
