@@ -240,7 +240,8 @@ export default function LandingPage() {
                     <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-8">
                         <Button
                             onClick={() => navigate('/register')}
-                            className="px-8 py-4 bg-white text-blue-600 hover:bg-black font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all text-lg"
+                            variant="outline"
+                            className="px-8 py-4 bg-white text-blue-600 hover:bg-blue-50 font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all text-lg"
                         >
                             Hemen Başlayın
                             <ArrowRight className="w-5 h-5 ml-2" />
