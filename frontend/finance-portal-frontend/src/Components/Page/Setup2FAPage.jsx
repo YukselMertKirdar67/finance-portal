@@ -26,7 +26,7 @@ export default function Setup2FAPage() {
             const data = await setupTotp();
             setQrCode(data.qrCode);
             setSecret(data.secret);
-        } catch (e) {
+        } catch {
             setError('QR kod oluşturulamadı. Lütfen tekrar deneyin.');
         } finally {
             setLoading(false);
@@ -47,7 +47,7 @@ export default function Setup2FAPage() {
             } else {
                 setError('Geçersiz kod. Lütfen tekrar deneyin.');
             }
-        } catch (e) {
+        } catch {
             setError('Doğrulama başarısız. Lütfen tekrar deneyin.');
         } finally {
             setVerifying(false);
