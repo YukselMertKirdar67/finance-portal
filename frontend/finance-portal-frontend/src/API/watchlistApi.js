@@ -2,7 +2,7 @@ import api from './instrumentsApi';
 
 
 /**
- * Watchlist'i getir (Paginated)
+ * Watchlist'i getir
  */
 export const getWatchlist = async (page = 0, size = 100) => {
     const response = await api.get('/watchlist', {
@@ -36,7 +36,7 @@ export const isInWatchlist = async (instrumentId) => {
 };
 
 /**
- * Enstrüman ara (Modal için)
+ * Enstrüman ara
  */
 export const searchInstruments = async (query) => {
     const response = await api.get('/instruments/search', {
