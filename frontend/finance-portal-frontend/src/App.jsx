@@ -31,6 +31,7 @@ import AdminNewsDashboard from './Components/Page/AdminNewsDashboard';
 import EmailVerifiedPage from './Components/Page/EmailVerifiedPage';
 import Setup2FAPage from './Components/Page/Setup2FAPage';
 import Verify2FAPage from './Components/Page/Verify2FAPage';
+import AdminPortfolioPage from './Components/Page/AdminPortfolioPage';
 
 
 // Protected Route Component
@@ -167,6 +168,15 @@ function App() {
                                         </ProtectedRoute>
                                     }
                                 />
+                                <Route
+                                    path="/admin/portfolios"
+                                    element={
+                                        <ProtectedRoute adminOnly>
+                                            <AdminPortfolioPage />
+                                        </ProtectedRoute>
+                                    }
+                                />
+
 
                                 {/* 404 Redirect */}
                                 <Route path="*" element={<Navigate to="/home" replace />} />
