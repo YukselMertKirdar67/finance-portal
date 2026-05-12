@@ -32,6 +32,7 @@ public interface PortfolioMapper {
     @Mapping(target = "unrealizedPnL", ignore = true)
     @Mapping(target = "pnlPercent", ignore = true)
     @Mapping(target = "holdingCount", ignore = true)
+    @Mapping(source = "userId", target = "userId")
     PortfolioDTO toDTO(Portfolio portfolio);
 
     @Mapping(target = "holdings", ignore = true)
