@@ -21,6 +21,7 @@ public class PortfolioDTO {
     private PortfolioType portfolioType;
     private String currency;
     private Boolean active;
+    private String userId;
 
     // Calculated fields (runtime'da hesaplanır)
     private BigDecimal totalValue;          // Portföyün güncel toplam değeri
