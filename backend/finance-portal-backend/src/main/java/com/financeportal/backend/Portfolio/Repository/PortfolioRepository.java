@@ -16,65 +16,30 @@ import java.util.Optional;
 @Repository
 public interface PortfolioRepository extends JpaRepository<Portfolio, Long> {
 
-    /**
-     * Find all portfolios by user ID
-     */
     List<Portfolio> findByUserId(String userId);
 
-    /**
-     * Find all portfolios by user ID (paginated)
-     */
     Page<Portfolio> findByUserId(String userId, Pageable pageable);
 
-    /**
-     * Find active portfolios by user ID
-     */
     List<Portfolio> findByUserIdAndActiveTrue(String userId);
 
-    /**
-     * Find portfolio by ID and user ID (ownership check)
-     */
     Optional<Portfolio> findByIdAndUserId(Long id, String userId);
 
-    /**
-     * Find portfolios by type
-     */
     List<Portfolio> findByUserIdAndPortfolioType(String userId, PortfolioType portfolioType);
 
-    /**
-     * Check if portfolio exists for user
-     */
     boolean existsByIdAndUserId(Long id, String userId);
 
-    /**
-     * Count portfolios by user ID
-     */
     long countByUserId(String userId);
 
-    /**
-     * Count active portfolios by user ID
-     */
     long countByUserIdAndActiveTrue(String userId);
 
-    /**
-     * Find portfolios created after a specific date
-     */
     List<Portfolio> findByUserIdAndCreatedAtAfter(String userId, LocalDateTime date);
 
-    /**
-     * Custom query: Find portfolios with holdings count
-     * (Useful for dashboard/summary)
-     */
     @Query("SELECT p FROM Portfolio p " +
             "LEFT JOIN FETCH p.holdings h " +
             "LEFT JOIN FETCH h.instrument " +
             "WHERE p.userId = :userId")
     List<Portfolio> findByUserIdWithHoldings(@Param("userId") String userId);
 
-    /**
-     * Custom query: Find portfolio with holdings and transactions
-     * (For detail page - fetch all related data in one query)
-     */
     @Query("SELECT DISTINCT p FROM Portfolio p " +
             "LEFT JOIN FETCH p.holdings h " +
             "LEFT JOIN FETCH h.instrument " +
@@ -85,17 +50,11 @@ public interface PortfolioRepository extends JpaRepository<Portfolio, Long> {
             @Param("userId") String userId
     );
 
-    /**
-     * Custom query: Find portfolios with at least one holding
-     */
     @Query("SELECT DISTINCT p FROM Portfolio p " +
             "INNER JOIN p.holdings " +
             "WHERE p.userId = :userId")
     List<Portfolio> findByUserIdWithActiveHoldings(@Param("userId") String userId);
 
-    /**
-     * Custom query: Search portfolios by name
-     */
     @Query("SELECT p FROM Portfolio p " +
             "WHERE p.userId = :userId " +
             "AND LOWER(p.name) LIKE LOWER(CONCAT('%', :searchTerm, '%'))")
@@ -104,8 +63,8 @@ public interface PortfolioRepository extends JpaRepository<Portfolio, Long> {
             @Param("searchTerm") String searchTerm
     );
 
-    /**
-     * Delete portfolio by ID and user ID (ownership check)
-     */
+    @Query("SELECT p FROM Portfolio p WHERE p.userId LIKE CONCAT('%', :userId, '%')")
+    List<Portfolio> findByUserIdContaining(@Param("userId") String userId);
+
     void deleteByIdAndUserId(Long id, String userId);
 }
