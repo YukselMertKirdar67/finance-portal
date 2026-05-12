@@ -1,6 +1,8 @@
 import api from './instrumentsApi';
 
-// Tüm portfolioları getir
+/**
+ * Tüm portföyleri getirir
+ */
 export const getAllPortfolios = async () => {
     try {
         const response = await api.get('/portfolios');
@@ -11,7 +13,9 @@ export const getAllPortfolios = async () => {
     }
 };
 
-// Portfolio detayı getir
+/**
+ * Portföyün detayını getirir
+ */
 export const getPortfolioDetail = async (id) => {
     try {
         const response = await api.get(`/portfolios/${id}/detail`);
@@ -22,7 +26,9 @@ export const getPortfolioDetail = async (id) => {
     }
 };
 
-// Portfolio oluştur
+/**
+ * Portföy oluşturur
+ */
 export const createPortfolio = async (data) => {
     try {
         const response = await api.post('/portfolios', data);
@@ -33,7 +39,9 @@ export const createPortfolio = async (data) => {
     }
 };
 
-// Portfolio güncelle
+/**
+ * Portföyü günceller
+ */
 export const updatePortfolio = async (id, data) => {
     try {
         const response = await api.put(`/portfolios/${id}`, data);
@@ -44,7 +52,9 @@ export const updatePortfolio = async (id, data) => {
     }
 };
 
-
+/**
+ * Portföyü kalıcı olarak siler
+ */
 export const hardDeletePortfolio = async (id) => {
     try {
         await api.delete(`/portfolios/${id}/hard`);
@@ -54,7 +64,9 @@ export const hardDeletePortfolio = async (id) => {
     }
 };
 
-// Transaction oluştur
+/**
+ * İşlem oluşturur
+ */
 export const createTransaction = async (portfolioId, data) => {
     try {
         const response = await api.post(`/portfolios/${portfolioId}/transactions`, data);
@@ -65,7 +77,9 @@ export const createTransaction = async (portfolioId, data) => {
     }
 };
 
-// Portfolio özeti getir (Dashboard için)
+/**
+ * Portföyün özetini getirir
+ */
 export const getPortfolioSummary = async () => {
     try {
         const response = await api.get('/portfolios/summary');
@@ -76,7 +90,9 @@ export const getPortfolioSummary = async () => {
     }
 };
 
-// Transaction'ları getir (sayfalı)
+/**
+ * İşlem bilgilerini getirir
+ */
 export const getTransactions = async (portfolioId, page = 0, size = 50) => {
     try {
         const response = await api.get(`/portfolios/${portfolioId}/transactions`, {
@@ -89,6 +105,9 @@ export const getTransactions = async (portfolioId, page = 0, size = 50) => {
     }
 };
 
+/**
+ * İşlem bilgilerini siler
+ */
 export const deleteTransaction = async (portfolioId, transactionId) => {
     try {
         await api.delete(`/portfolios/${portfolioId}/transactions/${transactionId}`);
@@ -98,18 +117,9 @@ export const deleteTransaction = async (portfolioId, transactionId) => {
     }
 };
 
-// Holdings getir
-export const getHoldings = async (portfolioId) => {
-    try {
-        const response = await api.get(`/portfolios/${portfolioId}/holdings`);
-        return response.data;
-    } catch (error) {
-        console.error('Error fetching holdings:', error);
-        throw error;
-    }
-};
-
-// Asset allocation getir
+/**
+ * Portföyde bulunan finansal enstrümanların asset-allocationunu getirir
+ */
 export const getAssetAllocation = async (portfolioId) => {
     try {
         const response = await api.get(`/portfolios/${portfolioId}/holdings/asset-allocation`);
@@ -120,6 +130,9 @@ export const getAssetAllocation = async (portfolioId) => {
     }
 };
 
+/**
+ * Portföyüb performansını getirir
+ */
 export const getPortfolioPerformance = async (portfolioId, days = 30) => {
     try {
         const response = await api.get(`/portfolios/${portfolioId}/performance`, {
