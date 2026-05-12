@@ -203,18 +203,9 @@ export default function CategoryDetailPage() {
                         placeholder="Sembol veya isim ara..."
                         value={searchQuery}
                         onChange={handleSearch}
-                        disabled={loading}
                         className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
                     />
                 </div>
-
-                {/* Loading */}
-                {loading && (
-                    <div className="text-center py-12">
-                        <RefreshCw className="w-8 h-8 animate-spin mx-auto text-blue-600" />
-                        <p className="mt-4 text-gray-600">Yükleniyor...</p>
-                    </div>
-                )}
 
                 {/* Error */}
                 {!loading && error && (
@@ -223,8 +214,16 @@ export default function CategoryDetailPage() {
                     </div>
                 )}
 
+                {/* Loading */}
+                {loading && (
+                    <div className="flex items-center gap-2 mb-4 text-blue-600">
+                        <RefreshCw className="w-4 h-4 animate-spin" />
+                        <span className="text-sm">Yükleniyor...</span>
+                    </div>
+                )}
+
                 {/* Table */}
-                {!loading && !error && (
+                {!error && (
                     <>
                         <Card>
                             <CardContent className="p-0">
