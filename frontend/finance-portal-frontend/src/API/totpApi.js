@@ -1,5 +1,9 @@
 import api from './instrumentsApi';
 
+
+/**
+ * TOTP kurulumunu başlatır ve QR kod ile secret key döner
+ */
 export const setupTotp = async () => {
     try {
         const response = await api.post('/totp/setup');
@@ -10,6 +14,10 @@ export const setupTotp = async () => {
     }
 };
 
+
+/**
+ * TOTP kurulumunu doğrular
+ */
 export const verifyTotpSetup = async (code) => {
     try {
         const response = await api.post('/totp/verify-setup', { code });
@@ -20,6 +28,9 @@ export const verifyTotpSetup = async (code) => {
     }
 };
 
+/**
+ * Giriş sırasında TOTP kodunu doğrular
+ */
 export const verifyTotpLogin = async (keycloakId, code) => {
     try {
         const response = await api.post('/totp/verify-login', { keycloakId, code });
@@ -30,22 +41,15 @@ export const verifyTotpLogin = async (keycloakId, code) => {
     }
 };
 
+/**
+ * Kullanıcının TOTP durumunu getirir (aktif/pasif)
+ */
 export const getTotpStatus = async () => {
     try {
         const response = await api.get('/totp/status');
         return response.data;
     } catch (error) {
         console.error('Error getting TOTP status:', error);
-        throw error;
-    }
-};
-
-export const disableTotp = async () => {
-    try {
-        const response = await api.delete('/totp/disable');
-        return response.data;
-    } catch (error) {
-        console.error('Error disabling TOTP:', error);
         throw error;
     }
 };
