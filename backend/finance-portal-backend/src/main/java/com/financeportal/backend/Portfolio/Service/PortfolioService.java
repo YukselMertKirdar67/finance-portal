@@ -7,6 +7,7 @@ import org.springframework.data.domain.Pageable;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 
 public interface PortfolioService {
 
@@ -47,4 +48,8 @@ public interface PortfolioService {
     List<PortfolioDTO> searchPortfoliosByName(String searchTerm);
 
     List<PortfolioDTO> getPortfoliosByType(String portfolioType);
+
+    List<PortfolioDTO> getAllPortfoliosAdmin(String userId);
+
+    Map<String, Object> getSystemStatistics();
 }
