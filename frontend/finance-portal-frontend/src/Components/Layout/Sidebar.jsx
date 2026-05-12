@@ -122,6 +122,12 @@ export default function Sidebar({
                                     <span>Haber Yönetimi</span>
                                 </NavLink>
                             </li>
+                            <li>
+                                <NavLink to="/admin/portfolios" className={navClass}>
+                                    <Briefcase className="w-5 h-5" />
+                                    <span>Portföy Yönetimi</span>
+                                </NavLink>
+                            </li>
                         </>
                     )}
                 </ul>
