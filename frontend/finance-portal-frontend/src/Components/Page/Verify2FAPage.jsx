@@ -55,7 +55,7 @@ const Verify2FAPage = () => {
                 setError('Giriş başarısız. Lütfen tekrar deneyin.');
             }
 
-        } catch (err) {
+        } catch {
             setError('Doğrulama başarısız. Lütfen tekrar deneyin.');
         } finally {
             setLoading(false);
