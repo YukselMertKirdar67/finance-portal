@@ -11,7 +11,8 @@ import {
     Home,
     RefreshCw,
     AlarmClock,
-    Newspaper
+    Newspaper,
+    ShieldCheck
 } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
 import { Button } from '../UI/Button';
@@ -99,7 +100,7 @@ export default function Sidebar({
                             </li>
                             <li>
                                 <NavLink to="/admin/dashboard" className={navClass}>
-                                    <LayoutDashboard className="w-5 h-5" />
+                                    <ShieldCheck className="w-5 h-5" />
                                     <span>Admin Dashboard</span>
                                 </NavLink>
                             </li>
