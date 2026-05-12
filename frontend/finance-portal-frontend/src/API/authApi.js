@@ -3,20 +3,7 @@ import axios from 'axios';
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
 
 /**
- * Login
- */
-export const login = async (credentials) => {
-    try {
-        const response = await axios.post(`${API_BASE_URL}/auth/login`, credentials);
-        return response.data;
-    } catch (error) {
-        console.error('Login error:', error);
-        throw error;
-    }
-};
-
-/**
- * Refresh Token
+ * Refresh token kullanarak yeni access token alır
  */
 export const refreshToken = async (refreshToken) => {
     try {
@@ -31,7 +18,7 @@ export const refreshToken = async (refreshToken) => {
 };
 
 /**
- * Logout - Terminate Keycloak session
+ * Keycloak oturumunu sonlandırır
  */
 export const logoutUser = async (refreshToken) => {
     try {
