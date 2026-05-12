@@ -1,5 +1,9 @@
 import api from './instrumentsApi';
 
+
+/**
+ * Tüm enstrümanların güncelleme durumunu getirir
+ */
 export const getUpdateStatus = async () => {
     try {
         const response = await api.get('/admin/instruments/update-status');
@@ -10,6 +14,9 @@ export const getUpdateStatus = async () => {
     }
 };
 
+/**
+ * Tüm enstrümanları tüm kaynaklardan günceller
+ */
 export const updateAllInstruments = async () => {
     try {
         const response = await api.post('/admin/instruments/update-all');
@@ -20,6 +27,9 @@ export const updateAllInstruments = async () => {
     }
 };
 
+/**
+ * TCMB'den günlük döviz kurlarını günceller
+ */
 export const updateTcmb = async () => {
     try {
         const response = await api.post('/admin/instruments/update-tcmb');
@@ -30,7 +40,9 @@ export const updateTcmb = async () => {
     }
 };
 
-// Yahoo US Stocks
+/**
+ * Yahoo Finance'den ABD hisse senedi fiyatlarını günceller
+ */
 export const updateUsStocks = async () => {
     try {
         const response = await api.post('/admin/instruments/update-us-stocks');
@@ -41,7 +53,9 @@ export const updateUsStocks = async () => {
     }
 };
 
-//  Yahoo BIST
+/**
+ * Yahoo Finance'den BIST hisse senedi fiyatlarını günceller
+ */
 export const updateBist = async () => {
     try {
         const response = await api.post('/admin/instruments/update-bist');
@@ -52,7 +66,9 @@ export const updateBist = async () => {
     }
 };
 
-//  Yahoo Kripto
+/**
+ * Yahoo Finance'den kripto para fiyatlarını günceller
+ */
 export const updateCrypto = async () => {
     try {
         const response = await api.post('/admin/instruments/update-crypto');
@@ -63,7 +79,9 @@ export const updateCrypto = async () => {
     }
 };
 
-// Yahoo Precious
+/**
+ * Yahoo Finance'den kıymetli metal fiyatlarını günceller (altın, gümüş vb.)
+ */
 export const updatePrecious = async () => {
     try {
         const response = await api.post('/admin/instruments/update-precious');
@@ -74,6 +92,9 @@ export const updatePrecious = async () => {
     }
 };
 
+/**
+ * Yahoo Finance'den ABD tahvil faiz oranlarını günceller
+ */
 export const updateBonds = async () => {
     try {
         const response = await api.post('/admin/instruments/update-bonds');
@@ -84,6 +105,9 @@ export const updateBonds = async () => {
     }
 };
 
+/**
+ * Yahoo Finance'den ABD tahvil faiz oranlarını günceller
+ */
 export const updateTrBonds = async () => {
     try {
         const response = await api.post('/admin/instruments/update-tr-bonds');
@@ -94,6 +118,9 @@ export const updateTrBonds = async () => {
     }
 };
 
+/**
+ * Yahoo Finance'den ETF fiyatlarını günceller
+ */
 export const updateEtfs = async () => {
     try {
         const response = await api.post('/admin/instruments/update-etfs');
@@ -104,7 +131,9 @@ export const updateEtfs = async () => {
     }
 };
 
-// Geçmiş veri
+/**
+ * Yahoo Finance'den ETF fiyatlarını günceller
+ */
 export const fetchAllHistoricalData = async () => {
     try {
         const response = await api.post('/admin/instruments/fetch-all-historical');
@@ -115,6 +144,9 @@ export const fetchAllHistoricalData = async () => {
     }
 };
 
+/**
+ * TCMB arşivinden geçmiş döviz kurlarını çeker
+ */
 export const fetchForexHistoricalData = async (days = 365) => {
     try {
         const response = await api.post(`/admin/instruments/fetch-forex-historical?days=${days}`);
@@ -125,22 +157,15 @@ export const fetchForexHistoricalData = async (days = 365) => {
     }
 };
 
+/**
+ * TCMB EVDS API'den geçmiş Türk tahvil faiz verilerini çeker
+ */
 export const fetchTrBondsHistorical = async (days = 365) => {
     try {
         const response = await api.post(`/admin/instruments/fetch-tr-bonds-historical?days=${days}`);
         return response.data;
     } catch (error) {
         console.error('Error fetching TR bonds historical:', error);
-        throw error;
-    }
-};
-
-export const getApiStats = async () => {
-    try {
-        const response = await api.get('/admin/instruments/stats');
-        return response.data;
-    } catch (error) {
-        console.error('Error fetching API stats:', error);
         throw error;
     }
 };
