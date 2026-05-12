@@ -9,7 +9,10 @@ const api = axios.create({
     },
 });
 
-// REQUEST INTERCEPTOR - Token ekle
+/**
+ * İstek interceptor'ı — her isteğe JWT token ekler.
+ * /auth/refresh endpoint'i için token eklenmez.
+ */
 api.interceptors.request.use(
     (config) => {
         // /auth/refresh isteğine token ekleme
@@ -30,7 +33,10 @@ api.interceptors.request.use(
     }
 );
 
-// RESPONSE INTERCEPTOR - Auto Token Refresh
+/**
+ * Yanıt interceptor'ı — 401 hatası alındığında token'ı otomatik yeniler.
+ * Yenileme başarısız olursa storage temizlenir ve login sayfasına yönlendirilir.
+ */
 api.interceptors.response.use(
     (response) => response,
     async (error) => {
@@ -97,7 +103,9 @@ api.interceptors.response.use(
     }
 );
 
-// Tüm enstrümanları getir (sayfalı)
+/**
+ * Tüm enstrümanları sayfalı olarak getirir
+ */
 export const getAllInstruments = async (page = 0, size = 20) => {
     try {
         const response = await api.get('/instruments', {
@@ -110,7 +118,10 @@ export const getAllInstruments = async (page = 0, size = 20) => {
     }
 };
 
-// Tipe göre enstrümanları getir
+
+/**
+ * Belirtilen tipe göre enstrümanları getirir
+ */
 export const getInstrumentsByType = async (type, page = 0, size = 20) => {
     try {
         const response = await api.get(`/instruments/type/${type}`, {
@@ -123,7 +134,9 @@ export const getInstrumentsByType = async (type, page = 0, size = 20) => {
     }
 };
 
-// ID ile enstrüman detayı
+/**
+ * ID'ye göre enstrüman detayını getirir
+ */
 export const getInstrumentById = async (id) => {
     try {
         const response = await api.get(`/instruments/${id}`);
@@ -134,20 +147,9 @@ export const getInstrumentById = async (id) => {
     }
 };
 
-// Sembol ile enstrüman detayı (slash sorunu için query param)
-export const getInstrumentBySymbol = async (symbol) => {
-    try {
-        const response = await api.get('/instruments/symbol', {
-            params: { symbol }
-        });
-        return response.data;
-    } catch (error) {
-        console.error('Error fetching instrument by symbol:', error);
-        throw error;
-    }
-};
-
-// Enstrüman ara
+/**
+ * Enstrüman arama yapar
+ */
 export const searchInstruments = async (query, page = 0, size = 20) => {
     try {
         const response = await api.get('/instruments/search', {
@@ -160,7 +162,9 @@ export const searchInstruments = async (query, page = 0, size = 20) => {
     }
 };
 
-// Anlık fiyat
+/**
+ * Enstrümanın anlık fiyatını getirir
+ */
 export const getInstrumentPrice = async (id) => {
     try {
         const response = await api.get(`/instruments/${id}/price`);
@@ -171,7 +175,9 @@ export const getInstrumentPrice = async (id) => {
     }
 };
 
-// Geçmiş fiyatlar
+/**
+ * Enstrümanın belirli tarih aralığındaki geçmiş fiyat verilerini getirir
+ */
 export const getHistoricalPrices = async (id, startDate, endDate) => {
     try {
         const response = await api.get(`/instruments/${id}/history`, {
