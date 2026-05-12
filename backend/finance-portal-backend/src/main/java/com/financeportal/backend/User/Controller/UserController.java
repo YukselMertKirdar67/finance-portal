@@ -5,9 +5,11 @@ import com.financeportal.backend.User.Entity.User;
 import com.financeportal.backend.User.Service.AuthService;
 import com.financeportal.backend.User.UserMapper;
 import com.financeportal.backend.User.Service.UserService;
+import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -24,6 +26,7 @@ import java.util.Map;
 @RequestMapping("/api/me")
 @RequiredArgsConstructor
 @Log4j2
+@Tag(name = "Kullanıcı", description = "Giriş yapmış kullanıcının profil ve hesap yönetimi endpoint'leri")
 public class UserController {
 
     private final UserService userService;
@@ -33,6 +36,7 @@ public class UserController {
     /**
      * Giriş yapmış kullanıcının temel profil bilgilerini getirir.
      */
+    @Operation(summary = "Temel profil bilgilerini getir")
     @GetMapping
     public MeResponseDTO me(@AuthenticationPrincipal Jwt jwt) {
         User user = userService.getOrCreateUser(jwt);
@@ -44,6 +48,7 @@ public class UserController {
      * Giriş yapmış kullanıcının detaylı profil bilgilerini getirir.
      * Bildirim tercihleri ve tema bilgisi de dahildir.
      */
+    @Operation(summary = "Detaylı profil bilgilerini getir", description = "Bildirim tercihleri ve tema bilgisi dahil profil döner")
     @GetMapping("/profile")
     public UserProfileDTO getCurrentUserProfile(@AuthenticationPrincipal Jwt jwt) {
         log.info("Fetching current user profile");
@@ -79,6 +84,7 @@ public class UserController {
      * Giriş yapmış kullanıcının şifresini değiştirir.
      * OTP aktifse doğrulama kodu da istenir.
      */
+    @Operation(summary = "Şifre değiştir", description = "2FA aktifse OTP kodu da istenir")
     @PostMapping("/change-password")
     public ResponseEntity<ChangePasswordResponseDTO> changePassword(
             @AuthenticationPrincipal Jwt jwt,
@@ -100,6 +106,7 @@ public class UserController {
     /**
      * Giriş yapmış kullanıcının kullanıcı adını günceller.
      */
+    @Operation(summary = "Kullanıcı adı güncelle")
     @PutMapping("/username")
     public ResponseEntity<?> updateUsername(
             @AuthenticationPrincipal Jwt jwt,
@@ -128,6 +135,7 @@ public class UserController {
      * Doğrulama e-postası gönderilir.
      */
     @PutMapping("/email")
+    @Operation(summary = "E-posta adresi güncelle", description = "Güncelleme sonrası doğrulama e-postası gönderilir")
     public ResponseEntity<?> updateEmail(
             @AuthenticationPrincipal Jwt jwt,
             @Valid @RequestBody UpdateEmailRequestDTO request) {
@@ -153,6 +161,7 @@ public class UserController {
     /**
      * Kullanıcının son şifre değişim tarihini getirir.
      */
+    @Operation(summary = "Son şifre değişim tarihini getir")
     @GetMapping("/password-last-changed")
     public ResponseEntity<PasswordLastChangedDTO> getPasswordLastChanged(
             @AuthenticationPrincipal Jwt jwt) {
@@ -168,6 +177,7 @@ public class UserController {
     /**
      * Kullanıcının tema ve bildirim tercihlerini günceller.
      */
+    @Operation(summary = "Tema ve bildirim tercihlerini güncelle")
     @PutMapping("/preferences")
     public ResponseEntity<?> updatePreferences(
             @AuthenticationPrincipal Jwt jwt,
@@ -197,6 +207,7 @@ public class UserController {
     /**
      * Kullanıcının tüm verilerini JSON formatında dışa aktarır.
      */
+    @Operation(summary = "Kullanıcı verilerini dışa aktar", description = "Tüm veriler JSON formatında indirilir")
     @GetMapping("/export")
     public ResponseEntity<byte[]> exportUserData(@AuthenticationPrincipal Jwt jwt) {
         try {
@@ -217,6 +228,7 @@ public class UserController {
      * Kullanıcının hesabını kalıcı olarak siler.
      * Tüm portföy, işlem ve watchlist verileri de silinir.
      */
+    @Operation(summary = "Hesabı sil", description = "Tüm portföy, işlem ve watchlist verileri de kalıcı olarak silinir")
     @DeleteMapping("/account")
     public ResponseEntity<?> deleteAccount(@AuthenticationPrincipal Jwt jwt) {
         try {
@@ -238,6 +250,7 @@ public class UserController {
     /**
      * Kullanıcı kimlik doğrulamasını test eder.
      */
+    @Operation(summary = "Kullanıcı kimlik doğrulama testi")
     @GetMapping("/ping")
     public String ping() {
         return "User authenticated";
@@ -247,6 +260,7 @@ public class UserController {
     /**
      * Admin yetkisini test eder.
      */
+    @Operation(summary = "Admin yetki testi")
     @GetMapping("/admin-check")
     @PreAuthorize("hasRole('ADMIN')")
     public String adminCheck() {

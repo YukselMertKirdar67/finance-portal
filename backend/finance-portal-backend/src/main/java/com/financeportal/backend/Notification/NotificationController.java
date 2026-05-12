@@ -1,5 +1,7 @@
 package com.financeportal.backend.Notification;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.data.domain.Page;
@@ -13,6 +15,7 @@ import java.util.Map;
 @RequestMapping("/api/notifications")
 @RequiredArgsConstructor
 @Log4j2
+@Tag(name = "Bildirimler", description = "Kullanıcı bildirim yönetimi endpoint'leri")
 public class NotificationController {
 
     private final NotificationService notificationService;
@@ -20,6 +23,7 @@ public class NotificationController {
     /**
      * Kullanıcının bildirimlerini sayfalı olarak getirir.
      */
+    @Operation(summary = "Bildirimleri getir", description = "Kullanıcının bildirimlerini sayfalı olarak listeler")
     @GetMapping
     public ResponseEntity<Page<NotificationDTO>> getNotifications(
             @RequestParam(defaultValue = "0") int page,
@@ -31,6 +35,7 @@ public class NotificationController {
     /**
      * Kullanıcının okunmamış bildirimlerini getirir.
      */
+    @Operation(summary = "Okunmamış bildirimleri getir")
     @GetMapping("/unread")
     public ResponseEntity<List<NotificationDTO>> getUnreadNotifications() {
         log.info("Fetching unread notifications");
@@ -40,6 +45,7 @@ public class NotificationController {
     /**
      * Kullanıcının okunmamış bildirim sayısını getirir.
      */
+    @Operation(summary = "Okunmamış bildirim sayısını getir")
     @GetMapping("/unread-count")
     public ResponseEntity<Map<String, Long>> getUnreadCount() {
         log.info("Fetching unread notification count");
@@ -49,6 +55,7 @@ public class NotificationController {
     /**
      * Tüm bildirimleri okundu olarak işaretler.
      */
+    @Operation(summary = "Tüm bildirimleri okundu işaretle")
     @PutMapping("/mark-all-read")
     public ResponseEntity<?> markAllAsRead() {
         log.info("Marking all notifications as read");
@@ -59,6 +66,7 @@ public class NotificationController {
     /**
      * Belirtilen bildirimi okundu olarak işaretler.
      */
+    @Operation(summary = "Bildirimi okundu işaretle")
     @PutMapping("/{id}/read")
     public ResponseEntity<?> markAsRead(@PathVariable Long id) {
         log.info("Marking notification {} as read", id);

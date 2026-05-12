@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/news")
 @Log4j2
-@Tag(name = "News API", description = "Finans haberleri")
+@Tag(name = "Haber işlemleri", description = "Kullanıcının yapabileceği işlemler")
 public class NewsController {
 
     private final NewsService newsService;

@@ -1,5 +1,7 @@
 package com.financeportal.backend.Totp;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.http.ResponseEntity;
@@ -13,6 +15,8 @@ import java.util.Map;
 @RequestMapping("/api/totp")
 @RequiredArgsConstructor
 @Log4j2
+@Tag(name = "2FA (TOTP)", description = "İki faktörlü doğrulama yönetimi endpoint'leri")
+
 public class TotpController {
 
     private final TotpService totpService;
@@ -20,6 +24,7 @@ public class TotpController {
     /**
      * TOTP kurulumu başlatır, QR kod ve secret döner.
      */
+    @Operation(summary = "TOTP kurulumu başlat", description = "QR kod ve secret key döner")
     @PostMapping("/setup")
     public ResponseEntity<?> setupTotp(@AuthenticationPrincipal Jwt jwt) {
         String keycloakId = jwt.getSubject();
@@ -32,6 +37,7 @@ public class TotpController {
     /**
      * TOTP kurulumunu doğrular ve aktif eder.
      */
+    @Operation(summary = "TOTP kurulumunu doğrula", description = "Kodu doğrular ve 2FA'yı aktif eder")
     @PostMapping("/verify-setup")
     public ResponseEntity<?> verifySetup(
             @AuthenticationPrincipal Jwt jwt,
@@ -50,6 +56,7 @@ public class TotpController {
     /**
      * Login sırasında TOTP kodunu doğrular.
      */
+    @Operation(summary = "Giriş sırasında TOTP kodunu doğrula")
     @PostMapping("/verify-login")
     public ResponseEntity<?> verifyLogin(@RequestBody Map<String, String> body) {
         String keycloakId = body.get("keycloakId");
@@ -66,6 +73,7 @@ public class TotpController {
     /**
      * Kullanıcının 2FA durumunu kontrol eder.
      */
+    @Operation(summary = "2FA durumunu kontrol et", description = "Kullanıcının 2FA aktif olup olmadığını döner")
     @GetMapping("/status")
     public ResponseEntity<?> getTotpStatus(@AuthenticationPrincipal Jwt jwt) {
         String keycloakId = jwt.getSubject();
@@ -76,6 +84,7 @@ public class TotpController {
     /**
      * 2FA'yı devre dışı bırakır.
      */
+    @Operation(summary = "2FA'yı devre dışı bırak")
     @DeleteMapping("/disable")
     public ResponseEntity<?> disableTotp(@AuthenticationPrincipal Jwt jwt) {
         String keycloakId = jwt.getSubject();

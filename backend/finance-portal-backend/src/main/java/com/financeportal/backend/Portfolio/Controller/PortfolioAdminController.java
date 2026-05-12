@@ -18,7 +18,7 @@ import java.util.Map;
 @RequestMapping("/api/admin/portfolios")
 @RequiredArgsConstructor
 @Log4j2
-@Tag(name = "Portfolio Admin", description = "Portfolio admin operations (ADMIN only)")
+@Tag(name = "Portfolio Admin", description = "Portfolio admin operasyonları (Sadece Admin)")
 @SecurityRequirement(name = "bearer-auth")
 public class PortfolioAdminController {
 
@@ -30,7 +30,7 @@ public class PortfolioAdminController {
      */
     @GetMapping
     @PreAuthorize("hasRole('ADMIN')")
-    @Operation(summary = "Get all portfolios (admin)", description = "Get all portfolios across all users")
+    @Operation(summary = "Tüm portföyleri getir (admin)", description = "Tüm kullanıcılardan portföyleri getir")
     public ResponseEntity<Map<String, Object>> getAllPortfolios(
             @Parameter(description = "User ID filter (optional)")
             @RequestParam(required = false) String userId) {
@@ -48,7 +48,7 @@ public class PortfolioAdminController {
      */
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    @Operation(summary = "Force delete portfolio", description = "Permanently delete any portfolio (admin only)")
+    @Operation(summary = "Portföyü siler", description = "Herhangi bir portföyü kalıcı olarak siler (admin)")
     public ResponseEntity<Void> forceDeletePortfolio(
             @Parameter(description = "Portfolio ID")
             @PathVariable Long id) {
@@ -64,7 +64,7 @@ public class PortfolioAdminController {
      */
     @GetMapping("/statistics")
     @PreAuthorize("hasRole('ADMIN')")
-    @Operation(summary = "Get portfolio statistics (admin)", description = "Get system-wide portfolio statistics")
+    @Operation(summary = "Portföy istatisliklerini getirir (admin)", description = "Sistemdeki portföylerin istatislikleri")
     public ResponseEntity<Map<String, Object>> getSystemStatistics() {
         log.info("API (Admin): Fetching system-wide portfolio statistics");
 

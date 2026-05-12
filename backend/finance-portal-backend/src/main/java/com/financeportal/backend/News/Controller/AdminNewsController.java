@@ -3,6 +3,8 @@ package com.financeportal.backend.News.Controller;
 import com.financeportal.backend.News.Entity.News;
 import com.financeportal.backend.News.Repository.NewsRepository;
 import com.financeportal.backend.News.Service.ExternalNewsService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
@@ -18,6 +20,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/admin/news")
 @Log4j2
+@Tag(name = "Admin - Haber Yönetimi", description = "Admin haber yönetimi endpoint'leri")
 public class AdminNewsController {
 
     private final ExternalNewsService externalNewsService;
@@ -38,6 +41,7 @@ public class AdminNewsController {
      * NewsAPI'dan tüm kategorilerde haber çeker ve veritabanına kaydeder.
      * İşlem sonunda kategori bazlı istatistik döner.
      */
+    @Operation(summary = "Haberleri API'den çek", description = "NewsAPI'dan tüm kategorilerde haber çeker ve veritabanına kaydeder")
     @PostMapping("/fetch")
     public ResponseEntity<?> fetchNewsFromApi() {
         try {
@@ -88,6 +92,7 @@ public class AdminNewsController {
     /**
      * Veritabanındaki tüm haberleri siler ve cache'i temizler.
      */
+    @Operation(summary = "Tüm haberleri sil", description = "Veritabanındaki tüm haberleri siler ve cache'i temizler")
     @DeleteMapping("/all")
     public ResponseEntity<?> deleteAllNews() {
         try {
@@ -124,6 +129,7 @@ public class AdminNewsController {
     /**
      * Tüm haberleri silip NewsAPI'dan yeniden çeker.
      */
+    @Operation(summary = "Haberleri yenile", description = "Tüm haberleri silip NewsAPI'dan yeniden çeker")
     @PostMapping("/refresh")
     public ResponseEntity<?> refreshAllNews() {
         try {
@@ -182,6 +188,7 @@ public class AdminNewsController {
     /**
      * Belirtilen kategorideki tüm haberleri siler.
      */
+    @Operation(summary = "Kategoriye göre haberleri sil")
     @DeleteMapping("/category/{category}")
     public ResponseEntity<?> deleteNewsByCategory(@PathVariable String category) {
         try {
@@ -226,6 +233,7 @@ public class AdminNewsController {
     /**
      * Tüm haberleri yayın tarihine göre sıralı getirir.
      */
+    @Operation(summary = "Tüm haberleri getir", description = "Tüm haberleri yayın tarihine göre sıralı listeler")
     @GetMapping("/all")
     public ResponseEntity<?> getAllNewsSorted() {
         try {
@@ -253,6 +261,7 @@ public class AdminNewsController {
     /**
      * Belirtilen kategorideki haberleri yayın tarihine göre sıralı getirir.
      */
+    @Operation(summary = "Kategoriye göre haberleri getir", description = "Belirtilen kategorideki haberleri yayın tarihine göre sıralı listeler")
     @GetMapping("/category/{category}")
     public ResponseEntity<?> getNewsByCategorySorted(@PathVariable String category) {
         try {
@@ -281,6 +290,7 @@ public class AdminNewsController {
     /**
      * Mevcut kategorileri ve her kategorideki haber sayısını getirir.
      */
+    @Operation(summary = "Kategorileri getir", description = "Mevcut kategorileri ve her kategorideki haber sayısını listeler")
     @GetMapping("/categories")
     public ResponseEntity<?> getAvailableCategories() {
         try {
@@ -316,6 +326,7 @@ public class AdminNewsController {
     /**
      * Toplam haber sayısı, kategori dağılımı ve son güncelleme tarihini getirir.
      */
+    @Operation(summary = "Haber istatistiklerini getir", description = "Toplam haber sayısı, kategori dağılımı ve son güncelleme tarihini döner")
     @GetMapping("/stats")
     public ResponseEntity<?> getNewsStats() {
         try {

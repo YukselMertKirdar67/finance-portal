@@ -27,7 +27,7 @@ import java.util.List;
 @RequestMapping("/api/portfolios/{portfolioId}/transactions")
 @RequiredArgsConstructor
 @Log4j2
-@Tag(name = "Portfolio Transactions", description = "Portfolio transaction management APIs")
+@Tag(name = "Portföy İşlemleri", description = "Portföy işlem yönetimi API'ları")
 public class PortfolioTransactionController {
 
     private final PortfolioTransactionService transactionService;
@@ -36,7 +36,7 @@ public class PortfolioTransactionController {
      * Portföye alış veya satış işlemi ekler.
      */
     @PostMapping
-    @Operation(summary = "Create transaction", description = "Create a new BUY or SELL transaction")
+    @Operation(summary = "İşlem oluştur", description = "Yeni bir ALIM veya SATIM işlemi oluşturur")
     public ResponseEntity<TransactionDTO> createTransaction(
             @Parameter(description = "Portfolio ID")
             @PathVariable Long portfolioId,
@@ -52,7 +52,7 @@ public class PortfolioTransactionController {
      * Portföyün tüm işlem geçmişini sayfalı olarak getirir.
      */
     @GetMapping
-    @Operation(summary = "Get transaction history", description = "Get all transactions for a portfolio (paginated)")
+    @Operation(summary = "İşlem geçmişini getir", description = "Bir portföye ait tüm işlemleri listeler (sayfalı)")
     public ResponseEntity<Page<TransactionDTO>> getTransactionHistory(
             @Parameter(description = "Portfolio ID")
             @PathVariable Long portfolioId,
@@ -74,7 +74,7 @@ public class PortfolioTransactionController {
      * ID'ye göre işlem getirir.
      */
     @GetMapping("/{transactionId}")
-    @Operation(summary = "Get transaction by ID", description = "Get details of a specific transaction")
+    @Operation(summary = "ID ile işlem getir", description = "Belirli bir işlemin detaylarını getirir")
     public ResponseEntity<TransactionDTO> getTransactionById(
             @Parameter(description = "Portfolio ID")
             @PathVariable Long portfolioId,
@@ -91,7 +91,7 @@ public class PortfolioTransactionController {
      * İşlemleri türe göre filtreler (BUY/SELL).
      */
     @GetMapping("/type/{type}")
-    @Operation(summary = "Get transactions by type", description = "Get BUY or SELL transactions")
+    @Operation(summary = "Türe göre işlemleri getir", description = "ALIM veya SATIM türündeki işlemleri filtreleyerek getirir")
     public ResponseEntity<List<TransactionDTO>> getTransactionsByType(
             @Parameter(description = "Portfolio ID")
             @PathVariable Long portfolioId,
@@ -108,7 +108,7 @@ public class PortfolioTransactionController {
      * Belirli bir enstrümana ait işlemleri getirir.
      */
     @GetMapping("/instrument/{instrumentId}")
-    @Operation(summary = "Get transactions by instrument", description = "Get all transactions for a specific instrument")
+    @Operation(summary = "Enstrümana göre işlemleri getir", description = "Belirli bir yatırım aracına (hisse, fon vb.) ait tüm işlemleri getirir")
     public ResponseEntity<List<TransactionDTO>> getTransactionsByInstrument(
             @Parameter(description = "Portfolio ID")
             @PathVariable Long portfolioId,
@@ -125,7 +125,7 @@ public class PortfolioTransactionController {
      * Belirtilen tarih aralığındaki işlemleri getirir.
      */
     @GetMapping("/date-range")
-    @Operation(summary = "Get transactions by date range", description = "Get transactions within a date range")
+    @Operation(summary = "Tarih aralığına göre getir", description = "Belirli bir tarih aralığındaki işlemleri getirir")
     public ResponseEntity<List<TransactionDTO>> getTransactionsByDateRange(
             @Parameter(description = "Portfolio ID")
             @PathVariable Long portfolioId,
@@ -147,7 +147,7 @@ public class PortfolioTransactionController {
      * Son N gün içindeki işlemleri getirir.
      */
     @GetMapping("/recent")
-    @Operation(summary = "Get recent transactions", description = "Get transactions from the last N days")
+    @Operation(summary = "Son işlemleri getir", description = "Son N güne ait işlemleri listeler")
     public ResponseEntity<List<TransactionDTO>> getRecentTransactions(
             @Parameter(description = "Portfolio ID")
             @PathVariable Long portfolioId,
@@ -165,7 +165,7 @@ public class PortfolioTransactionController {
      * Toplam alış/satış tutarı, komisyon, vergi ve kâr/zarar içerir.
      */
     @GetMapping("/summary")
-    @Operation(summary = "Get transaction summary", description = "Get summary statistics for all transactions")
+    @Operation(summary = "İşlem özetini getir", description = "Tüm işlemler için özet istatistikleri getirir")
     public ResponseEntity<TransactionSummaryDTO> getTransactionSummary(
             @Parameter(description = "Portfolio ID")
             @PathVariable Long portfolioId) {
@@ -181,7 +181,7 @@ public class PortfolioTransactionController {
      * Holding değişiklikleri geri alınmaz.
      */
     @DeleteMapping("/{transactionId}")
-    @Operation(summary = "Delete transaction", description = "Delete a transaction (WARNING: Does not reverse holding changes)")
+    @Operation(summary = "İşlemi sil", description = "Bir işlemi siler (UYARI: Bu işlem varlık bakiyelerini otomatik olarak geri almaz)")
     public ResponseEntity<Void> deleteTransaction(
             @Parameter(description = "Portfolio ID")
             @PathVariable Long portfolioId,

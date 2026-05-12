@@ -19,7 +19,7 @@ import java.util.List;
 @RequestMapping("/api/portfolios/{portfolioId}/holdings")
 @RequiredArgsConstructor
 @Log4j2
-@Tag(name = "Portfolio Holdings", description = "Portfolio holdings management APIs")
+@Tag(name = "Portföy Varlıkları", description = "Portföy varlık yönetimi endpoint'leri")
 public class PortfolioHoldingController {
 
     private final PortfolioHoldingService holdingService;
@@ -29,7 +29,7 @@ public class PortfolioHoldingController {
      * Portföydeki tüm holdingleri güncel fiyatlarla getirir.
      */
     @GetMapping
-    @Operation(summary = "Get portfolio holdings", description = "Get all holdings for a portfolio with current prices")
+    @Operation(summary = "Tüm varlıkları getir", description = "Portföydeki tüm varlıkları güncel fiyatlarla listeler")
     public ResponseEntity<List<HoldingDTO>> getHoldings(
             @Parameter(description = "Portfolio ID")
             @PathVariable Long portfolioId) {
@@ -44,7 +44,7 @@ public class PortfolioHoldingController {
      * Portföydeki aktif holdingleri getirir (miktar > 0).
      */
     @GetMapping("/active")
-    @Operation(summary = "Get active holdings", description = "Get only holdings with quantity > 0")
+    @Operation(summary = "Aktif varlıkları getir", description = "Sadece miktarı sıfırdan büyük varlıkları listeler")
     public ResponseEntity<List<HoldingDTO>> getActiveHoldings(
             @Parameter(description = "Portfolio ID")
             @PathVariable Long portfolioId) {
@@ -59,7 +59,7 @@ public class PortfolioHoldingController {
      * Portföydeki en yüksek değerli N holdingi getirir.
      */
     @GetMapping("/top")
-    @Operation(summary = "Get top holdings", description = "Get top N holdings by current value")
+    @Operation(summary = "En yüksek değerli varlıkları getir", description = "Portföydeki en yüksek değerli N varlığı listeler")
     public ResponseEntity<List<HoldingDTO>> getTopHoldings(
             @Parameter(description = "Portfolio ID")
             @PathVariable Long portfolioId,
@@ -76,7 +76,7 @@ public class PortfolioHoldingController {
      * ID'ye göre holding getirir.
      */
     @GetMapping("/{holdingId}")
-    @Operation(summary = "Get holding by ID", description = "Get details of a specific holding")
+    @Operation(summary = "ID'ye göre varlık getir", description = "Belirtilen varlığın detaylarını döner")
     public ResponseEntity<HoldingDTO> getHoldingById(
             @Parameter(description = "Portfolio ID")
             @PathVariable Long portfolioId,
@@ -93,7 +93,7 @@ public class PortfolioHoldingController {
      * Portföydeki varlık dağılımını portföy currency'sine göre hesaplar.
      */
     @GetMapping("/asset-allocation")
-    @Operation(summary = "Get asset allocation")
+    @Operation(summary = "Varlık dağılımını getir", description = "Portföy currency'sine göre varlık dağılımını hesaplar")
     public ResponseEntity<List<AssetAllocationDTO>> getAssetAllocation(
             @PathVariable Long portfolioId) {
         log.info("API: Fetching asset allocation for portfolio: {}", portfolioId);
@@ -111,7 +111,7 @@ public class PortfolioHoldingController {
      * Portföydeki toplam yatırım tutarını hesaplar.
      */
     @GetMapping("/total-investment")
-    @Operation(summary = "Calculate total investment", description = "Calculate total invested amount")
+    @Operation(summary = "Toplam yatırımı hesapla", description = "Portföydeki toplam yatırım tutarını döner")
     public ResponseEntity<BigDecimal> getTotalInvestment(
             @Parameter(description = "Portfolio ID")
             @PathVariable Long portfolioId) {
@@ -126,7 +126,7 @@ public class PortfolioHoldingController {
      * Portföydeki toplam güncel değeri hesaplar.
      */
     @GetMapping("/current-value")
-    @Operation(summary = "Calculate current value", description = "Calculate total current value")
+    @Operation(summary = "Güncel değeri hesapla", description = "Portföydeki toplam güncel değeri döner")
     public ResponseEntity<BigDecimal> getCurrentValue(
             @Parameter(description = "Portfolio ID")
             @PathVariable Long portfolioId) {
@@ -141,7 +141,7 @@ public class PortfolioHoldingController {
      * Portföydeki toplam gerçekleşmemiş kâr/zararı hesaplar.
      */
     @GetMapping("/unrealized-pnl")
-    @Operation(summary = "Calculate unrealized P&L", description = "Calculate total unrealized profit/loss")
+    @Operation(summary = "Gerçekleşmemiş kar/zarar hesapla", description = "Portföydeki toplam gerçekleşmemiş kar/zararı döner")
     public ResponseEntity<BigDecimal> getUnrealizedPnL(
             @Parameter(description = "Portfolio ID")
             @PathVariable Long portfolioId) {
@@ -156,7 +156,7 @@ public class PortfolioHoldingController {
      * Belirtilen holdingi portföyden siler.
      */
     @DeleteMapping("/{holdingId}")
-    @Operation(summary = "Delete holding", description = "Delete a holding from portfolio")
+    @Operation(summary = "Varlığı sil", description = "Portföyden belirtilen varlığı siler")
     public ResponseEntity<Void> deleteHolding(
             @Parameter(description = "Portfolio ID")
             @PathVariable Long portfolioId,
@@ -173,7 +173,7 @@ public class PortfolioHoldingController {
      * Portföydeki sıfır miktarlı holdingleri temizler.
      */
     @DeleteMapping("/cleanup")
-    @Operation(summary = "Cleanup zero holdings", description = "Delete all holdings with zero quantity")
+    @Operation(summary = "Sıfır miktarlı varlıkları temizle", description = "Portföydeki sıfır miktarlı tüm varlıkları siler")
     public ResponseEntity<Integer> deleteZeroQuantityHoldings(
             @Parameter(description = "Portfolio ID")
             @PathVariable Long portfolioId) {

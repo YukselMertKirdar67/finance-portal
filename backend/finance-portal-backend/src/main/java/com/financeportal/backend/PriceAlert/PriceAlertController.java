@@ -1,6 +1,8 @@
 package com.financeportal.backend.PriceAlert;
 
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
@@ -14,6 +16,8 @@ import java.util.Map;
 @RequestMapping("/api/price-alerts")
 @RequiredArgsConstructor
 @Log4j2
+@Tag(name = "Fiyat Alarmları", description = "Fiyat alarm yönetimi endpoint'leri")
+
 public class PriceAlertController {
 
     private final PriceAlertService priceAlertService;
@@ -21,6 +25,7 @@ public class PriceAlertController {
     /**
      * Yeni fiyat alarmı oluşturur.
      */
+    @Operation(summary = "Fiyat alarmı oluştur")
     @PostMapping
     public ResponseEntity<PriceAlertDTO> createAlert(
             @Valid @RequestBody CreatePriceAlertRequestDTO request) {
@@ -31,6 +36,7 @@ public class PriceAlertController {
     /**
      * Giriş yapmış kullanıcının tüm alarmlarını getirir.
      */
+    @Operation(summary = "Tüm alarmları getir", description = "Giriş yapmış kullanıcının tüm alarmlarını listeler")
     @GetMapping
     public ResponseEntity<List<PriceAlertDTO>> getUserAlerts() {
         log.info("Fetching all user alerts");
@@ -40,6 +46,7 @@ public class PriceAlertController {
     /**
      * Giriş yapmış kullanıcının aktif alarmlarını getirir.
      */
+    @Operation(summary = "Aktif alarmları getir", description = "Giriş yapmış kullanıcının sadece aktif alarmlarını listeler")
     @GetMapping("/active")
     public ResponseEntity<List<PriceAlertDTO>> getActiveUserAlerts() {
         log.info("Fetching active user alerts");
@@ -49,6 +56,7 @@ public class PriceAlertController {
     /**
      * Belirtilen alarmı siler.
      */
+    @Operation(summary = "Alarmı sil")
     @DeleteMapping("/{id}")
     public ResponseEntity<?> deleteAlert(@PathVariable Long id) {
         log.info("Deleting price alert: {}", id);

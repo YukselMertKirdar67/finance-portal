@@ -24,7 +24,7 @@ import java.util.List;
 @RequestMapping("/api/portfolios")
 @RequiredArgsConstructor
 @Log4j2
-@Tag(name = "Portfolio", description = "Portfolio management APIs")
+@Tag(name = "Portfolio", description = "Portföy yönetimi")
 public class PortfolioController {
 
     private final PortfolioService portfolioService;
@@ -33,7 +33,7 @@ public class PortfolioController {
      * Yeni portföy oluşturur
      */
     @PostMapping
-    @Operation(summary = "Create new portfolio", description = "Create a new portfolio for the current user")
+    @Operation(summary = "Yeni portföy oluştur", description = "Kullanıcı için yeni portföy oluşturur")
     public ResponseEntity<PortfolioDTO> createPortfolio(
             @Valid @RequestBody CreatePortfolioRequestDTO request) {
         log.info("API: Creating new portfolio: {}", request.getName());
@@ -47,7 +47,7 @@ public class PortfolioController {
      * Giriş yapmış kullanıcının tüm portföylerini getirir
      */
     @GetMapping
-    @Operation(summary = "Get user portfolios", description = "Get all portfolios for the current user")
+    @Operation(summary = "Kullanıcı portföylerini getir", description = "Kullanıcının bütün portföylerini getirir")
     public ResponseEntity<List<PortfolioDTO>> getUserPortfolios() {
         log.info("API: Fetching user portfolios");
 
@@ -60,7 +60,7 @@ public class PortfolioController {
      * Giriş yapmış kullanıcının portföylerini sayfalı olarak getirir.
      */
     @GetMapping("/paginated")
-    @Operation(summary = "Get user portfolios (paginated)", description = "Get portfolios with pagination")
+    @Operation(summary = "Kullanıcının portföylerini sayfalı şekilde getirir", description = "Tüm portföyleri sayfalı getirir")
     public ResponseEntity<Page<PortfolioDTO>> getUserPortfoliosPaginated(
             @Parameter(description = "Page number (0-indexed)")
             @RequestParam(defaultValue = "0") int page,
@@ -86,7 +86,7 @@ public class PortfolioController {
      * Sadece aktif portföyleri getirir.
      */
     @GetMapping("/active")
-    @Operation(summary = "Get active portfolios", description = "Get only active portfolios")
+    @Operation(summary = "Aktif portföyleri getir")
     public ResponseEntity<List<PortfolioDTO>> getActivePortfolios() {
         log.info("API: Fetching active portfolios");
 
@@ -99,7 +99,7 @@ public class PortfolioController {
      * ID'ye göre portföy getirir.
      */
     @GetMapping("/{id}")
-    @Operation(summary = "Get portfolio by ID", description = "Get basic portfolio information")
+    @Operation(summary = "ID ile portföyleri getir")
     public ResponseEntity<PortfolioDTO> getPortfolioById(
             @Parameter(description = "Portfolio ID")
             @PathVariable Long id) {
@@ -114,7 +114,7 @@ public class PortfolioController {
      * Portföyün holding listesi dahil detay bilgilerini getirir.
      */
     @GetMapping("/{id}/detail")
-    @Operation(summary = "Get portfolio detail", description = "Get detailed portfolio information with holdings")
+    @Operation(summary = "Portföy detayını getir", description = "Varlıklarla birlikte portföy detayını getirir")
     public ResponseEntity<PortfolioDetailDTO> getPortfolioDetail(
             @Parameter(description = "Portfolio ID")
             @PathVariable Long id) {
@@ -129,7 +129,7 @@ public class PortfolioController {
      * Portföy adını, açıklamasını veya aktiflik durumunu günceller.
      */
     @PutMapping("/{id}")
-    @Operation(summary = "Update portfolio", description = "Update portfolio information")
+    @Operation(summary = "Portföyü güncelle")
     public ResponseEntity<PortfolioDTO> updatePortfolio(
             @Parameter(description = "Portfolio ID")
             @PathVariable Long id,
@@ -145,7 +145,7 @@ public class PortfolioController {
      * Portföyü soft delete ile pasif hale getirir.
      */
     @DeleteMapping("/{id}")
-    @Operation(summary = "Delete portfolio", description = "Soft delete portfolio (set active to false)")
+    @Operation(summary = "Portföyü pasif hale getir")
     public ResponseEntity<Void> deletePortfolio(
             @Parameter(description = "Portfolio ID")
             @PathVariable Long id) {
@@ -160,7 +160,7 @@ public class PortfolioController {
      * Portföyü kalıcı olarak siler.
      */
     @DeleteMapping("/{id}/hard")
-    @Operation(summary = "Hard delete portfolio", description = "Permanently delete portfolio")
+    @Operation(summary = "Portföyü kalıcı olarak sil")
     public ResponseEntity<Void> hardDeletePortfolio(
             @Parameter(description = "Portfolio ID")
             @PathVariable Long id) {
@@ -175,7 +175,7 @@ public class PortfolioController {
      * Portföyü aktif hale getirir.
      */
     @PatchMapping("/{id}/activate")
-    @Operation(summary = "Activate portfolio", description = "Set portfolio as active")
+    @Operation(summary = "Portföyü aktif et")
     public ResponseEntity<Void> activatePortfolio(
             @Parameter(description = "Portfolio ID")
             @PathVariable Long id) {
@@ -190,7 +190,7 @@ public class PortfolioController {
      * Portföyü pasif hale getirir.
      */
     @PatchMapping("/{id}/deactivate")
-    @Operation(summary = "Deactivate portfolio", description = "Set portfolio as inactive")
+    @Operation(summary = "Portföyü pasif hale getir")
     public ResponseEntity<Void> deactivatePortfolio(
             @Parameter(description = "Portfolio ID")
             @PathVariable Long id) {
@@ -206,7 +206,7 @@ public class PortfolioController {
      * Toplam değer, kâr/zarar ve varlık dağılımı içerir.
      */
     @GetMapping("/summary")
-    @Operation(summary = "Get portfolio summary", description = "Get summary of all portfolios for dashboard")
+    @Operation(summary = "Portföy özetini getir")
     public ResponseEntity<PortfolioSummaryDTO> getPortfolioSummary() {
         log.info("API: Fetching portfolio summary");
 
@@ -220,7 +220,7 @@ public class PortfolioController {
      * Grafik için kullanılır.
      */
     @GetMapping("/{id}/performance")
-    @Operation(summary = "Get portfolio performance history", description = "Get historical performance data for chart")
+    @Operation(summary = "Portföy istatisliklerini getir")
     public ResponseEntity<List<PerformanceDataPointDTO>> getPortfolioPerformanceHistory(
             @Parameter(description = "Portfolio ID")
             @PathVariable Long id,
@@ -241,7 +241,7 @@ public class PortfolioController {
      * Portföyleri isme göre arar.
      */
     @GetMapping("/search")
-    @Operation(summary = "Search portfolios", description = "Search portfolios by name")
+    @Operation(summary = "Portföyü ara")
     public ResponseEntity<List<PortfolioDTO>> searchPortfolios(
             @Parameter(description = "Search term")
             @RequestParam String query) {
@@ -256,7 +256,7 @@ public class PortfolioController {
      * Portföyleri türe göre filtreler.
      */
     @GetMapping("/type/{type}")
-    @Operation(summary = "Get portfolios by type", description = "Get portfolios filtered by type")
+    @Operation(summary = "Portföyü türe göre getir")
     public ResponseEntity<List<PortfolioDTO>> getPortfoliosByType(
             @Parameter(description = "Portfolio type (PERSONAL, BUSINESS, RETIREMENT, SAVINGS)")
             @PathVariable String type) {
@@ -271,7 +271,7 @@ public class PortfolioController {
      * Tüm portföylerin toplam güncel değerini TRY cinsinden hesaplar.
      */
     @GetMapping("/total-value")
-    @Operation(summary = "Get total portfolio value", description = "Calculate total value across all portfolios")
+    @Operation(summary = "Tüm portföyleri değerini hesapla")
     public ResponseEntity<BigDecimal> getTotalPortfolioValue() {
         log.info("API: Calculating total portfolio value");
 
@@ -284,7 +284,7 @@ public class PortfolioController {
      * Tüm portföylerin toplam gerçekleşmemiş kâr/zararını hesaplar.
      */
     @GetMapping("/total-pnl")
-    @Operation(summary = "Get total unrealized P&L", description = "Calculate total unrealized P&L across all portfolios")
+    @Operation(summary = "Tüm kar/zararını hesapla")
     public ResponseEntity<BigDecimal> getTotalUnrealizedPnL() {
         log.info("API: Calculating total unrealized P&L");
 

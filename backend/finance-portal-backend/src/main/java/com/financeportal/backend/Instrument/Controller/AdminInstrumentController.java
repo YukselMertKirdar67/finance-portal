@@ -4,6 +4,8 @@ import com.financeportal.backend.Instrument.DTO.InstrumentUpdateStatusDTO;
 import com.financeportal.backend.Instrument.Entity.InstrumentPrice;
 import com.financeportal.backend.Instrument.Repository.PriceHistoryRepository;
 import com.financeportal.backend.Instrument.Service.*;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.http.ResponseEntity;
@@ -18,6 +20,8 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/admin/instruments")
 @RequiredArgsConstructor
+@Tag(name = "Admin - Enstrüman Yönetimi", description = "Admin fiyat güncelleme ve enstrüman yönetimi endpoint'leri")
+
 public class AdminInstrumentController {
 
     private final TcmbService tcmbService;
@@ -33,6 +37,7 @@ public class AdminInstrumentController {
     /**
      * Güncelleme durumunu döner.
      */
+    @Operation(summary = "Güncelleme durumunu getir")
     @GetMapping("/update-status")
     public ResponseEntity<InstrumentUpdateStatusDTO> getUpdateStatus() {
         return ResponseEntity.ok(lastUpdateStatus);
@@ -43,6 +48,7 @@ public class AdminInstrumentController {
     /**
      * TCMB'den günlük döviz kurlarını günceller.
      */
+    @Operation(summary = "TCMB döviz kurlarını güncelle", description = "TCMB'den günlük döviz kurlarını çeker ve kaydeder")
     @PostMapping("/update-tcmb")
     public ResponseEntity<?> updateTcmbRates() {
         lastUpdateStatus = InstrumentUpdateStatusDTO.builder()
@@ -69,6 +75,7 @@ public class AdminInstrumentController {
      * TCMB arşivinden belirtilen gün sayısı kadar döviz geçmiş verisi çeker.
      * Varsayılan olarak son 365 günü çeker.
      */
+    @Operation(summary = "Döviz geçmiş verisi çek", description = "TCMB arşivinden belirtilen gün sayısı kadar geçmiş veri çeker")
     @PostMapping("/fetch-forex-historical")
     public ResponseEntity<?> fetchForexHistoricalData(
             @RequestParam(defaultValue = "365") int days) {
@@ -96,6 +103,7 @@ public class AdminInstrumentController {
     /**
      * TCMB EVDS'den Türkiye tahvil ve faiz oranlarını günceller.
      */
+    @Operation(summary = "TR tahvil ve faiz oranlarını güncelle", description = "TCMB EVDS'den Türkiye tahvil ve faiz oranlarını günceller")
     @PostMapping("/update-tr-bonds")
     public ResponseEntity<?> updateTrBondYields() {
         lastUpdateStatus = InstrumentUpdateStatusDTO.builder()
@@ -121,6 +129,7 @@ public class AdminInstrumentController {
     /**
      * EVDS'den TR tahvil geçmiş verilerini çeker.
      */
+    @Operation(summary = "TR tahvil geçmiş verisi çek", description = "EVDS'den TR tahvil geçmiş verilerini çeker")
     @PostMapping("/fetch-tr-bonds-historical")
     public ResponseEntity<?> fetchTrBondsHistorical(
             @RequestParam(defaultValue = "365") int days) {
@@ -143,6 +152,7 @@ public class AdminInstrumentController {
     /**
      * Yahoo Finance'den ABD tahvil ve hazine bonosu faiz oranlarını günceller.
      */
+    @Operation(summary = "ABD tahvil faiz oranlarını güncelle", description = "Yahoo Finance'den ABD tahvil ve hazine bonosu faiz oranlarını günceller")
     @PostMapping("/update-bonds")
     public ResponseEntity<?> updateBondYields() {
         lastUpdateStatus = InstrumentUpdateStatusDTO.builder()
@@ -169,6 +179,7 @@ public class AdminInstrumentController {
     /**
      * Yahoo Finance'den ABD hisse senetlerini günceller.
      */
+    @Operation(summary = "ABD hisse senetlerini güncelle")
     @PostMapping("/update-us-stocks")
     public ResponseEntity<?> updateUsStocks() {
         lastUpdateStatus = InstrumentUpdateStatusDTO.builder()
@@ -193,6 +204,7 @@ public class AdminInstrumentController {
     /**
      * Yahoo Finance'den BIST hisse senetlerini günceller.
      */
+    @Operation(summary = "BIST hisse senetlerini güncelle")
     @PostMapping("/update-bist")
     public ResponseEntity<?> updateBistStocks() {
         lastUpdateStatus = InstrumentUpdateStatusDTO.builder()
@@ -218,6 +230,7 @@ public class AdminInstrumentController {
     /**
      * Yahoo Finance'den kripto para fiyatlarını günceller.
      */
+    @Operation(summary = "Kripto para fiyatlarını güncelle")
     @PostMapping("/update-crypto")
     public ResponseEntity<?> updateCryptos() {
         lastUpdateStatus = InstrumentUpdateStatusDTO.builder()
@@ -242,6 +255,7 @@ public class AdminInstrumentController {
     /**
      * Yahoo Finance'den kıymetli metal fiyatlarını günceller.
      */
+    @Operation(summary = "Kıymetli metal fiyatlarını güncelle")
     @PostMapping("/update-precious")
     public ResponseEntity<?> updatePreciousMetals() {
         lastUpdateStatus = InstrumentUpdateStatusDTO.builder()
@@ -267,6 +281,7 @@ public class AdminInstrumentController {
     /**
      * Yahoo Finance'den ETF fiyatlarını günceller.
      */
+    @Operation(summary = "ETF fiyatlarını güncelle")
     @PostMapping("/update-etfs")
     public ResponseEntity<?> updateEtfs() {
         lastUpdateStatus = InstrumentUpdateStatusDTO.builder()
@@ -292,6 +307,7 @@ public class AdminInstrumentController {
     /**
      * Belirtilen Yahoo Finance sembolü için anlık fiyatı günceller.
      */
+    @Operation(summary = "Belirtilen sembolü güncelle", description = "Yahoo Finance sembolü için anlık fiyatı günceller")
     @PostMapping("/update-symbol/{yahooSymbol}/{dbSymbol}")
     public ResponseEntity<?> updateSymbol(@PathVariable String yahooSymbol,
                                           @PathVariable String dbSymbol) {
@@ -310,6 +326,7 @@ public class AdminInstrumentController {
     /**
      * Belirtilen enstrüman için geçmiş fiyat verisi çeker.
      */
+    @Operation(summary = "Enstrüman geçmiş verisi çek", description = "Belirtilen enstrüman için geçmiş fiyat verisi çeker")
     @PostMapping("/fetch-historical/{yahooSymbol}/{dbSymbol}")
     public ResponseEntity<?> fetchHistoricalData(
             @PathVariable String yahooSymbol,
@@ -333,6 +350,7 @@ public class AdminInstrumentController {
     /**
      * Tüm enstrümanlar için 1 yıllık geçmiş fiyat verisi çeker.
      */
+    @Operation(summary = "Tüm enstrümanların geçmiş verisini çek", description = "Tüm enstrümanlar için 1 yıllık geçmiş fiyat verisi çeker")
     @PostMapping("/fetch-all-historical")
     public ResponseEntity<?> fetchAllHistoricalData() {
         try {
@@ -352,6 +370,7 @@ public class AdminInstrumentController {
      * Tüm enstrümanların fiyatlarını tek seferde günceller.
      * TCMB, Yahoo Finance ve tahvil verilerini kapsar.
      */
+    @Operation(summary = "Tüm fiyatları güncelle", description = "TCMB, Yahoo Finance ve tahvil verilerini tek seferde günceller")
     @PostMapping("/update-all")
     public ResponseEntity<?> updateAllPrices() {
         lastUpdateStatus = InstrumentUpdateStatusDTO.builder()
@@ -394,6 +413,7 @@ public class AdminInstrumentController {
     /**
      * Kullanılan API kaynaklarının istatistiklerini döner.
      */
+    @Operation(summary = "API istatistiklerini getir", description = "Kullanılan API kaynaklarının istatistiklerini döner")
     @GetMapping("/stats")
     public ResponseEntity<?> getApiStats() {
         return ResponseEntity.ok(Map.of(

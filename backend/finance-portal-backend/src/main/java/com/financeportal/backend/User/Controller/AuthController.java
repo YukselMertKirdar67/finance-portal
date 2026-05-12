@@ -5,6 +5,8 @@ import com.financeportal.backend.User.DTO.*;
 import com.financeportal.backend.User.Entity.User;
 import com.financeportal.backend.User.Service.AuthService;
 import com.financeportal.backend.User.Service.UserService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
@@ -20,6 +22,7 @@ import java.util.Map;
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
 @Log4j2
+@Tag(name = "Auth", description = "Kimlik doğrulama ve kullanıcı kayıt endpoint'leri")
 public class AuthController {
 
     private final AuthService authService;
@@ -30,6 +33,7 @@ public class AuthController {
     /**
      * Yeni kullanıcı kaydı oluşturur.
      */
+    @Operation(summary = "Kullanıcı kaydı", description = "Yeni kullanıcı oluşturur ve doğrulama e-postası gönderir")
     @PostMapping("/register")
     public ResponseEntity<RegisterResponseDTO> register(@Valid @RequestBody RegisterRequestDTO request) {
         RegisterResponseDTO response = authService.registerUser(request);
@@ -44,6 +48,7 @@ public class AuthController {
     /**
      * Kullanıcıya e-posta doğrulama maili gönderir.
      */
+    @Operation(summary = "E-posta doğrulama maili gönder")
     @PostMapping("/send-verification-email")
     public ResponseEntity<EmailVerificationResponseDTO> sendVerificationEmail(
             @Valid @RequestBody EmailVerificationRequestDTO request) {
@@ -60,6 +65,7 @@ public class AuthController {
     /**
      * Kullanıcının e-posta doğrulama durumunu kontrol eder.
      */
+    @Operation(summary = "E-posta doğrulama durumunu kontrol et")
     @GetMapping("/check-email-verification")
     public ResponseEntity<EmailVerificationResponseDTO> checkEmailVerification(
             @RequestParam String email) {
@@ -71,6 +77,7 @@ public class AuthController {
     /**
      * Auth servisinin çalışıp çalışmadığını kontrol eder.
      */
+    @Operation(summary = "Auth servis sağlık kontrolü")
     @GetMapping("/health")
     public String health() {
         return "Auth service is running";
@@ -79,6 +86,7 @@ public class AuthController {
     /**
      * Kullanıcıya şifre sıfırlama e-postası gönderir.
      */
+    @Operation(summary = "Şifre sıfırlama maili gönder")
     @PostMapping("/forgot-password")
     public ResponseEntity<PasswordResetResponseDTO> forgotPassword(
             @Valid @RequestBody ForgotPasswordRequestDTO request) {
@@ -90,6 +98,7 @@ public class AuthController {
     /**
      * Token ile şifre sıfırlama işlemini gerçekleştirir.
      */
+    @Operation(summary = "Şifre sıfırla", description = "Token ile şifre sıfırlama işlemini gerçekleştirir")
     @PostMapping("/reset-password")
     public ResponseEntity<PasswordResetResponseDTO> resetPassword(
             @Valid @RequestBody ResetPasswordRequestDTO request) {
@@ -107,6 +116,7 @@ public class AuthController {
      * Kullanıcı girişi yapar. Başarılı girişte kullanıcı DB'ye kaydedilir.
      * OTP gerekliyse OTP_REQUIRED mesajı döner.
      */
+    @Operation(summary = "Kullanıcı girişi", description = "Başarılı girişte access ve refresh token döner. 2FA aktifse OTP_REQUIRED mesajı döner")
     @PostMapping("/login")
     public ResponseEntity<LoginResponseDTO> login(@Valid @RequestBody LoginRequestDTO request) {
         log.info("Login attempt for user: {}", request.getUsername());
@@ -136,6 +146,7 @@ public class AuthController {
     /**
      * Kullanıcının Keycloak oturumunu sonlandırır.
      */
+    @Operation(summary = "Kullanıcı çıkışı", description = "Keycloak oturumunu sonlandırır")
     @PostMapping("/logout")
     public ResponseEntity<LogoutResponseDTO> logout(
             @Valid @RequestBody LogoutRequestDTO request) {
@@ -148,6 +159,7 @@ public class AuthController {
     /**
      * Refresh token kullanarak yeni access token alır.
      */
+    @Operation(summary = "Token yenile", description = "Refresh token kullanarak yeni access token alır")
     @PostMapping("/refresh")
     public ResponseEntity<RefreshTokenResponseDTO> refreshToken(
             @Valid @RequestBody RefreshTokenRequestDTO request) {
@@ -165,6 +177,7 @@ public class AuthController {
      * Authorization code ile access token alır.
      * Başarılı olursa kullanıcı DB'ye kaydedilir.
      */
+    @Operation(summary = "Token değişimi", description = "Authorization code ile access token alır")
     @PostMapping("/token-exchange")
     public ResponseEntity<LoginResponseDTO> tokenExchange(@RequestBody TokenExchangeRequestDTO request) {
         log.info("Token exchange request");
@@ -187,6 +200,7 @@ public class AuthController {
     /**
      * Email doğrulama tokenini doğrular.
      */
+    @Operation(summary = "E-posta doğrula", description = "E-posta doğrulama tokenini doğrular")
     @GetMapping("/verify-email")
     public ResponseEntity<?> verifyEmail(@RequestParam String token) {
         log.info("Verifying email token");
