@@ -429,6 +429,52 @@ public class PortfolioServiceImpl implements PortfolioService {
                 .collect(Collectors.toList());
     }
 
+    /**
+     * Admin — tüm kullanıcıların portföylerini getirir.
+     * userId verilirse o kullanıcıya göre filtreler.
+     */
+    @Override
+    @Transactional(readOnly = true)
+    public List<PortfolioDTO> getAllPortfoliosAdmin(String userId) {
+        log.info("Admin: Fetching all portfolios. Filter userId: {}", userId);
+
+        List<Portfolio> portfolios;
+
+        if (userId != null && !userId.isEmpty()) {
+            portfolios = portfolioRepository.findByUserIdContaining(userId);
+        } else {
+            portfolios = portfolioRepository.findAll();
+        }
+
+        return portfolios.stream()
+                .map(p -> enrichPortfolioDTO(portfolioMapper.toDTO(p), p))
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Admin — sistem geneli portföy istatistiklerini döner.
+     */
+    @Override
+    @Transactional(readOnly = true)
+    public Map<String, Object> getSystemStatistics() {
+        log.info("Admin: Fetching system statistics");
+
+        long totalPortfolios = portfolioRepository.count();
+        long activePortfolios = portfolioRepository.findAll().stream()
+                .filter(Portfolio::isActive).count();
+
+        BigDecimal totalValue = portfolioRepository.findAll().stream()
+                .map(p -> holdingService.calculateCurrentValue(p.getId()))
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        return Map.of(
+                "totalPortfolios", totalPortfolios,
+                "activePortfolios", activePortfolios,
+                "inactivePortfolios", totalPortfolios - activePortfolios,
+                "totalValueTRY", totalValue
+        );
+    }
+
     // ========== PRIVATE HELPER METHODS ==========
 
     /**
