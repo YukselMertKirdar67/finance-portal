@@ -10,6 +10,7 @@ import {
     Send,
 } from 'lucide-react';
 import api from '../../API/instrumentsApi';
+import { getCurrentUser } from '../../API/userApi';
 
 const UserProfilePage = () => {
     const { user } = useAuth();
@@ -28,8 +29,8 @@ const UserProfilePage = () => {
         setLoading(true);
         setError('');
         try {
-            const response = await api.get('/me/profile');
-            setProfileData(response.data);
+            const data = await getCurrentUser();
+            setProfileData(data);
         } catch (err) {
             setError('Profil bilgileri yüklenirken bir hata oluştu');
             console.error('Error fetching profile:', err);
