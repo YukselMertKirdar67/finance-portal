@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { LayoutDashboard, Newspaper, Home, GitCompare, Bell, LogOut, Check, CheckCheck } from 'lucide-react';
+import { BarChart2, Newspaper, GitCompare, Bell, LogOut, Check, CheckCheck } from 'lucide-react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { Button } from '../UI/Button';
 import { getUnreadNotifications, markAllAsRead, markAsRead, getUnreadCount } from '../../API/notificationApi';
@@ -101,16 +101,12 @@ export default function Header({
 
                 {/* TABS */}
                 <div className="flex gap-2">
-                    <NavLink to="/home" className={tabClass}>
-                        <LayoutDashboard className="w-4 h-4" />
-                        <span>Anasayfa</span>
-                    </NavLink>
                     <NavLink to="/news" className={tabClass}>
                         <Newspaper className="w-4 h-4" />
-                        <span>Haber</span>
+                        <span>Haberler</span>
                     </NavLink>
                     <NavLink to="/instruments" className={tabClass}>
-                        <Home className="w-4 h-4" />
+                        <BarChart2 className="w-4 h-4" />
                         <span>Finansal Enstrümanlar</span>
                     </NavLink>
                     <NavLink to="/comparison" className={tabClass}>
