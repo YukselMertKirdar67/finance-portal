@@ -19,6 +19,8 @@ public interface InstrumentRepository extends JpaRepository<BaseInstrument, Long
 
     Page<BaseInstrument> findByActiveTrue(Pageable pageable);
 
+    List<BaseInstrument> findByExchangeAndActiveTrue(String exchange);
+
     @Query("SELECT COUNT(i) FROM BaseInstrument i WHERE TYPE(i) = :type AND i.active = true")
     long countByType(@Param("type") Class<? extends BaseInstrument> type);
 
@@ -47,4 +49,7 @@ public interface InstrumentRepository extends JpaRepository<BaseInstrument, Long
 
     @Query("SELECT i FROM FundInstrument i WHERE i.active = true")
     Page<BaseInstrument> findAllFunds(Pageable pageable);
+
+    @Query("SELECT i FROM ViopInstrument i WHERE i.active = true")
+    Page<BaseInstrument> findAllViop(Pageable pageable);
 }
