@@ -43,6 +43,12 @@ public class InstrumentMapper {
             dto.setMetalType(precious.getMetalType());
             dto.setUnit(precious.getUnit());
         }
+        else if (instrument instanceof ViopInstrument viop) {
+            dto.setUnderlyingAsset(viop.getUnderlyingAsset());
+            dto.setContractType(viop.getContractType());
+            dto.setExpiryDate(viop.getExpiryDate());
+            dto.setInitialMargin(viop.getInitialMargin());
+        }
         else if (instrument instanceof FundInstrument fund) {
             dto.setFundCode(fund.getFundCode());
             dto.setFundType(fund.getFundType());
