@@ -53,6 +53,12 @@ public class InstrumentResponseDTO implements Serializable {
     private BigDecimal totalValue;
     private Integer investorCount;
 
+    // ======= VIOP Alanları ======
+    private String underlyingAsset;
+    private String contractType;
+    private LocalDate expiryDate;
+    private BigDecimal initialMargin;
+
 
     // ====== Fiyat Bilgileri ======
     private PriceDataDTO currentPrice;
