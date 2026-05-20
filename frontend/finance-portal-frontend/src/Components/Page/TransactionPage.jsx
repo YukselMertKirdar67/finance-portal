@@ -21,6 +21,10 @@ export default function TransactionPage() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [deletingTransactionId, setDeletingTransactionId] = useState(null);
+    const [deleting, setDeleting] = useState(false);
+
     // Filters
     const [typeFilter, setTypeFilter] = useState('ALL'); // ALL, BUY, SELL
     const [searchTerm, setSearchTerm] = useState('');
@@ -127,15 +131,16 @@ export default function TransactionPage() {
         });
     };
 
-    const handleDelete = async (transactionId) => {
-        if (!window.confirm('Bu işlemi silmek istediğinize emin misiniz?')) return;
-
+    const handleDelete = async () => {
         try {
-            await deleteTransaction(PORTFOLIO_ID, transactionId);
-            setTransactions(prev => prev.filter(tx => tx.id !== transactionId));
+            setDeleting(true);
+            await deleteTransaction(PORTFOLIO_ID, deletingTransactionId);
+            setTransactions(prev => prev.filter(tx => tx.id !== deletingTransactionId));
+            setShowDeleteModal(false);
+            setDeletingTransactionId(null);
         } catch {
             alert('İşlem silinirken hata oluştu.');
-        }
+        } finally { setDeleting(false); }
     };
 
     if (loading) {
@@ -389,7 +394,7 @@ export default function TransactionPage() {
                                         </td>
                                         <td className="py-4 px-4 text-center">
                                             <button
-                                                onClick={() => handleDelete(tx.id)}
+                                                onClick={() => { setDeletingTransactionId(tx.id); setShowDeleteModal(true); }}
                                                 className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors"
                                                 title="İşlemi Sil"
                                             >
@@ -404,6 +409,39 @@ export default function TransactionPage() {
                     </div>
                 </CardContent>
             </Card>
+            {showDeleteModal && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-lg shadow-2xl w-full max-w-md">
+                        <div className="p-6 border-b border-gray-200">
+                            <h2 className="text-2xl font-bold text-gray-900">İşlemi Sil</h2>
+                        </div>
+                        <div className="p-6">
+                            <div className="flex items-center gap-4 p-4 bg-red-50 border-2 border-red-200 rounded-lg">
+                                <div className="text-red-500 text-4xl">⚠️</div>
+                                <div>
+                                    <p className="font-semibold text-red-800">Bu işlemi silmek istediğinize emin misiniz?</p>
+                                    <p className="text-sm text-red-600 mt-1">
+                                        İşlem listeden kaldırılacak.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="p-6 border-t border-gray-200 flex gap-3">
+                            <Button variant="outline" className="flex-1 h-12 font-semibold border-2"
+                                    onClick={() => { setShowDeleteModal(false); setDeletingTransactionId(null); }}
+                                    disabled={deleting}>
+                                İptal
+                            </Button>
+                            <Button className="flex-1 h-12 font-semibold bg-red-600 hover:bg-red-700 text-white"
+                                    onClick={handleDelete} disabled={deleting}>
+                                {deleting
+                                    ? <><span className="animate-spin mr-2">⟳</span>Siliniyor...</>
+                                    : 'İşlemi Sil'}
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

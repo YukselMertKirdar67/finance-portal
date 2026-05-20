@@ -58,6 +58,7 @@ export default function PortfolioPage() {
     const [tax, setTax] = useState('');
     const [notes, setNotes] = useState('');
     const [submitting, setSubmitting] = useState(false);
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
 
     useEffect(() => { loadAllData(); }, []);
 
@@ -121,12 +122,11 @@ export default function PortfolioPage() {
     };
 
     const handleDeletePortfolio = async () => {
-        if (!window.confirm(`"${portfolio.name}" portföyünü KALICI olarak silmek istediğinizden emin misiniz?\n\nBu işlem GERİ ALINAMAZ!`)) return;
         try {
             setSubmitting(true);
             await hardDeletePortfolio(PORTFOLIO_ID);
-            alert('Portföy kalıcı olarak silindi!');
-            window.location.href = '/portfolios';
+            setShowDeleteModal(false);
+            navigate('/portfolios');
         } catch (err) {
             alert(err.response?.data?.message || 'Portföy silinirken hata oluştu');
         } finally { setSubmitting(false); }
@@ -274,7 +274,8 @@ export default function PortfolioPage() {
                     <Button variant="outline" onClick={() => { setEditFormData({ name: portfolio.name, description: portfolio.description || '', active: portfolio.active }); setShowEditModal(true); }}>
                         Düzenle
                     </Button>
-                    <Button variant="outline" className="text-red-600 hover:text-red-700 hover:bg-red-50" onClick={handleDeletePortfolio}>Sil</Button>
+                    <Button variant="outline" className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                            onClick={() => setShowDeleteModal(true)}>Sil</Button>
                     <Button variant="default" onClick={() => setShowAddModal(true)} className="bg-[#0066FF] hover:bg-[#0052CC]">
                         <Plus className="w-5 h-5 mr-2" />İşlem Ekle
                     </Button>
@@ -549,6 +550,39 @@ export default function PortfolioPage() {
                             <Button variant="outline" className="flex-1 h-12 font-semibold border-2" onClick={() => setShowEditModal(false)} disabled={submitting}>İptal</Button>
                             <Button className="flex-1 h-12 font-semibold bg-[#0066FF] hover:bg-[#0052CC]" onClick={handleUpdatePortfolio} disabled={!editFormData.name.trim() || submitting}>
                                 {submitting ? (<><RefreshCw className="w-5 h-5 mr-2 animate-spin" />Güncelleniyor...</>) : 'Güncelle'}
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {showDeleteModal && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-lg shadow-2xl w-full max-w-md">
+                        <div className="p-6 border-b border-gray-200">
+                            <h2 className="text-2xl font-bold text-gray-900">Portföyü Sil</h2>
+                        </div>
+                        <div className="p-6 space-y-4">
+                            <div className="flex items-center gap-4 p-4 bg-red-50 border-2 border-red-200 rounded-lg">
+                                <div className="text-red-500 text-4xl">⚠️</div>
+                                <div>
+                                    <p className="font-semibold text-red-800">Bu işlem geri alınamaz!</p>
+                                    <p className="text-sm text-red-600 mt-1">
+                                        <span className="font-bold">"{portfolio.name}"</span> portföyü ve tüm işlem geçmişi kalıcı olarak silinecek.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="p-6 border-t border-gray-200 flex gap-3">
+                            <Button variant="outline" className="flex-1 h-12 font-semibold border-2"
+                                    onClick={() => setShowDeleteModal(false)} disabled={submitting}>
+                                İptal
+                            </Button>
+                            <Button className="flex-1 h-12 font-semibold bg-red-600 hover:bg-red-700 text-white"
+                                    onClick={handleDeletePortfolio} disabled={submitting}>
+                                {submitting
+                                    ? <><RefreshCw className="w-5 h-5 mr-2 animate-spin" />Siliniyor...</>
+                                    : 'Kalıcı Olarak Sil'}
                             </Button>
                         </div>
                     </div>
