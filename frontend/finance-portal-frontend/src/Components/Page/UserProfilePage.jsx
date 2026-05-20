@@ -114,18 +114,20 @@ const UserProfilePage = () => {
                         <div className="space-y-2">
                             <p className="text-sm font-medium text-gray-600 mb-2">Roller:</p>
                             <div className="flex flex-wrap gap-2">
-                                {profileData?.roles?.map((role) => (
-                                    <span
-                                        key={role}
-                                        className={`px-3 py-1 rounded-full text-sm font-medium ${
-                                            role === 'ADMIN'
-                                                ? 'bg-red-100 text-red-700'
-                                                : 'bg-blue-100 text-blue-700'
-                                        }`}
-                                    >
-                                        {role}
-                                    </span>
-                                ))}
+                                {profileData?.roles
+                                    ?.filter(role => role === 'ADMIN' || role === 'USER')
+                                    .map((role) => (
+                                        <span
+                                            key={role}
+                                            className={`px-3 py-1 rounded-full text-sm font-medium ${
+                                                role === 'ADMIN'
+                                                    ? 'bg-red-100 text-red-700'
+                                                    : 'bg-blue-100 text-blue-700'
+                                            }`}
+                                        >
+                                         {role}
+                                        </span>
+                                    ))}
                             </div>
                         </div>
                     </div>
