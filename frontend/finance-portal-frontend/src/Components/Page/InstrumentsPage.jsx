@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
     DollarSign, Building2, FileText,
-    Coins, Bitcoin, ChevronRight, RefreshCw, BarChart3
+    Coins, Bitcoin, ChevronRight, RefreshCw, BarChart3, TrendingUp
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent } from '../UI/Card';
@@ -49,6 +49,13 @@ const CATEGORIES = [
         icon: Bitcoin,
         color: 'bg-pink-500',
         description: 'Bitcoin, Ethereum ve altcoinler',
+    },
+    {
+        title: 'VİOP',
+        apiType: 'VIOP',
+        icon: TrendingUp,
+        color: 'bg-red-500',
+        description: 'Vadeli işlem ve opsiyon sözleşmeleri',
     },
 ];
 
