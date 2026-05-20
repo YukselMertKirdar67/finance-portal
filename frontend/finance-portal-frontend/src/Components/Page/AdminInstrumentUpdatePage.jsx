@@ -8,7 +8,7 @@ import {
 import {
     getUpdateStatus, updateAllInstruments, updateTcmb,
     updateUsStocks, updateBist, updateCrypto, updatePrecious,
-    updateBonds, fetchAllHistoricalData, fetchForexHistoricalData, updateEtfs, updateTrBonds, fetchTrBondsHistorical
+    updateBonds, fetchAllHistoricalData, fetchForexHistoricalData, updateEtfs, updateTrBonds, fetchTrBondsHistorical, updateViop, fetchViopHistorical
 } from '../../API/adminInstrumentApi';
 import { useAuth } from '../../context/AuthContext';
 
@@ -279,6 +279,33 @@ const AdminInstrumentUpdatePage = () => {
                             <><History className="w-5 h-5" /><span>EVDS TR Tahvil Geçmiş Veri (1 Yıl)</span></>
                         )}
                     </button>
+                    <button
+                        onClick={async () => {
+                            setUpdating(true);
+                            setError(''); setSuccess('');
+                            try {
+                                const result = await fetchViopHistorical();
+                                if (result.success) {
+                                    setSuccess('✅ VİOP tarihsel verileri çekildi!');
+                                } else {
+                                    setError('VİOP tarihsel veri çekilemedi');
+                                }
+                            } catch {
+                                setError('VİOP tarihsel veri çekilirken hata oluştu');
+                            } finally {
+                                setUpdating(false);
+                            }
+                        }}
+                        disabled={updating || status?.updating}
+                        className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 disabled:from-gray-400 disabled:to-gray-500 text-white font-semibold rounded-lg transition shadow-lg"
+                    >
+                        {(updating || status?.updating) ? (
+                            <><Loader2 className="w-5 h-5 animate-spin" /><span>Çekiliyor...</span></>
+                        ) : (
+                            <><History className="w-5 h-5" /><span>VİOP Geçmiş Veri (1 Yıl)</span></>
+                        )}
+                    </button>
+
                 </div>
                 <p className="text-sm text-gray-500 text-center mt-3">
                     ⚠️ Geçmiş veri çekme işlemi uzun sürebilir (5-10 dakika)
@@ -359,6 +386,15 @@ const AdminInstrumentUpdatePage = () => {
                     onUpdate={() => handleSingleUpdate(updateTrBonds, 'TR Tahvil/Faiz')}
                     disabled={updating || status?.updating}
                 />
+                <UpdateCard
+                    title="İş Yatırım - VİOP"
+                    description="Vadeli işlem ve opsiyon sözleşmeleri fiyatları"
+                    icon={<TrendingUp className="w-6 h-6" />}
+                    iconBg="bg-red-100" iconColor="text-red-600"
+                    limit="Sınırsız"
+                    onUpdate={() => handleSingleUpdate(updateViop, 'VİOP')}
+                    disabled={updating || status?.updating}
+                />
             </div>
 
             {/* Info Box */}
@@ -370,11 +406,11 @@ const AdminInstrumentUpdatePage = () => {
                         <ul className="space-y-2 text-sm text-blue-800">
                             <li className="flex items-start gap-2">
                                 <span className="text-blue-600 mt-1">•</span>
-                                <span><strong>Tümünü Güncelle:</strong> TCMB + Yahoo Finance + EVDS Tahvil verilerini çeker.</span>
+                                <span><strong>Tümünü Güncelle:</strong> TCMB + Yahoo Finance + EVDS Tahvil + İş Yatırım VİOP verilerini çeker.</span>
                             </li>
                             <li className="flex items-start gap-2">
                                 <span className="text-blue-600 mt-1">•</span>
-                                <span><strong>Geçmiş Verileri Çek:</strong> Döviz kurları hariç 1 yıllık geçmiş fiyat verisi çeker.</span>
+                                <span><strong>Geçmiş Verileri Çek:</strong> Döviz kurları ve VİOP hariç 1 yıllık geçmiş fiyat verisi çeker.</span>
                             </li>
                             <li className="flex items-start gap-2">
                                 <span className="text-blue-600 mt-1">•</span>
@@ -383,6 +419,10 @@ const AdminInstrumentUpdatePage = () => {
                             <li className="flex items-start gap-2">
                                 <span className="text-blue-600 mt-1">•</span>
                                 <span><strong>Yahoo Finance:</strong> ABD hisseleri, BIST, kripto, tahvil, EFT ve kıymetli metaller için sınırsız ücretsiz veri.</span>
+                            </li>
+                            <li className="flex items-start gap-2">
+                                <span className="text-blue-600 mt-1">•</span>
+                                <span><strong>İş Yatırım:</strong> VİOP verilerini çeker.</span>
                             </li>
                             <li className="flex items-start gap-2">
                                 <span className="text-blue-600 mt-1">•</span>
