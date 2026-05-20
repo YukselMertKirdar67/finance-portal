@@ -6,6 +6,7 @@ import com.financeportal.backend.Instrument.Repository.InstrumentPriceRepository
 import com.financeportal.backend.Instrument.Repository.InstrumentRepository;
 import com.financeportal.backend.News.DTO.NewsResponseDTO;
 import com.financeportal.backend.News.Service.NewsService;
+import jakarta.persistence.criteria.CriteriaBuilder;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.cache.annotation.Cacheable;
@@ -185,6 +186,7 @@ public class HomeService {
                 case BOND -> BondInstrument.class;
                 case PRECIOUS -> PreciousInstrument.class;
                 case FUND -> FundInstrument.class;
+                case VIOP -> ViopInstrument.class;
             };
 
             long count = instrumentRepository.countByType(entityClass);
@@ -288,6 +290,7 @@ public class HomeService {
             case BOND -> "Tahvil";
             case PRECIOUS -> "Kıymetli Maden";
             case FUND -> "Yatırım Fonu";
+            case VIOP -> "VİOP Vadeli İşlemler";
         };
     }
 
@@ -303,6 +306,7 @@ public class HomeService {
             case BOND -> "FileText";
             case PRECIOUS -> "Gem";
             case FUND -> "Briefcase";
+            case VIOP -> "TrendingUp";
         };
     }
 }
