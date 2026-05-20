@@ -23,6 +23,7 @@ const TYPE_COLORS = {
     FUND: '#F97316',
     PRECIOUS: '#EAB308',
     CRYPTO: '#EC4899',
+    VIOP: '#EF4444',
 };
 
 const TYPE_LABELS = {
@@ -32,6 +33,7 @@ const TYPE_LABELS = {
     FUND: 'Fon / ETF',
     PRECIOUS: 'Kıymetli Metal',
     CRYPTO: 'Kripto Para',
+    VIOP: 'VİOP Vadeli İşlem',
 };
 
 function CandlestickChart({ data }) {
@@ -315,6 +317,10 @@ export default function InstrumentDetailPage() {
         if (instrument.fundType) fields.push({ label: 'Fon Türü', value: instrument.fundType });
         if (instrument.totalValue) fields.push({ label: 'Portföy Büyüklüğü', value: instrument.totalValue.toLocaleString('tr-TR') + ' USD' });
         if (instrument.investorCount) fields.push({ label: 'Yatırımcı Sayısı', value: instrument.investorCount.toLocaleString('tr-TR') });
+        if (instrument.underlyingAsset) fields.push({ label: 'Dayanak Varlık', value: instrument.underlyingAsset });
+        if (instrument.contractType) fields.push({ label: 'Kontrat Tipi', value: instrument.contractType });
+        if (instrument.expiryDate) fields.push({ label: 'Vade Tarihi', value: new Date(instrument.expiryDate).toLocaleDateString('tr-TR') });
+        if (instrument.initialMargin) fields.push({ label: 'Başlangıç Teminatı', value: '₺' + instrument.initialMargin.toLocaleString('tr-TR') });
         return fields;
     };
 
