@@ -73,7 +73,6 @@ public class RedisConfig {
         objectMapper.registerModule(new JavaTimeModule());
         objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
 
-        // ❌ TİP BİLGİSİ YOK (Frontend için temiz JSON)
 
         return objectMapper;
     }
