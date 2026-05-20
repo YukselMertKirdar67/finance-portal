@@ -6,5 +6,6 @@ public enum InstrumentType {
     PRECIOUS,     // Değerli Madenler (GOLD, SILVER, XAU/USD)
     CRYPTO,       // Kripto (BTC, ETH)
     BOND,         // Tahvil/Bono
-    FUND          // Yatırım Fonu/EFT
+    FUND,          // Yatırım Fonu/EFT
+    VIOP          //Vadeli İşlemler
 }
