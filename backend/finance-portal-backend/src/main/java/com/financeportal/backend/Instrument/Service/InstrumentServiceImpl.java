@@ -126,7 +126,7 @@ public class InstrumentServiceImpl implements InstrumentService {
             case BOND -> instrumentRepository.findAllBonds(pageable);
             case PRECIOUS -> instrumentRepository.findAllPrecious(pageable);
             case FUND -> instrumentRepository.findAllFunds(pageable);
-            default -> Page.empty(pageable);
+            case VIOP -> instrumentRepository.findAllViop(pageable);
         };
 
         return instruments.map(instrument -> {
