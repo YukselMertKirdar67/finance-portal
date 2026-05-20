@@ -2,6 +2,7 @@ package com.financeportal.backend.Instrument.Controller;
 
 import com.financeportal.backend.Instrument.DTO.InstrumentUpdateStatusDTO;
 import com.financeportal.backend.Instrument.Entity.InstrumentPrice;
+import com.financeportal.backend.Instrument.Repository.InstrumentRepository;
 import com.financeportal.backend.Instrument.Repository.PriceHistoryRepository;
 import com.financeportal.backend.Instrument.Service.*;
 import io.swagger.v3.oas.annotations.Operation;
@@ -27,6 +28,8 @@ public class AdminInstrumentController {
     private final TcmbService tcmbService;
     private final TcmbEvdsService tcmbEvdsService;
     private final YahooFinanceService yahooFinanceService;
+    private final ViopService viopService;
+    private final InstrumentRepository instrumentRepository;
 
     private InstrumentUpdateStatusDTO lastUpdateStatus = InstrumentUpdateStatusDTO.builder()
             .updating(false)
@@ -367,8 +370,51 @@ public class AdminInstrumentController {
 
 
     /**
+     * VİOP fiyatlarını çeker.
+     */
+    @Operation(summary = "VİOP fiyatlarını güncelle")
+    @PostMapping("/update-viop")
+    public ResponseEntity<?> updateViop() {
+        lastUpdateStatus = InstrumentUpdateStatusDTO.builder()
+                .updating(true).message("VİOP fiyatları güncelleniyor...").build();
+        try {
+            viopService.fetchViopPrices();
+            int count = instrumentRepository.findByExchangeAndActiveTrue("VIOP").size();
+            lastUpdateStatus = InstrumentUpdateStatusDTO.builder()
+                    .updating(false).lastUpdateTime(LocalDateTime.now())
+                    .message("VİOP fiyatları güncellendi").build();
+            return ResponseEntity.ok(Map.of(
+                    "success", true,
+                    "message", "VİOP fiyatları güncellendi",
+                    "updatedCount", count));
+        } catch (Exception e) {
+            log.error("❌ VIOP update failed: {}", e.getMessage());
+            lastUpdateStatus = InstrumentUpdateStatusDTO.builder()
+                    .updating(false).message("VİOP güncellemesi başarısız: " + e.getMessage()).build();
+            return ResponseEntity.status(500).body(Map.of("success", false, "message", e.getMessage()));
+        }
+    }
+
+    /**
+     * Geçmiş VİOP fiyatlarını çeker.
+     */
+    @Operation(summary = "VİOP tarihsel verilerini çek")
+    @PostMapping("/fetch-viop-historical")
+    public ResponseEntity<?> fetchViopHistorical() {
+        try {
+            viopService.fetchViopHistoricalData();
+            return ResponseEntity.ok(Map.of(
+                    "success", true,
+                    "message", "VİOP tarihsel veriler çekildi"));
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body(Map.of("success", false, "message", e.getMessage()));
+        }
+    }
+
+
+    /**
      * Tüm enstrümanların fiyatlarını tek seferde günceller.
-     * TCMB, Yahoo Finance ve tahvil verilerini kapsar.
+     * TCMB, Yahoo Finance, İş Yatırım verilerini kapsar.
      */
     @Operation(summary = "Tüm fiyatları güncelle", description = "TCMB, Yahoo Finance ve tahvil verilerini tek seferde günceller")
     @PostMapping("/update-all")
@@ -380,6 +426,7 @@ public class AdminInstrumentController {
             int yahooUpdated   = yahooFinanceService.updateAll();
             int bondsUpdated = yahooFinanceService.updateBonds();
             int evdsUpdated = tcmbEvdsService.fetchBondYields().size();
+            viopService.fetchViopPrices();
             int totalUpdated = tcmbUpdated + bondsUpdated + yahooUpdated + evdsUpdated;
 
             lastUpdateStatus = InstrumentUpdateStatusDTO.builder()
@@ -398,6 +445,7 @@ public class AdminInstrumentController {
                     "bondsUpdated", bondsUpdated,
                     "yahooUpdated", yahooUpdated,
                     "evdsUpdated", evdsUpdated,
+                    "viopUpdated", "güncellendi",
                     "totalUpdated", totalUpdated));
         } catch (Exception e) {
             log.error("❌ Update all failed: {}", e.getMessage(), e);
@@ -421,7 +469,8 @@ public class AdminInstrumentController {
                 "apis", Map.of(
                         "tcmb",         Map.of("limit", "Sınırsız", "usage", "Döviz kurları"),
                         "tcmbEvds",     Map.of("limit", "Sınırsız", "usage", "Tahvil/Bono"),
-                        "yahooFinance", Map.of("limit", "Sınırsız", "usage", "ABD Hisse + BIST + Kripto + Emtia")
+                        "yahooFinance", Map.of("limit", "Sınırsız", "usage", "ABD Hisse + BIST + Kripto + Emtia"),
+                        "isYatirimViop", Map.of("limit", "Sınırsız", "usage", "VİOP Vadeli İşlemler")
                 )));
     }
 }
