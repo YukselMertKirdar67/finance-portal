@@ -169,3 +169,29 @@ export const fetchTrBondsHistorical = async (days = 365) => {
         throw error;
     }
 };
+
+/**
+ * İş Yatırım'dan VİOP fiyatlarını günceller
+ */
+export const updateViop = async () => {
+    try {
+        const response = await api.post('/admin/instruments/update-viop');
+        return response.data;
+    } catch (error) {
+        console.error('Error updating VIOP:', error);
+        throw error;
+    }
+};
+
+/**
+ * İş Yatırım'dan geçmiş VİOP fiyatlarını çeker
+ */
+export const fetchViopHistorical = async () => {
+    try {
+        const response = await api.post('/admin/instruments/fetch-viop-historical');
+        return response.data;
+    } catch (error) {
+        console.error('Error fetching VIOP historical:', error);
+        throw error;
+    }
+};
