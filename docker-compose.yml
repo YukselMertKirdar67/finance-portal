@@ -197,6 +197,28 @@ services:
     networks:
       - finance-network
 
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: finance-prometheus
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"
+    networks:
+      - finance-network
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: finance-grafana
+    ports:
+      - "3001:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    depends_on:
+      - prometheus
+    networks:
+      - finance-network
+
   otel-collector:
     image: otel/opentelemetry-collector-contrib:0.91.0
     container_name: finance-otel-collector
