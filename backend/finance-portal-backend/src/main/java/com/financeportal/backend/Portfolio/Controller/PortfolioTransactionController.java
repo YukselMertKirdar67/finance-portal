@@ -24,7 +24,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/portfolios/{portfolioId}/transactions")
+@RequestMapping("/api/v1/portfolios/{portfolioId}/transactions")
 @RequiredArgsConstructor
 @Log4j2
 @Tag(name = "Portföy İşlemleri", description = "Portföy işlem yönetimi API'ları")

@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/api/totp")
+@RequestMapping("/api/v1/totp")
 @RequiredArgsConstructor
 @Log4j2
 @Tag(name = "2FA (TOTP)", description = "İki faktörlü doğrulama yönetimi endpoint'leri")

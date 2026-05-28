@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/home")
+@RequestMapping("/api/v1/home")
 @RequiredArgsConstructor
 @Log4j2
 @Tag(name = "Home API", description = "Anasayfa verileri")

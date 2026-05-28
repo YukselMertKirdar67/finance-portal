@@ -18,7 +18,7 @@ import java.time.LocalDate;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/instruments")
+@RequestMapping("/api/v1/instruments")
 @RequiredArgsConstructor
 @Tag(name = "Instruments API", description = "Finansal enstrümanlar yönetimi")
 public class InstrumentController {

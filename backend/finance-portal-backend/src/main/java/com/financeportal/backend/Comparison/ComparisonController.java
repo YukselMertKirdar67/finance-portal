@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 
 @RestController
-@RequestMapping("/api/comparison")
+@RequestMapping("/api/v1/comparison")
 @RequiredArgsConstructor
 @Log4j2
 @Tag(name = "Comparison API", description = "Enstrüman karşılaştırma")

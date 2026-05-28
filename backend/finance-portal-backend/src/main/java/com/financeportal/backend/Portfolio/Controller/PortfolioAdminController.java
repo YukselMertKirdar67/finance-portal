@@ -17,7 +17,7 @@ import java.util.List;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/api/admin/portfolios")
+@RequestMapping("/api/v1/admin/portfolios")
 @RequiredArgsConstructor
 @Log4j2
 @Tag(name = "Portfolio Admin", description = "Portfolio admin operasyonları (Sadece Admin)")

@@ -18,7 +18,7 @@ import java.util.List;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/api/admin/news")
+@RequestMapping("/api/v1/admin/news")
 @Log4j2
 @Tag(name = "Admin - Haber Yönetimi", description = "Admin haber yönetimi endpoint'leri")
 public class AdminNewsController {

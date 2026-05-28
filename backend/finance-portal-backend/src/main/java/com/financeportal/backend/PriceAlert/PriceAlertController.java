@@ -13,7 +13,7 @@ import java.util.List;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/api/price-alerts")
+@RequestMapping("/api/v1/price-alerts")
 @RequiredArgsConstructor
 @Log4j2
 @Tag(name = "Fiyat Alarmları", description = "Fiyat alarm yönetimi endpoint'leri")

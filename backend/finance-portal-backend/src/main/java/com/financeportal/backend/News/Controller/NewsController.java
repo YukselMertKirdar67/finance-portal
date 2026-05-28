@@ -10,7 +10,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/news")
+@RequestMapping("/api/v1/news")
 @Log4j2
 @Tag(name = "Haber işlemleri", description = "Kullanıcının yapabileceği işlemler")
 public class NewsController {

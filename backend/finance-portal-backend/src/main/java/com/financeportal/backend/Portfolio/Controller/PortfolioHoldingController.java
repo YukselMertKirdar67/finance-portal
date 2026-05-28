@@ -16,7 +16,7 @@ import java.math.BigDecimal;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/portfolios/{portfolioId}/holdings")
+@RequestMapping("/api/v1/portfolios/{portfolioId}/holdings")
 @RequiredArgsConstructor
 @Log4j2
 @Tag(name = "Portföy Varlıkları", description = "Portföy varlık yönetimi endpoint'leri")

@@ -19,7 +19,7 @@ import java.util.Map;
 
 @Log4j2
 @RestController
-@RequestMapping("/api/admin/instruments")
+@RequestMapping("/api/v1/admin/instruments")
 @RequiredArgsConstructor
 @Tag(name = "Admin - Enstrüman Yönetimi", description = "Admin fiyat güncelleme ve enstrüman yönetimi endpoint'leri")
 

@@ -11,7 +11,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/watchlist")
+@RequestMapping("/api/v1/watchlist")
 @RequiredArgsConstructor
 @Log4j2
 @Tag(name = "Watchlist API", description = "Takip listesi yönetimi")

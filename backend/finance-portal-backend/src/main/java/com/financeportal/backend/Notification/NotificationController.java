@@ -12,7 +12,7 @@ import java.util.List;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/api/notifications")
+@RequestMapping("/api/v1/notifications")
 @RequiredArgsConstructor
 @Log4j2
 @Tag(name = "Bildirimler", description = "Kullanıcı bildirim yönetimi endpoint'leri")

@@ -23,7 +23,7 @@ import java.util.List;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/api/me")
+@RequestMapping("/api/v1/me")
 @RequiredArgsConstructor
 @Log4j2
 @Tag(name = "Kullanıcı", description = "Giriş yapmış kullanıcının profil ve hesap yönetimi endpoint'leri")
