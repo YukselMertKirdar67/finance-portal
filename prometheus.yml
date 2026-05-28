@@ -1,0 +1,11 @@
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+  - job_name: 'finance-backend'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['finance-backend:8080']
+    relabel_configs:
+      - source_labels: [job]
+        target_label: application
