@@ -38,6 +38,7 @@ const appInfo = [
     { label: 'Döviz Veri Kaynağı', value: 'TCMB (Türkiye Cumhuriyet Merkez Bankası)' },
     { label: 'Hisse & Kripto Veri Kaynağı', value: 'Yahoo Finance' },
     { label: 'Tahvil/Bono Veri Kaynağı', value: 'TCMB EVDS' },
+    { label: 'VİOP Veri Kaynağı', value: 'İş Yatırım' },
     { label: 'Backend', value: 'Spring Boot (Java)' },
     { label: 'Frontend', value: 'React + Tailwind CSS' },
     { label: 'Veritabanı', value: 'PostgreSQL' },
