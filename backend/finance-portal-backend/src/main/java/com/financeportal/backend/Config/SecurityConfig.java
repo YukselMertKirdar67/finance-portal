@@ -45,15 +45,15 @@ public class SecurityConfig {
                         .requestMatchers("/v3/api-docs").permitAll()
                         .requestMatchers("/v3/api-docs/**").permitAll()
 
-                        .requestMatchers("/api/auth/**").permitAll()
-                        .requestMatchers("/api/totp/verify-login").permitAll()
+                        .requestMatchers("/api/v1/auth/**").permitAll()
+                        .requestMatchers("/api/v1/totp/verify-login").permitAll()
                         .requestMatchers("/ws/**").permitAll()
 
                         // Admin endpoints
-                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                        .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
 
                         // User endpoints
-                        .requestMatchers("/api/**").hasAnyRole("USER", "ADMIN")
+                        .requestMatchers("/api/v1/**").hasAnyRole("USER", "ADMIN")
 
                         // Geri kalanlar authenticated olmalı
                         .anyRequest().authenticated()
