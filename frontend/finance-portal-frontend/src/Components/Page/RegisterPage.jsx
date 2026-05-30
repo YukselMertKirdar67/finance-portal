@@ -136,7 +136,7 @@ const RegisterPage = () => {
                         <UserCircle className="w-10 h-10 text-white" />
                     </div>
                     <h1 className="text-3xl font-bold text-gray-800 mb-2">Hesap Oluştur</h1>
-                    <p className="text-gray-600">Finance Portal'a hoş geldiniz</p>
+                    <p className="text-gray-600">FinansApp'e hoş geldiniz</p>
                 </div>
 
                 {/* Success Message */}
