@@ -1,4 +1,4 @@
-import api from './instrumentsApi';
+import api from './axiosConfig.js';
 
 /**
  * Admin dashboard istatistikleri

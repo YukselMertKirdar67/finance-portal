@@ -1,4 +1,5 @@
-import api from './instrumentsApi';
+import api from './axiosConfig.js';
+
 
 /**
  * Kullanıcı profilini getirir
