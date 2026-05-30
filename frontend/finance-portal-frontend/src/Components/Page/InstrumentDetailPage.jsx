@@ -6,10 +6,10 @@ import {
 import { useNavigate, useParams } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '../UI/Card';
 import { Button } from '../UI/Button';
-import { createChart, CandlestickSeries } from 'lightweight-charts';
+import { createChart, CandlestickSeries, LineSeries } from 'lightweight-charts';
 import {
     AreaChart, Area, XAxis, YAxis, Tooltip,
-    CartesianGrid, ResponsiveContainer
+    CartesianGrid, ResponsiveContainer, Line
 } from 'recharts';
 import { getInstrumentById, getHistoricalPrices } from '../../API/instrumentsApi';
 import { addToWatchlist, removeFromWatchlist, isInWatchlist } from '../../API/watchlistApi';
@@ -87,6 +87,22 @@ function CandlestickChart({ data }) {
             .sort((a, b) => a.time.localeCompare(b.time));
 
         candleSeries.setData(chartData);
+        const period = 20;
+        const maData = chartData
+            .map((item, index) => {
+                if (index < period - 1) return null;
+                const slice = chartData.slice(index - period + 1, index + 1);
+                const avg = slice.reduce((sum, d) => sum + d.close, 0) / period;
+                return { time: item.time, value: parseFloat(avg.toFixed(4)) };
+            })
+            .filter(Boolean);
+
+        const maSeries = chart.addSeries(LineSeries, {
+            color: '#f97316',
+            lineWidth: 2,
+            title: 'MA20',
+        });
+        maSeries.setData(maData);
         chart.timeScale().fitContent();
 
         const handleResize = () => {
@@ -297,6 +313,13 @@ export default function InstrumentDetailPage() {
         time: h.date,
         value: h.close,
     }));
+    const period = 20;
+    const areaChartDataWithMA = areaChartData.map((item, index) => {
+        if (index < period - 1) return { ...item, ma: null };
+        const slice = areaChartData.slice(index - period + 1, index + 1);
+        const avg = slice.reduce((sum, d) => sum + d.value, 0) / period;
+        return { ...item, ma: parseFloat(avg.toFixed(4)) };
+    });
 
     const getTypeSpecificFields = () => {
         const fields = [];
@@ -512,7 +535,7 @@ export default function InstrumentDetailPage() {
                             ) : (
                                 <div className="h-[450px]">
                                     <ResponsiveContainer width="100%" height="100%">
-                                        <AreaChart data={areaChartData}>
+                                        <AreaChart data={areaChartDataWithMA}>
                                             <defs>
                                                 <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
                                                     <stop offset="5%" stopColor={accentColor} stopOpacity={0.2} />
@@ -537,6 +560,14 @@ export default function InstrumentDetailPage() {
                                                 stroke={accentColor}
                                                 strokeWidth={2}
                                                 fill="url(#colorValue)"
+                                            />
+                                            <Line
+                                                type="monotone"
+                                                dataKey="ma"
+                                                stroke="#f97316"
+                                                strokeWidth={2}
+                                                dot={false}
+                                                name="MA20"
                                             />
                                         </AreaChart>
                                     </ResponsiveContainer>
