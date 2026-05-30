@@ -2,8 +2,8 @@
 -- BASE INSTRUMENT (Ana tablo)
 -- ===============================
 CREATE TABLE IF NOT EXISTS base_instrument (
-                                               id BIGSERIAL PRIMARY KEY,
-                                               symbol VARCHAR(30) NOT NULL UNIQUE,
+    id BIGSERIAL PRIMARY KEY,
+    symbol VARCHAR(30) NOT NULL UNIQUE,
     name VARCHAR(150) NOT NULL,
     exchange VARCHAR(50),
     currency VARCHAR(10),
@@ -17,26 +17,26 @@ CREATE TABLE IF NOT EXISTS base_instrument (
 -- INSTRUMENT ALT TABLOLARI
 -- ===============================
 CREATE TABLE IF NOT EXISTS stock_instrument (
-                                                id BIGINT PRIMARY KEY REFERENCES base_instrument(id),
+    id BIGINT PRIMARY KEY REFERENCES base_instrument(id),
     sector VARCHAR(50),
     market_cap NUMERIC(18,2)
     );
 
 CREATE TABLE IF NOT EXISTS forex_instrument (
-                                                id BIGINT PRIMARY KEY REFERENCES base_instrument(id),
+    id BIGINT PRIMARY KEY REFERENCES base_instrument(id),
     base_currency VARCHAR(10),
     quote_currency VARCHAR(10)
     );
 
 CREATE TABLE IF NOT EXISTS crypto_instrument (
-                                                 id BIGINT PRIMARY KEY REFERENCES base_instrument(id),
+    id BIGINT PRIMARY KEY REFERENCES base_instrument(id),
     blockchain VARCHAR(50),
     total_supply NUMERIC(25,8),
     circulating_supply NUMERIC(25,8)
     );
 
 CREATE TABLE IF NOT EXISTS bond_instrument (
-                                               id BIGINT PRIMARY KEY REFERENCES base_instrument(id),
+    id BIGINT PRIMARY KEY REFERENCES base_instrument(id),
     maturity_date DATE,
     coupon_rate NUMERIC(5,2),
     face_value NUMERIC(10,2),
@@ -44,13 +44,13 @@ CREATE TABLE IF NOT EXISTS bond_instrument (
     );
 
 CREATE TABLE IF NOT EXISTS precious_instrument (
-                                                   id BIGINT PRIMARY KEY REFERENCES base_instrument(id),
+    id BIGINT PRIMARY KEY REFERENCES base_instrument(id),
     metal_type VARCHAR(20),
     unit VARCHAR(10)
     );
 
 CREATE TABLE IF NOT EXISTS fund_instrument (
-                                               id BIGINT PRIMARY KEY REFERENCES base_instrument(id),
+    id BIGINT PRIMARY KEY REFERENCES base_instrument(id),
     fund_code VARCHAR(50),
     fund_type VARCHAR(100),
     umbrella VARCHAR(100),
@@ -62,8 +62,8 @@ CREATE TABLE IF NOT EXISTS fund_instrument (
 -- INSTRUMENT PRICES
 -- ===============================
 CREATE TABLE IF NOT EXISTS instrument_prices (
-                                                 id BIGSERIAL PRIMARY KEY,
-                                                 instrument_id BIGINT NOT NULL REFERENCES base_instrument(id),
+    id BIGSERIAL PRIMARY KEY,
+    instrument_id BIGINT NOT NULL REFERENCES base_instrument(id),
     current_price NUMERIC(18,6) NOT NULL,
     open_price NUMERIC(18,6) NOT NULL,
     high_price NUMERIC(18,6) NOT NULL,
@@ -82,8 +82,8 @@ CREATE INDEX IF NOT EXISTS idx_instrument_timestamp ON instrument_prices(instrum
 -- PRICE HISTORY
 -- ===============================
 CREATE TABLE IF NOT EXISTS price_history (
-                                             id BIGSERIAL PRIMARY KEY,
-                                             instrument_id BIGINT NOT NULL REFERENCES base_instrument(id),
+    id BIGSERIAL PRIMARY KEY,
+    instrument_id BIGINT NOT NULL REFERENCES base_instrument(id),
     date DATE NOT NULL,
     open NUMERIC(18,6) NOT NULL,
     high NUMERIC(18,6) NOT NULL,
@@ -99,8 +99,8 @@ CREATE INDEX IF NOT EXISTS idx_instrument_date ON price_history(instrument_id, d
 -- USERS
 -- ===============================
 CREATE TABLE IF NOT EXISTS users (
-                                     id BIGSERIAL PRIMARY KEY,
-                                     keycloak_id VARCHAR(255) NOT NULL UNIQUE,
+    id BIGSERIAL PRIMARY KEY,
+    keycloak_id VARCHAR(255) NOT NULL UNIQUE,
     username VARCHAR(50) NOT NULL UNIQUE,
     email VARCHAR(100) NOT NULL UNIQUE,
     enabled BOOLEAN NOT NULL DEFAULT TRUE,
@@ -118,8 +118,8 @@ CREATE TABLE IF NOT EXISTS users (
 -- TOTP SECRETS
 -- ===============================
 CREATE TABLE IF NOT EXISTS totp_secrets (
-                                            id BIGSERIAL PRIMARY KEY,
-                                            keycloak_id VARCHAR(255) NOT NULL UNIQUE,
+    id BIGSERIAL PRIMARY KEY,
+    keycloak_id VARCHAR(255) NOT NULL UNIQUE,
     secret VARCHAR(255) NOT NULL,
     verified BOOLEAN NOT NULL DEFAULT FALSE
     );
@@ -128,8 +128,8 @@ CREATE TABLE IF NOT EXISTS totp_secrets (
 -- EMAIL VERIFICATION TOKENS
 -- ===============================
 CREATE TABLE IF NOT EXISTS email_verification_tokens (
-                                                         id BIGSERIAL PRIMARY KEY,
-                                                         token VARCHAR(255) NOT NULL UNIQUE,
+    id BIGSERIAL PRIMARY KEY,
+    token VARCHAR(255) NOT NULL UNIQUE,
     keycloak_id VARCHAR(255) NOT NULL,
     email VARCHAR(255) NOT NULL,
     expires_at TIMESTAMP NOT NULL,
@@ -140,8 +140,8 @@ CREATE TABLE IF NOT EXISTS email_verification_tokens (
 -- WATCHLIST
 -- ===============================
 CREATE TABLE IF NOT EXISTS watchlist (
-                                         id BIGSERIAL PRIMARY KEY,
-                                         user_id VARCHAR(255) NOT NULL,
+    id BIGSERIAL PRIMARY KEY,
+    user_id VARCHAR(255) NOT NULL,
     instrument_id BIGINT NOT NULL REFERENCES base_instrument(id),
     added_at TIMESTAMP NOT NULL,
     CONSTRAINT uk_user_instrument UNIQUE (user_id, instrument_id)
@@ -151,8 +151,8 @@ CREATE TABLE IF NOT EXISTS watchlist (
 -- PRICE ALERTS
 -- ===============================
 CREATE TABLE IF NOT EXISTS price_alerts (
-                                            id BIGSERIAL PRIMARY KEY,
-                                            user_id VARCHAR(255) NOT NULL,
+    id BIGSERIAL PRIMARY KEY,
+    user_id VARCHAR(255) NOT NULL,
     instrument_id BIGINT NOT NULL REFERENCES base_instrument(id),
     target_price NUMERIC(20,6) NOT NULL,
     condition VARCHAR(20) NOT NULL,
@@ -166,8 +166,8 @@ CREATE TABLE IF NOT EXISTS price_alerts (
 -- NOTIFICATIONS
 -- ===============================
 CREATE TABLE IF NOT EXISTS notifications (
-                                             id BIGSERIAL PRIMARY KEY,
-                                             user_id VARCHAR(255) NOT NULL,
+    id BIGSERIAL PRIMARY KEY,
+    user_id VARCHAR(255) NOT NULL,
     title VARCHAR(255) NOT NULL,
     message VARCHAR(500) NOT NULL,
     type VARCHAR(50) NOT NULL,
@@ -180,8 +180,8 @@ CREATE TABLE IF NOT EXISTS notifications (
 -- NEWS
 -- ===============================
 CREATE TABLE IF NOT EXISTS news (
-                                    id BIGSERIAL PRIMARY KEY,
-                                    title VARCHAR(255) NOT NULL,
+    id BIGSERIAL PRIMARY KEY,
+    title VARCHAR(255) NOT NULL,
     content TEXT,
     category VARCHAR(255),
     source VARCHAR(255),
@@ -193,8 +193,8 @@ CREATE TABLE IF NOT EXISTS news (
 -- PORTFOLIOS
 -- ===============================
 CREATE TABLE IF NOT EXISTS portfolios (
-                                          id BIGSERIAL PRIMARY KEY,
-                                          user_id VARCHAR(100) NOT NULL,
+    id BIGSERIAL PRIMARY KEY,
+    user_id VARCHAR(100) NOT NULL,
     name VARCHAR(100) NOT NULL,
     description TEXT,
     portfolio_type VARCHAR(20) NOT NULL,
@@ -208,10 +208,10 @@ CREATE TABLE IF NOT EXISTS portfolios (
 -- PORTFOLIO HOLDINGS
 -- ===============================
 CREATE TABLE IF NOT EXISTS portfolio_holdings (
-                                                  id BIGSERIAL PRIMARY KEY,
-                                                  portfolio_id BIGINT NOT NULL,
-                                                  instrument_id BIGINT NOT NULL,
-                                                  quantity NUMERIC(18,8) NOT NULL,
+    id BIGSERIAL PRIMARY KEY,
+    portfolio_id BIGINT NOT NULL,
+    instrument_id BIGINT NOT NULL,
+    quantity NUMERIC(18,8) NOT NULL,
     average_buy_price NUMERIC(18,6) NOT NULL,
     currency VARCHAR(10),
     exchange_rate NUMERIC(18,6),
@@ -228,10 +228,10 @@ CREATE TABLE IF NOT EXISTS portfolio_holdings (
 -- PORTFOLIO TRANSACTIONS
 -- ===============================
 CREATE TABLE IF NOT EXISTS portfolio_transactions (
-                                                      id BIGSERIAL PRIMARY KEY,
-                                                      portfolio_id BIGINT NOT NULL,
-                                                      instrument_id BIGINT NOT NULL,
-                                                      transaction_type VARCHAR(10) NOT NULL,
+    id BIGSERIAL PRIMARY KEY,
+    portfolio_id BIGINT NOT NULL,
+    instrument_id BIGINT NOT NULL,
+    transaction_type VARCHAR(10) NOT NULL,
     quantity NUMERIC(18,8) NOT NULL,
     price NUMERIC(18,6) NOT NULL,
     total_amount NUMERIC(18,2) NOT NULL,
