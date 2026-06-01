@@ -68,6 +68,16 @@ public class ViopService {
                 added++;
             }
         }
+        List<BaseInstrument> all = instrumentRepository.findByExchangeAndActiveTrue("VIOP");
+        for (BaseInstrument i : all) {
+            if (i instanceof ViopInstrument viop &&
+                    viop.getExpiryDate() != null &&
+                    viop.getExpiryDate().isBefore(LocalDate.now())) {
+                viop.setActive(false);
+                instrumentRepository.save(viop);
+                log.info("⛔ Başlangıçta pasife çekildi: {}", viop.getSymbol());
+            }
+        }
         log.info("✅ VİOP enstrümanları hazır. ({} yeni eklendi, {} zaten vardı)",
                 added, VIOP_SYMBOLS.size() - added);
     }
