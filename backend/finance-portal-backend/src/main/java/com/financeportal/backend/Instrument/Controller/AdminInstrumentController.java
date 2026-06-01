@@ -473,4 +473,16 @@ public class AdminInstrumentController {
                         "isYatirimViop", Map.of("limit", "Sınırsız", "usage", "VİOP Vadeli İşlemler")
                 )));
     }
+
+    /**
+     * Enstrüman detaylarını günceller.
+     */
+    @Operation(summary = "Enstrüman detaylarını güncelle")
+    @PostMapping("/update-instrument-details")
+    public ResponseEntity<?> updateInstrumentDetails() {
+        yahooFinanceService.updateExistingInstrumentDetails();
+        return ResponseEntity.ok(Map.of(
+                "success", true,
+                "message", "Enstrüman detayları güncellendi"));
+    }
 }
