@@ -196,3 +196,17 @@ export const fetchViopHistorical = async () => {
         throw error;
     }
 };
+
+/**
+ * Mevcut enstrümanların type-specific detaylarını günceller
+ * (sector, blockchain, metalType vb.)
+ */
+export const updateInstrumentDetails = async () => {
+    try {
+        const response = await api.post('/admin/instruments/update-instrument-details');
+        return response.data;
+    } catch (error) {
+        console.error('Error updating instrument details:', error);
+        throw error;
+    }
+};
