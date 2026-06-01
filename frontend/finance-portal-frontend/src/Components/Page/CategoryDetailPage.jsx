@@ -13,8 +13,9 @@ const TYPE_META = {
     STOCK:    { title: 'Hisse Senetleri',       description: 'BIST ve ABD hisse senetleri' },
     BOND:     { title: 'Tahvil ve Bonolar',     description: 'Devlet tahvilleri ve hazine bonoları' },
     FUND:     { title: 'Fon ve EFTler',         description: 'Global fonler ve EFTler' },
-    PRECIOUS: { title: 'Altın ve Gümüş',        description: 'Kıymetli metaller ve emtia piyasaları' },
+    PRECIOUS: { title: 'Altın ve Gümüş',        description: 'Kıymetli metaller' },
     CRYPTO:   { title: 'Kripto Paralar',        description: 'Bitcoin, Ethereum ve altcoinler' },
+    VIOP:     { title: 'VİOP',                  description: 'Vadeli işlemler' },
 };
 
 export default function CategoryDetailPage() {
