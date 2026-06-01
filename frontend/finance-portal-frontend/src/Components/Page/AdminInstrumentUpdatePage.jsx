@@ -8,7 +8,7 @@ import {
 import {
     getUpdateStatus, updateAllInstruments, updateTcmb,
     updateUsStocks, updateBist, updateCrypto, updatePrecious,
-    updateBonds, fetchAllHistoricalData, fetchForexHistoricalData, updateEtfs, updateTrBonds, fetchTrBondsHistorical, updateViop, fetchViopHistorical
+    updateBonds, fetchAllHistoricalData, fetchForexHistoricalData, updateEtfs, updateTrBonds, fetchTrBondsHistorical, updateViop, fetchViopHistorical, updateInstrumentDetails
 } from '../../API/adminInstrumentApi';
 import { useAuth } from '../../context/AuthContext';
 
@@ -393,6 +393,15 @@ const AdminInstrumentUpdatePage = () => {
                     iconBg="bg-red-100" iconColor="text-red-600"
                     limit="Sınırsız"
                     onUpdate={() => handleSingleUpdate(updateViop, 'VİOP')}
+                    disabled={updating || status?.updating}
+                />
+                <UpdateCard
+                    title="Enstrüman Detayları"
+                    description="Sektör, blockchain, metal türü gibi type-specific bilgileri günceller"
+                    icon={<Info className="w-6 h-6" />}
+                    iconBg="bg-gray-100" iconColor="text-gray-600"
+                    limit="Tek Seferlik"
+                    onUpdate={() => handleSingleUpdate(updateInstrumentDetails, 'Enstrüman Detayları')}
                     disabled={updating || status?.updating}
                 />
             </div>
