@@ -80,17 +80,17 @@ public class YahooFinanceService {
     );
 
     private static final List<Map<String, String>> CRYPTOS = List.of(
-            Map.of("yahoo", "BTC-USD",  "db", "BTC-USD",  "name", "Bitcoin",       "blockchain", "Bitcoin"),
-            Map.of("yahoo", "ETH-USD",  "db", "ETH-USD",  "name", "Ethereum",      "blockchain", "Ethereum"),
-            Map.of("yahoo", "BNB-USD",  "db", "BNB-USD",  "name", "BNB",           "blockchain", "BSC"),
-            Map.of("yahoo", "XRP-USD",  "db", "XRP-USD",  "name", "XRP",           "blockchain", "XRP Ledger"),
-            Map.of("yahoo", "ADA-USD",  "db", "ADA-USD",  "name", "Cardano",       "blockchain", "Cardano"),
-            Map.of("yahoo", "SOL-USD",  "db", "SOL-USD",  "name", "Solana",        "blockchain", "Solana"),
-            Map.of("yahoo", "DOGE-USD", "db", "DOGE-USD", "name", "Dogecoin",      "blockchain", "Dogecoin"),
-            Map.of("yahoo", "DOT-USD",  "db", "DOT-USD",  "name", "Polkadot",      "blockchain", "Polkadot"),
-            Map.of("yahoo", "AVAX-USD", "db", "AVAX-USD", "name", "Avalanche",     "blockchain", "Avalanche"),
-            Map.of("yahoo", "LINK-USD", "db", "LINK-USD", "name", "Chainlink",     "blockchain", "Ethereum"),
-            Map.of("yahoo", "ETC-USD",  "db", "ETC-USD",  "name", "Ethereum Classic", "blockchain", "Ethereum Classic")
+            Map.of("yahoo", "BTC-USD",  "db", "BTC-USD",  "name", "Bitcoin",          "blockchain", "Bitcoin",          "totalSupply", "21000000",       "circulatingSupply", "19700000"),
+            Map.of("yahoo", "ETH-USD",  "db", "ETH-USD",  "name", "Ethereum",         "blockchain", "Ethereum",         "totalSupply", "120000000",      "circulatingSupply", "120000000"),
+            Map.of("yahoo", "BNB-USD",  "db", "BNB-USD",  "name", "BNB",              "blockchain", "BSC",              "totalSupply", "145887575",      "circulatingSupply", "145887575"),
+            Map.of("yahoo", "XRP-USD",  "db", "XRP-USD",  "name", "XRP",              "blockchain", "XRP Ledger",       "totalSupply", "100000000000",   "circulatingSupply", "54000000000"),
+            Map.of("yahoo", "ADA-USD",  "db", "ADA-USD",  "name", "Cardano",          "blockchain", "Cardano",          "totalSupply", "45000000000",    "circulatingSupply", "35000000000"),
+            Map.of("yahoo", "SOL-USD",  "db", "SOL-USD",  "name", "Solana",           "blockchain", "Solana",           "totalSupply", "580000000",      "circulatingSupply", "460000000"),
+            Map.of("yahoo", "DOGE-USD", "db", "DOGE-USD", "name", "Dogecoin",         "blockchain", "Dogecoin",         "totalSupply", "0",              "circulatingSupply", "143000000000"),
+            Map.of("yahoo", "DOT-USD",  "db", "DOT-USD",  "name", "Polkadot",         "blockchain", "Polkadot",         "totalSupply", "1400000000",     "circulatingSupply", "1400000000"),
+            Map.of("yahoo", "AVAX-USD", "db", "AVAX-USD", "name", "Avalanche",        "blockchain", "Avalanche",        "totalSupply", "720000000",      "circulatingSupply", "410000000"),
+            Map.of("yahoo", "LINK-USD", "db", "LINK-USD", "name", "Chainlink",        "blockchain", "Ethereum",         "totalSupply", "1000000000",     "circulatingSupply", "600000000"),
+            Map.of("yahoo", "ETC-USD",  "db", "ETC-USD",  "name", "Ethereum Classic", "blockchain", "Ethereum Classic", "totalSupply", "210700000",      "circulatingSupply", "147000000")
     );
 
     private static final List<Map<String, String>> PRECIOUS_METALS = List.of(
@@ -110,11 +110,12 @@ public class YahooFinanceService {
             Map.of("yahoo", "AEDTRY=X", "db", "AED/TRY")
     );
     private static final List<Map<String, String>> BONDS = List.of(
-            Map.of("yahoo", "^TNX",    "db", "US-10Y-BOND", "name", "ABD 10 Yıllık Tahvil"),
-            Map.of("yahoo", "^TYX",    "db", "US-30Y-BOND", "name", "ABD 30 Yıllık Tahvil"),
-            Map.of("yahoo", "^IRX",    "db", "US-3M-BOND",  "name", "ABD 3 Aylık Hazine Bonosu"),
-            Map.of("yahoo", "^FVX",    "db", "US-5Y-BOND",  "name", "ABD 5 Yıllık Tahvil")
+            Map.of("yahoo", "^TNX", "db", "US-10Y-BOND", "name", "ABD 10 Yıllık Tahvil",       "issuer", "US Treasury", "faceValue", "1000", "maturityDate", "2034-05-15"),
+            Map.of("yahoo", "^TYX", "db", "US-30Y-BOND", "name", "ABD 30 Yıllık Tahvil",       "issuer", "US Treasury", "faceValue", "1000", "maturityDate", "2054-05-15"),
+            Map.of("yahoo", "^IRX", "db", "US-3M-BOND",  "name", "ABD 3 Aylık Hazine Bonosu",  "issuer", "US Treasury", "faceValue", "1000", "maturityDate", "2026-08-28"),
+            Map.of("yahoo", "^FVX", "db", "US-5Y-BOND",  "name", "ABD 5 Yıllık Tahvil",        "issuer", "US Treasury", "faceValue", "1000", "maturityDate", "2029-05-15")
     );
+
     private static final List<Map<String, String>> ETFS = List.of(
             Map.of("yahoo", "SPY",  "db", "SPY",  "name", "SPDR S&P 500 ETF Trust"),
             Map.of("yahoo", "QQQ",  "db", "QQQ",  "name", "Invesco QQQ Trust"),
@@ -184,7 +185,8 @@ public class YahooFinanceService {
                 return null;
             }
 
-            BaseInstrument instrument = getOrCreateInstrument(dbSymbol, yahooSymbol, meta);
+            Map<String, String> config = findConfig(dbSymbol);
+            BaseInstrument instrument = getOrCreateInstrument(dbSymbol, yahooSymbol, meta, config);
             Long volume = meta.path("regularMarketVolume").asLong(0);
 
             BigDecimal changeAmount  = currentPrice.subtract(previousClose);
@@ -515,82 +517,197 @@ public class YahooFinanceService {
         log.info("✅ Historical data fetch completed");
     }
 
+    /**
+     * Mevcut enstrümanların type-specific bilgilerini günceller.
+     * Sector, blockchain, metalType gibi alanları listelerden alır.
+     */
+    public void updateExistingInstrumentDetails() {
+        log.info("📊 Updating existing instrument details...");
+
+        for (Map<String, String> stock : US_STOCKS) {
+            instrumentRepository.findBySymbol(stock.get("db")).ifPresent(inst -> {
+                if (inst instanceof StockInstrument s) {
+                    s.setSector(stock.get("sector"));
+                    instrumentRepository.save(s);
+                }
+            });
+        }
+
+        for (Map<String, String> stock : BIST_STOCKS) {
+            instrumentRepository.findBySymbol(stock.get("db")).ifPresent(inst -> {
+                if (inst instanceof StockInstrument s) {
+                    s.setSector(stock.get("sector"));
+                    instrumentRepository.save(s);
+                }
+            });
+        }
+
+        for (Map<String, String> crypto : CRYPTOS) {
+            instrumentRepository.findBySymbol(crypto.get("db")).ifPresent(inst -> {
+                if (inst instanceof CryptoInstrument c) {
+                    c.setBlockchain(crypto.get("blockchain"));
+                    if (crypto.containsKey("totalSupply") && !crypto.get("totalSupply").equals("0")) {
+                        c.setTotalSupply(new BigDecimal(crypto.get("totalSupply")));
+                    }
+                    if (crypto.containsKey("circulatingSupply")) {
+                        c.setCirculatingSupply(new BigDecimal(crypto.get("circulatingSupply")));
+                    }
+                    instrumentRepository.save(c);
+                }
+            });
+        }
+
+        for (Map<String, String> metal : PRECIOUS_METALS) {
+            instrumentRepository.findBySymbol(metal.get("db")).ifPresent(inst -> {
+                if (inst instanceof PreciousInstrument p) {
+                    p.setMetalType(metal.get("metalType"));
+                    p.setUnit(metal.get("unit"));
+                    instrumentRepository.save(p);
+                }
+            });
+        }
+
+        for (Map<String, String> bond : BONDS) {
+            instrumentRepository.findBySymbol(bond.get("db")).ifPresent(inst -> {
+                if (inst instanceof BondInstrument b) {
+                    b.setIssuer(bond.get("issuer"));
+                    if (bond.containsKey("faceValue")) {
+                        b.setFaceValue(new BigDecimal(bond.get("faceValue")));
+                    }
+                    if (bond.containsKey("maturityDate")) {
+                        b.setMaturityDate(java.time.LocalDate.parse(bond.get("maturityDate")));
+                    }
+                    instrumentRepository.save(b);
+                }
+            });
+        }
+
+        log.info("✅ Instrument details updated");
+    }
+
     // ========== PRIVATE HELPER METHODS ==========
 
     /**
      * Sembolü veritabanında arar, yoksa yeni enstrüman oluşturur.
      */
-    private BaseInstrument getOrCreateInstrument(String dbSymbol, String yahooSymbol, JsonNode meta) {
+    private Map<String, String> findConfig(String dbSymbol) {
+        List<Map<String, String>> all = new ArrayList<>();
+        all.addAll(US_STOCKS);
+        all.addAll(BIST_STOCKS);
+        all.addAll(CRYPTOS);
+        all.addAll(PRECIOUS_METALS);
+        all.addAll(ETFS);
+        all.addAll(BONDS);
+        return all.stream()
+                .filter(m -> dbSymbol.equals(m.get("db")))
+                .findFirst()
+                .orElse(Map.of());
+    }
+
+    private BaseInstrument getOrCreateInstrument(String dbSymbol, String yahooSymbol,
+                                                 JsonNode meta, Map<String, String> config) {
         return instrumentRepository.findBySymbol(dbSymbol)
-                .orElseGet(() -> createInstrument(dbSymbol, yahooSymbol, meta));
+                .orElseGet(() -> createInstrument(dbSymbol, yahooSymbol, meta, config));
     }
 
     /**
      * Sembol tipine göre uygun enstrüman entity'sini oluşturur ve veritabanına kaydeder.
      * Kıymetli metal, BIST, kripto, tahvil, ETF ve hisse senedi tiplerini destekler.
      */
-    private BaseInstrument createInstrument(String dbSymbol, String yahooSymbol, JsonNode meta) {
-        String currency  = meta.path("currency").asText("USD");
-        String exchange  = meta.path("exchangeName").asText("NASDAQ");
-        String longName  = meta.path("longName").asText(dbSymbol);
+    private BaseInstrument createInstrument(String dbSymbol, String yahooSymbol,
+                                            JsonNode meta, Map<String, String> config) {
+        String currency = meta.path("currency").asText("USD");
+        String exchange = meta.path("exchangeName").asText("NASDAQ");
+        String longName = config.getOrDefault("name", meta.path("longName").asText(dbSymbol));
 
         BaseInstrument instrument;
 
-        // Kıymetli metal kontrolü — önce kontrol et
         if (dbSymbol.startsWith("XAU") || dbSymbol.startsWith("XAG") ||
                 dbSymbol.startsWith("XPT") || dbSymbol.startsWith("XPD")) {
 
-            String metalType = switch (dbSymbol.substring(0, 3)) {
+            String metalType = config.getOrDefault("metalType", switch (dbSymbol.substring(0, 3)) {
                 case "XAU" -> "GOLD";
                 case "XAG" -> "SILVER";
                 case "XPT" -> "PLATINUM";
                 case "XPD" -> "PALLADIUM";
                 default -> "GOLD";
-            };
+            });
 
             instrument = PreciousInstrument.builder()
                     .symbol(dbSymbol).name(longName)
-                    .metalType(metalType).unit("oz")
+                    .metalType(metalType)
+                    .unit(config.getOrDefault("unit", "oz"))
                     .exchange("COMMODITY").currency("USD").active(true).build();
 
         } else if (dbSymbol.endsWith(".IS")) {
             instrument = StockInstrument.builder()
                     .symbol(dbSymbol).name(longName)
-                    .sector("Genel").exchange("BIST")
+                    .sector(config.getOrDefault("sector", "Genel"))
+                    .exchange("BIST")
                     .currency("TRY").active(true).build();
 
-        } else if (dbSymbol.endsWith("-USD")) {
+        }
+        else if (dbSymbol.endsWith("-USD")) {
+            BigDecimal totalSupply = null;
+            BigDecimal circulatingSupply = null;
+            try {
+                if (config.containsKey("totalSupply") && !config.get("totalSupply").equals("0")) {
+                    totalSupply = new BigDecimal(config.get("totalSupply"));
+                }
+                if (config.containsKey("circulatingSupply")) {
+                    circulatingSupply = new BigDecimal(config.get("circulatingSupply"));
+                }
+            } catch (Exception ignored) {}
+
             instrument = CryptoInstrument.builder()
                     .symbol(dbSymbol).name(longName)
-                    .blockchain("Unknown").exchange("CRYPTO")
+                    .blockchain(config.getOrDefault("blockchain", "Unknown"))
+                    .totalSupply(totalSupply)
+                    .circulatingSupply(circulatingSupply)
+                    .exchange("CRYPTO")
                     .currency("USD").active(true).build();
 
-        }
-        else if (dbSymbol.endsWith("-BOND")) {
+        } else if (dbSymbol.endsWith("-BOND")) {
+            BigDecimal faceValue = null;
+            java.time.LocalDate maturityDate = null;
+            try {
+                if (config.containsKey("faceValue")) {
+                    faceValue = new BigDecimal(config.get("faceValue"));
+                }
+                if (config.containsKey("maturityDate")) {
+                    maturityDate = java.time.LocalDate.parse(config.get("maturityDate"));
+                }
+            } catch (Exception ignored) {}
+
             instrument = BondInstrument.builder()
-                    .symbol(dbSymbol).name(meta.path("longName").asText(dbSymbol))
-                    .issuer("US Treasury").exchange("CBOE")
+                    .symbol(dbSymbol).name(longName)
+                    .issuer(config.getOrDefault("issuer", "US Treasury"))
+                    .faceValue(faceValue)
+                    .maturityDate(maturityDate)
+                    .exchange("CBOE")
                     .currency("USD").active(true).build();
-        }
-        else if (dbSymbol.equals("SPY") || dbSymbol.equals("QQQ") ||
-            dbSymbol.equals("VTI") || dbSymbol.equals("GLD") ||
-            dbSymbol.equals("IEF") || dbSymbol.equals("EEM") ||
-            dbSymbol.equals("XLK") || dbSymbol.equals("XLF") ||
-            dbSymbol.equals("ARKK") || dbSymbol.equals("VNQ")) {
+        } else if (config.getOrDefault("fundType", "").equals("ETF") ||
+                List.of("SPY","QQQ","VTI","GLD","IEF","EEM","XLK","XLF","ARKK","VNQ")
+                        .contains(dbSymbol)) {
             instrument = FundInstrument.builder()
-                .symbol(dbSymbol)
-                .name(meta.path("longName").asText(dbSymbol))
-                .fundCode(dbSymbol)
-                .fundType("ETF")
-                .exchange(meta.path("exchangeName").asText("NYSE"))
-                .currency("USD")
-                .active(true)
-                .build();
-        }
-        else {
+                    .symbol(dbSymbol).name(longName)
+                    .fundCode(dbSymbol)
+                    .fundType("ETF")
+                    .exchange(meta.path("exchangeName").asText("NYSE"))
+                    .currency("USD").active(true).build();
+
+        } else {
+            BigDecimal marketCap = null;
+            try {
+                long mcRaw = meta.path("marketCap").asLong(0);
+                if (mcRaw > 0) marketCap = new BigDecimal(mcRaw);
+            } catch (Exception ignored) {}
+
             instrument = StockInstrument.builder()
                     .symbol(dbSymbol).name(longName)
-                    .sector("Genel").exchange(exchange)
+                    .sector(config.getOrDefault("sector", "Genel"))
+                    .marketCap(marketCap)
+                    .exchange(exchange)
                     .currency(currency).active(true).build();
         }
 
