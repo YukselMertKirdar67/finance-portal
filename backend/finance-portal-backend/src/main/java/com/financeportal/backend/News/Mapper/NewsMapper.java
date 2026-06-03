@@ -3,34 +3,19 @@ package com.financeportal.backend.News.Mapper;
 import com.financeportal.backend.News.DTO.NewsRequestDTO;
 import com.financeportal.backend.News.DTO.NewsResponseDTO;
 import com.financeportal.backend.News.Entity.News;
-import org.springframework.stereotype.Component;
+import org.mapstruct.*;
 
 import java.time.LocalDateTime;
 
-@Component
-public class NewsMapper {
+@Mapper(componentModel = "spring",
+        unmappedTargetPolicy = ReportingPolicy.IGNORE,
+        nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
+public interface NewsMapper {
 
-    public NewsResponseDTO toResponseDto(News news) {
-        return new NewsResponseDTO(
-                news.getId(),
-                news.getTitle(),
-                news.getContent(),
-                news.getSource(),
-                news.getCategory(),
-                news.getImageUrl(),
-                news.getPublishDate() != null ? news.getPublishDate() : LocalDateTime.now()
-        );
-    }
+    @Mapping(target = "publishDate", expression = "java(news.getPublishDate() != null ? news.getPublishDate() : java.time.LocalDateTime.now())")
+    NewsResponseDTO toResponseDto(News news);
 
-    public News toEntity(NewsRequestDTO dto) {
-        News news = new News();
-        news.setTitle(dto.getTitle());
-        news.setContent(dto.getContent());
-        news.setSource(dto.getSource());
-        news.setCategory(dto.getCategory());
-        news.setImageUrl(dto.getImageUrl());
-        news.setPublishDate(LocalDateTime.now());
-        return news;
-    }
+    @Mapping(target = "id", ignore = true)
+    @Mapping(target = "publishDate", expression = "java(java.time.LocalDateTime.now())")
+    News toEntity(NewsRequestDTO dto);
 }
-

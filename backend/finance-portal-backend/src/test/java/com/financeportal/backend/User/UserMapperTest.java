@@ -6,6 +6,7 @@ import com.financeportal.backend.User.Entity.User;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.mapstruct.factory.Mappers;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -20,7 +21,7 @@ class UserMapperTest {
 
     @BeforeEach
     void setUp() {
-        userMapper = new UserMapper();
+        userMapper = Mappers.getMapper(UserMapper.class);
 
         testUser = User.builder()
                 .keycloakId("test-keycloak-id")

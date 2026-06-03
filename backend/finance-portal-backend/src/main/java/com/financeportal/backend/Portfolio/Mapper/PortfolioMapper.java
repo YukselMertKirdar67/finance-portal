@@ -139,9 +139,6 @@ public interface PortfolioMapper {
     // HELPER METHODS
     // ===================================================================
 
-    /**
-     * Map InstrumentType enum to String
-     */
     default String mapInstrumentType(BaseInstrument instrument) {
         if (instrument == null) {
             return null;
@@ -151,9 +148,6 @@ public interface PortfolioMapper {
         return type != null ? type.name() : null;
     }
 
-    /**
-     * Calculate total amount (quantity × price)
-     */
     default BigDecimal calculateTotalAmount(CreateTransactionRequestDTO request) {
         if (request.getQuantity() == null || request.getPrice() == null) {
             return BigDecimal.ZERO;
@@ -161,9 +155,6 @@ public interface PortfolioMapper {
         return request.getQuantity().multiply(request.getPrice());
     }
 
-    /**
-     * Calculate net amount (totalAmount + commission + tax)
-     */
     default BigDecimal calculateNetAmount(PortfolioTransaction transaction) {
         BigDecimal net = transaction.getTotalAmount() != null
                 ? transaction.getTotalAmount()
@@ -178,9 +169,6 @@ public interface PortfolioMapper {
         return net;
     }
 
-    /**
-     * Set transaction date (if null, use current time)
-     */
     default LocalDateTime getTransactionDate(CreateTransactionRequestDTO request) {
         return request.getTransactionDate() != null
                 ? request.getTransactionDate()
