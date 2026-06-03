@@ -80,6 +80,18 @@ public class GlobalExceptionHandler {
     return ResponseEntity.status(HttpStatus.FORBIDDEN).body(error);
   }
 
+  @ExceptionHandler(BusinessRuleException.class)
+  public ResponseEntity<ErrorResponse> handleBusinessRuleException(
+          BusinessRuleException ex) {
+
+    ErrorResponse error = new ErrorResponse(
+            HttpStatus.BAD_REQUEST.value(),
+            ex.getMessage()
+    );
+
+    return ResponseEntity.badRequest().body(error);
+  }
+
   // 500 - Beklenmeyen hatalar
   @ExceptionHandler(Exception.class)
   public ResponseEntity<ErrorResponse> handleGeneralException(
@@ -93,15 +105,4 @@ public class GlobalExceptionHandler {
     return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
   }
 
-  @ExceptionHandler(BusinessRuleException.class)
-  public ResponseEntity<ErrorResponse> handleBusinessRuleException(
-          BusinessRuleException ex) {
-
-    ErrorResponse error = new ErrorResponse(
-            HttpStatus.BAD_REQUEST.value(),
-            ex.getMessage()
-    );
-
-    return ResponseEntity.badRequest().body(error);
-  }
 }
