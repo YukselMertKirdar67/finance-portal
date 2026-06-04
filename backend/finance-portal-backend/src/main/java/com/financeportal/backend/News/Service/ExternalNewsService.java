@@ -4,6 +4,7 @@ import com.financeportal.backend.News.DTO.External.ExternalNewsResponse;
 import com.financeportal.backend.News.Entity.News;
 import com.financeportal.backend.News.Repository.NewsRepository;
 import com.financeportal.backend.Notification.NotificationService;
+import com.financeportal.backend.Translation.TranslationService;
 import com.financeportal.backend.User.Repository.UserRepository;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Value;
@@ -35,13 +36,17 @@ public class ExternalNewsService {
     private final ImageService imageService;
     private final NotificationService notificationService;
     private final UserRepository userRepository;
+    private final TranslationService translationService;
 
-    public ExternalNewsService(RestTemplate restTemplate, NewsRepository newsRepository, ImageService imageService, NotificationService notificationService, UserRepository userRepository) {
+    public ExternalNewsService(RestTemplate restTemplate, NewsRepository newsRepository,
+                               ImageService imageService, NotificationService notificationService,
+                               UserRepository userRepository, TranslationService translationService) {
         this.restTemplate = restTemplate;
         this.newsRepository = newsRepository;
         this.imageService = imageService;
         this.notificationService = notificationService;
         this.userRepository = userRepository;
+        this.translationService = translationService;
     }
 
     /**
@@ -150,6 +155,8 @@ public class ExternalNewsService {
                     news.setSource(sourceName);
                     news.setCategory(displayCategory);
                     news.setImageUrl(imageService.getImageUrl(article.getUrlToImage(), displayCategory));
+                    news.setTitleEn(translationService.translateToEnglish(article.getTitle()));
+                    news.setContentEn(translationService.translateToEnglish(getContent(article)));
 
                     if (article.getPublishedAt() != null) {
                         news.setPublishDate(LocalDateTime.parse(
