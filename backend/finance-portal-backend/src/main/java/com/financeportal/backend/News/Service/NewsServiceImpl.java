@@ -21,6 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 @Service
@@ -39,11 +40,12 @@ public class NewsServiceImpl implements NewsService {
     @Override
     @Cacheable(
             value = "newsByCategory",
-            key = "'cat:' + #category + ':page:' + #page + ':size:' + #size"
+            key = "'cat:' + #category + ':page:' + #page + ':size:' + #size + ':lang:' + #locale.language"
     )
     public PageResponseDTO<NewsResponseDTO> getNewsByCategory(
-            String category, int page, int size) {
-        log.info("Fetching news by category: {}, page: {}, size: {}", category, page, size);
+            String category, int page, int size, Locale locale) {
+        log.info("Fetching news by category: {}, page: {}, size: {}, locale: {}",
+                category, page, size, locale);
 
         Pageable pageable = PageRequest.of(
                 page, size,
@@ -53,7 +55,7 @@ public class NewsServiceImpl implements NewsService {
         Page<News> newsPage = newsRepository.findByCategoryIgnoreCase(category, pageable);
 
         List<NewsResponseDTO> content = newsPage.getContent().stream()
-                .map(newsMapper::toResponseDto)
+                .map(news -> applyLocale(newsMapper.toResponseDto(news), locale))
                 .toList();
 
         log.info("✅ Fetched {} news for category: {}", content.size(), category);
@@ -75,10 +77,10 @@ public class NewsServiceImpl implements NewsService {
     @Override
     @Cacheable(
             value = "allNews",
-            key = "'page:' + #page + ':size:' + #size"
+            key = "'page:' + #page + ':size:' + #size + ':lang:' + #locale.language"
     )
-    public PageResponseDTO<NewsResponseDTO> getAllNews(int page, int size) {
-        log.info("Fetching all news, page: {}, size: {}", page, size);
+    public PageResponseDTO<NewsResponseDTO> getAllNews(int page, int size, Locale locale) {
+        log.info("Fetching all news, page: {}, size: {}, locale: {}", page, size, locale);
 
         Pageable pageable = PageRequest.of(
                 page, size,
@@ -88,7 +90,7 @@ public class NewsServiceImpl implements NewsService {
         Page<News> newsPage = newsRepository.findAll(pageable);
 
         List<NewsResponseDTO> content = newsPage.getContent().stream()
-                .map(newsMapper::toResponseDto)
+                .map(news -> applyLocale(newsMapper.toResponseDto(news), locale))
                 .toList();
 
         log.info("✅ Fetched {} news total", content.size());
@@ -103,15 +105,16 @@ public class NewsServiceImpl implements NewsService {
         );
     }
 
+
     /**
      * ID'ye göre haber getirir.
      * Sonuç Redis cache'te tutulur.
      * Haber bulunamazsa ResourceNotFoundException fırlatır.
      */
     @Override
-    @Cacheable(value = "news", key = "'by-id:' + #id")
-    public NewsResponseDTO getNewsById(Long id) {
-        log.info("Fetching news by ID: {}", id);
+    @Cacheable(value = "news", key = "'by-id:' + #id + ':lang:' + #locale.language")
+    public NewsResponseDTO getNewsById(Long id, Locale locale) {
+        log.info("Fetching news by ID: {}, locale: {}", id, locale);
 
         News news = newsRepository.findById(id)
                 .orElseThrow(() -> {
@@ -120,7 +123,7 @@ public class NewsServiceImpl implements NewsService {
                 });
 
         log.info("✅ News found: {}", news.getTitle());
-        return newsMapper.toResponseDto(news);
+        return applyLocale(newsMapper.toResponseDto(news), locale);
     }
 
     /**
@@ -220,5 +223,21 @@ public class NewsServiceImpl implements NewsService {
                 "categoryCounts", categoryCounts,
                 "lastUpdate", lastNews != null ? lastNews.getPublishDate() : null
         );
+    }
+
+    /**
+     * Locale'e göre title ve content alanlarını ayarlar.
+     * İngilizce locale'de titleEn/contentEn varsa onları kullanır.
+     */
+    private NewsResponseDTO applyLocale(NewsResponseDTO dto, Locale locale) {
+        if (locale != null && "en".equals(locale.getLanguage())) {
+            if (dto.getTitleEn() != null && !dto.getTitleEn().isBlank()) {
+                dto.setTitle(dto.getTitleEn());
+            }
+            if (dto.getContentEn() != null && !dto.getContentEn().isBlank()) {
+                dto.setContent(dto.getContentEn());
+            }
+        }
+        return dto;
     }
 }
