@@ -90,6 +90,32 @@ Uygulama ilk kez başlatıldığında Keycloak realm'ini manuel import etmen ger
 
 > Import başarılı olursa sol üstte **finance-portal** realm'i görünür.
 
+### 4. OpenSearch Tracing Kurulumu
+
+Trace'lerin görüntülenebilmesi için `otel-v1-apm-service-map` index'i ve index pattern'larının manuel oluşturulması gerekir.
+
+**4.1. Service Map index oluştur:**
+
+PowerShell'de çalıştır:
+```powershell
+Invoke-WebRequest -Uri "http://localhost:9200/otel-v1-apm-service-map" -Method PUT -Headers @{"Content-Type"="application/json"} -Body '{"mappings":{"properties":{"serviceName":{"type":"keyword"},"destination":{"type":"keyword"},"traceGroupName":{"type":"keyword"}}}}'
+```
+
+**4.2. Index Pattern'ları oluştur:**
+
+1. [http://localhost:5601](http://localhost:5601) adresine git
+2. Sol menü → **Stack Management** → **Index Patterns** → **Create index pattern**
+3. İlk pattern: `otel-v1-apm-span-*` → Time field: `startTime` → **Create**
+4. İkinci pattern: `otel-v1-apm-service-map*` → **I don't want to use time filter** → **Create**
+
+**4.3. Trace'leri görüntüle:**
+
+1. Sol menü → **Observability → Traces**
+2. Date range → **Last 90 days** seç
+3. HTTP request trace'leri listelenecektir
+
+> **Not:** `docker-compose down -v` komutu kullanılırsa OpenSearch verileri tamamen silinir ve bu adımların tekrar yapılması gerekir. Sadece `docker-compose down` yapılırsa veriler korunur.
+
 ## Servis URL'leri
 
 | Servis | URL | Kullanıcı Adı | Şifre |
@@ -172,7 +198,12 @@ Haberlerin İngilizce çevirilerini oluşturmak için admin panelinden haber çe
 ### Distributed Tracing (OpenTelemetry)
 
 1. [http://localhost:5601](http://localhost:5601) adresine git
-2. **Observability → Traces** sekmesinden request trace'lerini görüntüle
+2. Sol menü → **Observability → Traces** sekmesine git
+3. Date range → **Last 90 days** seç
+4. HTTP request trace'leri (GET /api/..., POST /api/...) listelenir
+5. Bir trace'e tıklayarak detayını görüntüle — hangi endpoint kaç ms sürdü, DB ve Hibernate span'ları görünür
+
+> **İlk kurulumda** Kurulum bölümü 4. adımını (OpenSearch Tracing Kurulumu) takip et.
 
 ## Proje Yapısı
 
