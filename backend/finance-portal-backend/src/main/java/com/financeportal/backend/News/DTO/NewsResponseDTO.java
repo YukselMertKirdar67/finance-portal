@@ -22,4 +22,6 @@ public class NewsResponseDTO implements Serializable {
     private String imageUrl;
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime publishDate;
+    private String titleEn;
+    private String contentEn;
 }
