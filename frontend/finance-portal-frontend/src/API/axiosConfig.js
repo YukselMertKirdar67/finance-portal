@@ -1,4 +1,5 @@
 import axios from 'axios';
+import i18n from '../i18n';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api/v1';
 
@@ -10,11 +11,14 @@ const api = axios.create({
 });
 
 /**
- * İstek interceptor'ı — her isteğe JWT token ekler.
+ * İstek interceptor'ı — her isteğe JWT token ve dil header'ı ekler.
  * /auth/refresh endpoint'i için token eklenmez.
  */
 api.interceptors.request.use(
     (config) => {
+        // Accept-Language header'ı ekle
+        config.headers['Accept-Language'] = i18n.language || 'tr';
+
         if (config.url && config.url.includes('/auth/refresh')) {
             return config;
         }
