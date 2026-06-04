@@ -16,6 +16,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Locale;
 
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.when;
@@ -40,7 +41,7 @@ class NewsControllerTest {
     void setUp() {
         testNewsDTO = new NewsResponseDTO(
                 1L, "Test Haber", "Test içerik", "Test Kaynak",
-                "FINANS", null, LocalDateTime.now());
+                "FINANS", null, LocalDateTime.now(), null, null);
 
         testPage = new PageResponseDTO<>(
                 List.of(testNewsDTO), 0, 20, 1, 1, true);
@@ -50,7 +51,8 @@ class NewsControllerTest {
     @WithMockUser(roles = "USER")
     @DisplayName("Tüm haberler başarıyla getirilmeli")
     void getAllNews_ReturnsOk() throws Exception {
-        when(newsService.getAllNews(0, 20)).thenReturn(testPage);
+        when(newsService.getAllNews(anyInt(), anyInt(), any(Locale.class)))
+                .thenReturn(testPage);
 
         mockMvc.perform(get("/api/v1/news"))
                 .andExpect(status().isOk())
@@ -61,7 +63,7 @@ class NewsControllerTest {
     @WithMockUser(roles = "USER")
     @DisplayName("Kategoriye göre haberler getirilmeli")
     void getNewsByCategory_ReturnsOk() throws Exception {
-        when(newsService.getNewsByCategory(eq("FINANS"), anyInt(), anyInt()))
+        when(newsService.getNewsByCategory(anyString(), anyInt(), anyInt(), any(Locale.class)))
                 .thenReturn(testPage);
 
         mockMvc.perform(get("/api/v1/news/category/FINANS"))
@@ -73,12 +75,32 @@ class NewsControllerTest {
     @WithMockUser(roles = "USER")
     @DisplayName("ID ile haber getirilmeli")
     void getNewsById_ReturnsOk() throws Exception {
-        when(newsService.getNewsById(1L)).thenReturn(testNewsDTO);
+        when(newsService.getNewsById(eq(1L), any(Locale.class)))
+                .thenReturn(testNewsDTO);
 
         mockMvc.perform(get("/api/v1/news/1"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(1))
                 .andExpect(jsonPath("$.title").value("Test Haber"));
+    }
+
+    @Test
+    @WithMockUser(roles = "USER")
+    @DisplayName("Accept-Language: en header ile İngilizce haber dönmeli")
+    void getAllNews_EnglishLocale_ReturnsOk() throws Exception {
+        NewsResponseDTO englishNews = new NewsResponseDTO(
+                1L, "Test News", "Test content", "Test Source",
+                "FINANCE", null, LocalDateTime.now(), null, null);
+        PageResponseDTO<NewsResponseDTO> englishPage = new PageResponseDTO<>(
+                List.of(englishNews), 0, 20, 1, 1, true);
+
+        when(newsService.getAllNews(anyInt(), anyInt(), any(Locale.class)))
+                .thenReturn(englishPage);
+
+        mockMvc.perform(get("/api/v1/news")
+                        .header("Accept-Language", "en"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content[0].title").value("Test News"));
     }
 
     @Test

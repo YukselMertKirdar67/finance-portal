@@ -15,10 +15,12 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.quality.Strictness;
 import org.mockito.junit.jupiter.MockitoSettings;
+import org.springframework.context.MessageSource;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.*;
@@ -38,6 +40,9 @@ class HomeServiceTest {
 
     @Mock
     private NewsService newsService;
+
+    @Mock
+    private MessageSource messageSource;
 
     @InjectMocks
     private HomeService homeService;
@@ -73,6 +78,8 @@ class HomeServiceTest {
                 .previousClose(new BigDecimal("38.00"))
                 .timestamp(LocalDateTime.now())
                 .build();
+        when(messageSource.getMessage(anyString(), any(), any(Locale.class)))
+                .thenReturn("Test Category");
     }
 
     @Test
@@ -83,7 +90,7 @@ class HomeServiceTest {
         when(priceRepository.findTopByInstrumentOrderByTimestampDesc(testInstrument))
                 .thenReturn(Optional.of(positivePrice));
         when(instrumentRepository.countByType(any())).thenReturn(5L);
-        when(newsService.getAllNews(eq(0), eq(5))).thenReturn(
+        when(newsService.getAllNews(eq(0), eq(5), any(Locale.class))).thenReturn(
                 new PageResponseDTO<>(List.of(), 0, 5, 0, 0, true));
 
         HomePageDTO result = homeService.getHomePageData();
@@ -101,7 +108,7 @@ class HomeServiceTest {
         when(priceRepository.findTopByInstrumentOrderByTimestampDesc(testInstrument))
                 .thenReturn(Optional.of(positivePrice));
         when(instrumentRepository.countByType(any())).thenReturn(0L);
-        when(newsService.getAllNews(anyInt(), anyInt())).thenReturn(
+        when(newsService.getAllNews(anyInt(), anyInt(), any(Locale.class))).thenReturn(
                 new PageResponseDTO<>(List.of(), 0, 5, 0, 0, true));
 
         HomePageDTO result = homeService.getHomePageData();
@@ -118,7 +125,7 @@ class HomeServiceTest {
         when(priceRepository.findTopByInstrumentOrderByTimestampDesc(testInstrument))
                 .thenReturn(Optional.of(negativePrice));
         when(instrumentRepository.countByType(any())).thenReturn(0L);
-        when(newsService.getAllNews(anyInt(), anyInt())).thenReturn(
+        when(newsService.getAllNews(anyInt(), anyInt(), any(Locale.class))).thenReturn(
                 new PageResponseDTO<>(List.of(), 0, 5, 0, 0, true));
 
         HomePageDTO result = homeService.getHomePageData();
@@ -133,7 +140,8 @@ class HomeServiceTest {
         when(instrumentRepository.findBySymbol(anyString())).thenReturn(Optional.empty());
         when(instrumentRepository.findByActiveTrue()).thenReturn(List.of());
         when(instrumentRepository.countByType(any())).thenReturn(0L);
-        when(newsService.getAllNews(anyInt(), anyInt())).thenThrow(new RuntimeException("News service error"));
+        when(newsService.getAllNews(anyInt(), anyInt(), any(Locale.class)))
+                .thenThrow(new RuntimeException("News service error"));
 
         HomePageDTO result = homeService.getHomePageData();
 
@@ -149,7 +157,7 @@ class HomeServiceTest {
         when(priceRepository.findTopByInstrumentOrderByTimestampDesc(testInstrument))
                 .thenReturn(Optional.empty());
         when(instrumentRepository.countByType(any())).thenReturn(0L);
-        when(newsService.getAllNews(anyInt(), anyInt())).thenReturn(
+        when(newsService.getAllNews(anyInt(), anyInt(), any(Locale.class))).thenReturn(
                 new PageResponseDTO<>(List.of(), 0, 5, 0, 0, true));
 
         HomePageDTO result = homeService.getHomePageData();

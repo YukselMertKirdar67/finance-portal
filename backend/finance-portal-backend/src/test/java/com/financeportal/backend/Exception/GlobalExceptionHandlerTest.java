@@ -4,7 +4,11 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
+import org.springframework.context.MessageSource;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
@@ -13,18 +17,31 @@ import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 
+import java.util.Locale;
+
 import static org.assertj.core.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-@DisplayName("GlobalExceptionHandler Unit Testleri")
+@MockitoSettings(strictness = Strictness.LENIENT)
 class GlobalExceptionHandlerTest {
+
+    @Mock
+    private MessageSource messageSource;
 
     private GlobalExceptionHandler exceptionHandler;
 
     @BeforeEach
     void setUp() {
-        exceptionHandler = new GlobalExceptionHandler();
+        exceptionHandler = new GlobalExceptionHandler(messageSource);
+
+        when(messageSource.getMessage(eq("error.unauthorized"), any(), any(Locale.class)))
+                .thenReturn("Kimlik doğrulama başarısız.");
+        when(messageSource.getMessage(eq("error.forbidden"), any(), any(Locale.class)))
+                .thenReturn("Bu kaynağa erişim yetkiniz yok.");
+        when(messageSource.getMessage(eq("error.internal"), any(), any(Locale.class)))
+                .thenReturn("Sunucu tarafında beklenmeyen bir hata oluştu.");
     }
 
     @Test
@@ -76,7 +93,8 @@ class GlobalExceptionHandlerTest {
     void handleAuthenticationException_Returns401() {
         BadCredentialsException ex = new BadCredentialsException("Kimlik doğrulama hatası");
 
-        ResponseEntity<ErrorResponse> response = exceptionHandler.handleAuthenticationException(ex);
+        ResponseEntity<ErrorResponse> response = exceptionHandler.handleAuthenticationException(
+                ex, Locale.forLanguageTag("tr"));
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
         assertThat(response.getBody()).isNotNull();
@@ -89,7 +107,8 @@ class GlobalExceptionHandlerTest {
     void handleAccessDenied_Returns403() {
         AccessDeniedException ex = new AccessDeniedException("Erişim reddedildi");
 
-        ResponseEntity<ErrorResponse> response = exceptionHandler.handleAccessDenied(ex);
+        ResponseEntity<ErrorResponse> response = exceptionHandler.handleAccessDenied(
+                ex, Locale.forLanguageTag("tr"));
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
         assertThat(response.getBody()).isNotNull();
@@ -115,13 +134,43 @@ class GlobalExceptionHandlerTest {
     void handleGeneralException_Returns500() {
         Exception ex = new Exception("Beklenmeyen hata");
 
-        ResponseEntity<ErrorResponse> response = exceptionHandler.handleGeneralException(ex);
+        ResponseEntity<ErrorResponse> response = exceptionHandler.handleGeneralException(
+                ex, Locale.forLanguageTag("tr"));
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
         assertThat(response.getBody()).isNotNull();
         assertThat(response.getBody().getStatus()).isEqualTo(500);
         assertThat(response.getBody().getMessage())
                 .isEqualTo("Sunucu tarafında beklenmeyen bir hata oluştu.");
+    }
+
+    @Test
+    @DisplayName("İngilizce locale ile 401 dönmeli")
+    void handleAuthenticationException_EnglishLocale_Returns401() {
+        when(messageSource.getMessage(eq("error.unauthorized"), any(), eq(Locale.ENGLISH)))
+                .thenReturn("Authentication failed.");
+
+        BadCredentialsException ex = new BadCredentialsException("Auth error");
+
+        ResponseEntity<ErrorResponse> response = exceptionHandler.handleAuthenticationException(
+                ex, Locale.ENGLISH);
+
+        assertThat(response.getBody().getMessage()).isEqualTo("Authentication failed.");
+    }
+
+    @Test
+    @DisplayName("İngilizce locale ile 403 dönmeli")
+    void handleAccessDenied_EnglishLocale_Returns403() {
+        when(messageSource.getMessage(eq("error.forbidden"), any(), eq(Locale.ENGLISH)))
+                .thenReturn("You do not have access to this resource.");
+
+        AccessDeniedException ex = new AccessDeniedException("Access denied");
+
+        ResponseEntity<ErrorResponse> response = exceptionHandler.handleAccessDenied(
+                ex, Locale.ENGLISH);
+
+        assertThat(response.getBody().getMessage())
+                .isEqualTo("You do not have access to this resource.");
     }
 
     @Test

@@ -107,4 +107,37 @@ class NewsMapperTest {
         assertThat(result.getImageUrl()).isNotBlank();
         assertThat(result.getPublishDate()).isNotNull();
     }
+
+    @Test
+    @DisplayName("titleEn ve contentEn alanları map edilmeli")
+    void toResponseDto_WithEnglishFields_Success() {
+        testNews.setTitleEn("Test News Title");
+        testNews.setContentEn("Test news content");
+
+        NewsResponseDTO result = newsMapper.toResponseDto(testNews);
+
+        assertThat(result.getTitleEn()).isEqualTo("Test News Title");
+        assertThat(result.getContentEn()).isEqualTo("Test news content");
+    }
+
+    @Test
+    @DisplayName("titleEn ve contentEn null olduğunda null dönmeli")
+    void toResponseDto_NullEnglishFields_ReturnsNull() {
+        testNews.setTitleEn(null);
+        testNews.setContentEn(null);
+
+        NewsResponseDTO result = newsMapper.toResponseDto(testNews);
+
+        assertThat(result.getTitleEn()).isNull();
+        assertThat(result.getContentEn()).isNull();
+    }
+
+    @Test
+    @DisplayName("toEntity - titleEn ve contentEn set edilmemeli")
+    void toEntity_EnglishFieldsIgnored() {
+        News result = newsMapper.toEntity(testRequestDTO);
+
+        assertThat(result.getTitleEn()).isNull();
+        assertThat(result.getContentEn()).isNull();
+    }
 }

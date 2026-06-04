@@ -21,6 +21,7 @@ import org.springframework.data.domain.Pageable;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.*;
@@ -31,14 +32,9 @@ import static org.mockito.Mockito.*;
 @DisplayName("News Service Unit Tests")
 class NewsServiceTest {
 
-    @Mock
-    private NewsRepository newsRepository;
-
-    @Mock
-    private NewsMapper newsMapper;
-
-    @Mock
-    private ExternalNewsService externalNewsService;
+    @Mock private NewsRepository newsRepository;
+    @Mock private NewsMapper newsMapper;
+    @Mock private ExternalNewsService externalNewsService;
 
     @InjectMocks
     private NewsServiceImpl newsService;
@@ -63,18 +59,20 @@ class NewsServiceTest {
                 "Test Kaynak",
                 "FINANS",
                 null,
-                LocalDateTime.now()
+                LocalDateTime.now(),
+                null,
+                null
         );
     }
 
     @Test
-    @DisplayName("Tüm haberler sayfalı olarak getirilmeli")
-    void getAllNews_ReturnsPage() {
+    @DisplayName("Tüm haberler Türkçe locale ile getirilmeli")
+    void getAllNews_TurkishLocale_ReturnsPage() {
         Page<News> page = new PageImpl<>(List.of(testNews));
         when(newsRepository.findAll(any(Pageable.class))).thenReturn(page);
         when(newsMapper.toResponseDto(testNews)).thenReturn(testNewsDTO);
 
-        PageResponseDTO<NewsResponseDTO> result = newsService.getAllNews(0, 10);
+        PageResponseDTO<NewsResponseDTO> result = newsService.getAllNews(0, 10, Locale.forLanguageTag("tr"));
 
         assertThat(result).isNotNull();
         assertThat(result.getContent()).hasSize(1);
@@ -82,13 +80,37 @@ class NewsServiceTest {
     }
 
     @Test
-    @DisplayName("Kategoriye göre haberler getirilmeli")
+    @DisplayName("Tüm haberler İngilizce locale ile getirilmeli")
+    void getAllNews_EnglishLocale_ReturnsPage() {
+        testNews.setTitleEn("Test News Title");
+        testNews.setContentEn("Test news content");
+
+        NewsResponseDTO englishDTO = new NewsResponseDTO(
+                1L, "Test Haber Başlığı", "Test haber içeriği",
+                "Test Kaynak", "FINANS", null, LocalDateTime.now(),null,null);
+        englishDTO.setTitleEn("Test News Title");
+        englishDTO.setContentEn("Test news content");
+
+        Page<News> page = new PageImpl<>(List.of(testNews));
+        when(newsRepository.findAll(any(Pageable.class))).thenReturn(page);
+        when(newsMapper.toResponseDto(testNews)).thenReturn(englishDTO);
+
+        PageResponseDTO<NewsResponseDTO> result = newsService.getAllNews(0, 10, Locale.ENGLISH);
+
+        assertThat(result).isNotNull();
+        assertThat(result.getContent().get(0).getTitle()).isEqualTo("Test News Title");
+    }
+
+    @Test
+    @DisplayName("Kategoriye göre haberler Türkçe locale ile getirilmeli")
     void getNewsByCategory_ReturnsPage() {
         Page<News> page = new PageImpl<>(List.of(testNews));
-        when(newsRepository.findByCategoryIgnoreCase(eq("FINANS"), any(Pageable.class))).thenReturn(page);
+        when(newsRepository.findByCategoryIgnoreCase(eq("FINANS"), any(Pageable.class)))
+                .thenReturn(page);
         when(newsMapper.toResponseDto(testNews)).thenReturn(testNewsDTO);
 
-        PageResponseDTO<NewsResponseDTO> result = newsService.getNewsByCategory("FINANS", 0, 10);
+        PageResponseDTO<NewsResponseDTO> result = newsService.getNewsByCategory(
+                "FINANS", 0, 10, Locale.forLanguageTag("tr"));
 
         assertThat(result).isNotNull();
         assertThat(result.getContent()).hasSize(1);
@@ -96,12 +118,12 @@ class NewsServiceTest {
     }
 
     @Test
-    @DisplayName("ID ile haber getirilmeli")
+    @DisplayName("ID ile haber Türkçe locale ile getirilmeli")
     void getNewsById_ReturnsNews() {
         when(newsRepository.findById(1L)).thenReturn(Optional.of(testNews));
         when(newsMapper.toResponseDto(testNews)).thenReturn(testNewsDTO);
 
-        NewsResponseDTO result = newsService.getNewsById(1L);
+        NewsResponseDTO result = newsService.getNewsById(1L, Locale.forLanguageTag("tr"));
 
         assertThat(result).isNotNull();
         assertThat(result.getTitle()).isEqualTo("Test Haber Başlığı");
@@ -113,7 +135,7 @@ class NewsServiceTest {
     void getNewsById_NotFound_ThrowsException() {
         when(newsRepository.findById(999L)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> newsService.getNewsById(999L))
+        assertThatThrownBy(() -> newsService.getNewsById(999L, Locale.forLanguageTag("tr")))
                 .isInstanceOf(ResourceNotFoundException.class);
     }
 
