@@ -32,5 +32,10 @@ public class News implements Serializable {
     @Column(name = "published_at")
     private LocalDateTime publishDate;
 
+    @Column(name = "title_en", columnDefinition = "TEXT")
+    private String titleEn;
+    @Column(name = "content_en", columnDefinition = "TEXT")
+    private String contentEn;
+
 
 }
