@@ -1,10 +1,13 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Lock, Shield, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from '../UI/Card';
 import { Button } from '../UI/Button';
 import { changePassword } from '../../API/userApi';
 
 export default function SecuritySettings() {
+    const { t } = useTranslation();
+
     const [passwordForm, setPasswordForm] = useState({
         currentPassword: '',
         newPassword: '',
@@ -31,20 +34,18 @@ export default function SecuritySettings() {
 
     const validatePasswordForm = () => {
         const errors = {};
-
-        if (!passwordForm.currentPassword) errors.currentPassword = 'Mevcut şifre gerekli';
+        if (!passwordForm.currentPassword) errors.currentPassword = t('security.validation.currentRequired');
         if (!passwordForm.newPassword) {
-            errors.newPassword = 'Yeni şifre gerekli';
+            errors.newPassword = t('security.validation.newRequired');
         } else if (passwordForm.newPassword.length < 6) {
-            errors.newPassword = 'Yeni şifre en az 6 karakter olmalı';
+            errors.newPassword = t('security.validation.newMin');
         }
         if (passwordForm.newPassword !== passwordForm.confirmPassword) {
-            errors.confirmPassword = 'Şifreler eşleşmiyor';
+            errors.confirmPassword = t('register.validation.passwordMismatch');
         }
         if (showOTPInput && (!otpCode || otpCode.length !== 6)) {
-            errors.otpCode = '6 haneli OTP kodu gerekli';
+            errors.otpCode = t('security.validation.otpRequired');
         }
-
         setPasswordErrors(errors);
         return Object.keys(errors).length === 0;
     };
@@ -68,14 +69,14 @@ export default function SecuritySettings() {
                 setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
                 setOtpCode('');
                 setShowOTPInput(false);
-                showToast('Şifreniz başarıyla değiştirildi');
+                showToast(t('security.passwordChanged'));
             } else if (response.message === 'OTP_REQUIRED') {
                 setShowOTPInput(true);
             } else {
-                setPasswordErrors({ submit: response.message || 'Şifre değiştirme başarısız' });
+                setPasswordErrors({ submit: response.message || t('security.passwordChangeFailed') });
             }
         } catch (error) {
-            const errorMsg = error.response?.data?.message || 'Şifre değiştirme başarısız';
+            const errorMsg = error.response?.data?.message || t('security.passwordChangeFailed');
             if (errorMsg === 'OTP_REQUIRED') {
                 setShowOTPInput(true);
             } else {
@@ -96,7 +97,9 @@ export default function SecuritySettings() {
                         ? 'bg-green-50 text-green-800 border border-green-200'
                         : 'bg-red-50 text-red-800 border border-red-200'
                 }`}>
-                    {toast.type === 'success' ? <CheckCircle className="w-5 h-5" /> : <AlertCircle className="w-5 h-5" />}
+                    {toast.type === 'success'
+                        ? <CheckCircle className="w-5 h-5" />
+                        : <AlertCircle className="w-5 h-5" />}
                     <span>{toast.message}</span>
                 </div>
             )}
@@ -106,7 +109,7 @@ export default function SecuritySettings() {
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                         <Lock className="w-5 h-5 text-blue-600" />
-                        Şifre Değiştir
+                        {t('profile.changePassword')}
                     </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -118,10 +121,11 @@ export default function SecuritySettings() {
                     )}
 
                     <form onSubmit={handlePasswordSubmit} className="space-y-4">
+
                         {/* Mevcut Şifre */}
                         <div>
                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                Mevcut Şifre
+                                {t('profile.currentPassword')}
                             </label>
                             <div className="relative">
                                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -147,7 +151,7 @@ export default function SecuritySettings() {
                         {/* Yeni Şifre */}
                         <div>
                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                Yeni Şifre
+                                {t('profile.newPassword')}
                             </label>
                             <div className="relative">
                                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -173,7 +177,7 @@ export default function SecuritySettings() {
                         {/* Yeni Şifre Tekrar */}
                         <div>
                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                Yeni Şifre Tekrar
+                                {t('register.confirmPassword')}
                             </label>
                             <div className="relative">
                                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -200,7 +204,7 @@ export default function SecuritySettings() {
                         {showOTPInput && (
                             <div className="border-t dark:border-gray-700 pt-4">
                                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                    2FA Kodu
+                                    {t('security.twoFACode')}
                                 </label>
                                 <input
                                     type="text"
@@ -212,7 +216,7 @@ export default function SecuritySettings() {
                                     autoFocus
                                 />
                                 <p className="text-sm text-gray-500 mt-2 text-center">
-                                    Authenticator uygulamanızdan 6 haneli kodu girin
+                                    {t('security.otpHint')}
                                 </p>
                                 {passwordErrors.otpCode && (
                                     <p className="text-red-600 text-sm mt-1 text-center">{passwordErrors.otpCode}</p>
@@ -223,12 +227,14 @@ export default function SecuritySettings() {
                         <div className="flex justify-end pt-2">
                             <Button type="submit" disabled={passwordLoading}>
                                 {passwordLoading ? (
-                                    <><Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                                        {showOTPInput ? 'Doğrulanıyor...' : 'Değiştiriliyor...'}
+                                    <>
+                                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                        {showOTPInput ? t('setup2fa.verifying') : t('security.changing')}
                                     </>
                                 ) : (
-                                    <><Lock className="w-4 h-4 mr-2" />
-                                        {showOTPInput ? '2FA Doğrula' : 'Şifreyi Değiştir'}
+                                    <>
+                                        <Lock className="w-4 h-4 mr-2" />
+                                        {showOTPInput ? t('security.verify2FA') : t('profile.changePassword')}
                                     </>
                                 )}
                             </Button>
@@ -242,8 +248,7 @@ export default function SecuritySettings() {
                 <div className="flex items-start gap-3">
                     <Shield className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
                     <p className="text-sm text-blue-800 dark:text-blue-300">
-                        Hesabınızı korumak için güçlü bir şifre kullanın ve şifrenizi düzenli olarak değiştirin.
-                        2FA aktifse şifre değişikliği için authenticator kodunuz istenecektir.
+                        {t('security.securityNote')}
                     </p>
                 </div>
             </div>

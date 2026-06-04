@@ -3,12 +3,13 @@ import { TrendingUp, TrendingDown, ArrowRight, DollarSign, Gem, Briefcase, Globe
 import { Card, CardContent, CardHeader, CardTitle } from '../UI/Card';
 import { Button } from '../UI/Button';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { getHomePageData } from '../../API/homeApi';
 import { useWebSocket } from '../../Hooks/useWebSocket';
 
-
 export default function HomePage() {
     const navigate = useNavigate();
+    const { t , i18n} = useTranslation();
     const [homeData, setHomeData] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -16,7 +17,7 @@ export default function HomePage() {
 
     useEffect(() => {
         fetchHomeData();
-    }, []);
+    }, [i18n.language]);
 
     useWebSocket((priceUpdate) => {
         setLivePrices(prev => ({
@@ -25,7 +26,6 @@ export default function HomePage() {
         }));
     });
 
-
     const fetchHomeData = async () => {
         try {
             setLoading(true);
@@ -33,7 +33,7 @@ export default function HomePage() {
             setHomeData(data);
         } catch (err) {
             console.error('Home data fetch error:', err);
-            setError('Veri yüklenirken hata oluştu');
+            setError(t('home.error'));
         } finally {
             setLoading(false);
         }
@@ -61,7 +61,7 @@ export default function HomePage() {
             <div className="min-h-screen bg-gray-50 flex items-center justify-center">
                 <div className="text-center">
                     <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-                    <p className="text-gray-600">Yükleniyor...</p>
+                    <p className="text-gray-600">{t('common.loading')}</p>
                 </div>
             </div>
         );
@@ -72,7 +72,7 @@ export default function HomePage() {
             <div className="min-h-screen bg-gray-50 flex items-center justify-center">
                 <div className="text-center">
                     <p className="text-red-600 mb-4">{error}</p>
-                    <Button onClick={fetchHomeData}>Tekrar Dene</Button>
+                    <Button onClick={fetchHomeData}>{t('common.refresh')}</Button>
                 </div>
             </div>
         );
@@ -81,10 +81,11 @@ export default function HomePage() {
     return (
         <div className="min-h-screen bg-gray-50 p-8">
             <div className="max-w-7xl mx-auto">
+
                 {/* Header */}
                 <div className="mb-8">
-                    <h1 className="text-4xl font-bold text-gray-900 mb-2">Anasayfa</h1>
-                    <p className="text-gray-600">Piyasalara genel bakış ve güncel gelişmeler</p>
+                    <h1 className="text-4xl font-bold text-gray-900 mb-2">{t('nav.home')}</h1>
+                    <p className="text-gray-600">{t('home.subtitle')}</p>
                 </div>
 
                 {/* Market Overview */}
@@ -120,7 +121,7 @@ export default function HomePage() {
                                             <TrendingDown className="w-4 h-4" />
                                         )}
                                         <span className="text-sm font-semibold">
-                                           {item.change} ({item.changePercent})
+                                            {item.change} ({item.changePercent})
                                         </span>
                                     </div>
                                 </CardContent>
@@ -133,7 +134,7 @@ export default function HomePage() {
                 {homeData?.marketStats && (
                     <Card className="mb-8 border-0 shadow-sm">
                         <CardHeader>
-                            <CardTitle>Piyasa Durumu</CardTitle>
+                            <CardTitle>{t('home.marketStats')}</CardTitle>
                         </CardHeader>
                         <CardContent>
                             <div className="grid grid-cols-3 gap-6">
@@ -141,19 +142,19 @@ export default function HomePage() {
                                     <div className="text-3xl font-bold text-emerald-600 mb-1">
                                         {homeData.marketStats.rising}
                                     </div>
-                                    <p className="text-sm text-gray-600">Yükseliş</p>
+                                    <p className="text-sm text-gray-600">{t('home.rising')}</p>
                                 </div>
                                 <div className="text-center">
                                     <div className="text-3xl font-bold text-red-500 mb-1">
                                         {homeData.marketStats.falling}
                                     </div>
-                                    <p className="text-sm text-gray-600">Düşüş</p>
+                                    <p className="text-sm text-gray-600">{t('home.falling')}</p>
                                 </div>
                                 <div className="text-center">
                                     <div className="text-3xl font-bold text-gray-500 mb-1">
                                         {homeData.marketStats.unchanged}
                                     </div>
-                                    <p className="text-sm text-gray-600">Değişmedi</p>
+                                    <p className="text-sm text-gray-600">{t('home.unchanged')}</p>
                                 </div>
                             </div>
                         </CardContent>
@@ -176,7 +177,9 @@ export default function HomePage() {
                                             <IconComponent className="w-6 h-6 text-blue-600" />
                                         </div>
                                         <p className="font-semibold text-gray-900 mb-1">{category.displayName}</p>
-                                        <p className="text-sm text-gray-600">{category.count} enstrüman</p>
+                                        <p className="text-sm text-gray-600">
+                                            {t('home.instrumentCount', { count: category.count })}
+                                        </p>
                                     </CardContent>
                                 </Card>
                             );
@@ -186,12 +189,13 @@ export default function HomePage() {
 
                 {/* Top Gainers & Losers */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+
                     {/* Top Gainers */}
                     <Card className="border-0 shadow-sm">
                         <CardHeader className="flex flex-row items-center justify-between">
                             <CardTitle className="text-emerald-600 flex items-center gap-2">
                                 <TrendingUp className="w-5 h-5" />
-                                En Çok Kazananlar
+                                {t('home.topGainers')}
                             </CardTitle>
                         </CardHeader>
                         <CardContent>
@@ -217,7 +221,7 @@ export default function HomePage() {
                                     ))}
                                 </div>
                             ) : (
-                                <p className="text-center text-gray-400 py-8">Veri bulunamadı</p>
+                                <p className="text-center text-gray-400 py-8">{t('common.noData')}</p>
                             )}
                         </CardContent>
                     </Card>
@@ -227,7 +231,7 @@ export default function HomePage() {
                         <CardHeader className="flex flex-row items-center justify-between">
                             <CardTitle className="text-red-500 flex items-center gap-2">
                                 <TrendingDown className="w-5 h-5" />
-                                En Çok Kaybedenler
+                                {t('home.topLosers')}
                             </CardTitle>
                         </CardHeader>
                         <CardContent>
@@ -253,7 +257,7 @@ export default function HomePage() {
                                     ))}
                                 </div>
                             ) : (
-                                <p className="text-center text-gray-400 py-8">Veri bulunamadı</p>
+                                <p className="text-center text-gray-400 py-8">{t('common.noData')}</p>
                             )}
                         </CardContent>
                     </Card>
@@ -263,14 +267,14 @@ export default function HomePage() {
                 {homeData?.recentNews && homeData.recentNews.length > 0 && (
                     <Card className="border-0 shadow-sm">
                         <CardHeader className="flex flex-row items-center justify-between">
-                            <CardTitle>Son Haberler</CardTitle>
+                            <CardTitle>{t('home.recentNews')}</CardTitle>
                             <Button
                                 variant="ghost"
                                 size="sm"
                                 onClick={() => navigate('/news')}
                                 className="hover:bg-gray-100"
                             >
-                                Tümünü Gör
+                                {t('home.seeAll')}
                                 <ArrowRight className="w-4 h-4 ml-2" />
                             </Button>
                         </CardHeader>

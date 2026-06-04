@@ -3,36 +3,21 @@ import { TrendingUp, TrendingDown, Plus, X, Search, RefreshCw } from 'lucide-rea
 import { Card, CardContent, CardHeader, CardTitle } from '../UI/Card';
 import { Button } from '../UI/Button';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import {
-    PieChart,
-    Pie,
-    Cell,
-    ResponsiveContainer,
-    Tooltip as RechartsTooltip,
-    LineChart,
-    Line,
-    XAxis,
-    YAxis,
-    CartesianGrid,
+    PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip,
+    LineChart, Line, XAxis, YAxis, CartesianGrid,
 } from 'recharts';
-
 import {
-    getPortfolioDetail,
-    getAssetAllocation,
-    createTransaction,
-    getPortfolioPerformance,
-    updatePortfolio,
-    hardDeletePortfolio
+    getPortfolioDetail, getAssetAllocation, createTransaction,
+    getPortfolioPerformance, updatePortfolio, hardDeletePortfolio
 } from '../../API/portfolioApi';
-
-import {
-    getAllInstruments,
-    getInstrumentPrice
-} from '../../API/instrumentsApi';
+import { getAllInstruments, getInstrumentPrice } from '../../API/instrumentsApi';
 
 export default function PortfolioPage() {
     const { id } = useParams();
     const navigate = useNavigate();
+    const { t } = useTranslation();
     const PORTFOLIO_ID = parseInt(id);
 
     const [portfolio, setPortfolio] = useState(null);
@@ -40,14 +25,12 @@ export default function PortfolioPage() {
     const [assetAllocation, setAssetAllocation] = useState([]);
     const [availableInstruments, setAvailableInstruments] = useState([]);
     const [performanceData, setPerformanceData] = useState([]);
-
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [error, setError] = useState(null);
     const [showEditModal, setShowEditModal] = useState(false);
     const [editFormData, setEditFormData] = useState({ name: '', description: '', active: true });
-
-    const [activeFilter, setActiveFilter] = useState('Tümü');
+    const [activeFilter, setActiveFilter] = useState(t('portfolio.all'));
     const [showAddModal, setShowAddModal] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedInstrument, setSelectedInstrument] = useState(null);
@@ -77,8 +60,7 @@ export default function PortfolioPage() {
             const allocationData = await getAssetAllocation(PORTFOLIO_ID);
             setAssetAllocation(allocationData || []);
         } catch (err) {
-            console.error('Error loading portfolio:', err);
-            setError(err.response?.data?.message || 'Portföy yüklenirken hata oluştu');
+            setError(err.response?.data?.message || t('portfolio.loadError'));
         }
     };
 
@@ -96,7 +78,6 @@ export default function PortfolioPage() {
             const data = await getPortfolioPerformance(PORTFOLIO_ID, 30);
             setPerformanceData(data);
         } catch (err) {
-            console.error('Error loading performance data:', err);
             setPerformanceData([]);
         }
     };
@@ -109,15 +90,19 @@ export default function PortfolioPage() {
     };
 
     const handleUpdatePortfolio = async () => {
-        if (!editFormData.name.trim()) { alert('Portföy adı boş olamaz'); return; }
+        if (!editFormData.name.trim()) { alert(t('portfolio.nameRequired')); return; }
         try {
             setSubmitting(true);
-            await updatePortfolio(PORTFOLIO_ID, { name: editFormData.name, description: editFormData.description || undefined, active: editFormData.active });
+            await updatePortfolio(PORTFOLIO_ID, {
+                name: editFormData.name,
+                description: editFormData.description || undefined,
+                active: editFormData.active
+            });
             setShowEditModal(false);
             await loadPortfolioData();
-            alert('Portföy başarıyla güncellendi!');
+            alert(t('portfolio.updateSuccess'));
         } catch (err) {
-            alert(err.response?.data?.message || 'Portföy güncellenirken hata oluştu');
+            alert(err.response?.data?.message || t('portfolio.updateError'));
         } finally { setSubmitting(false); }
     };
 
@@ -128,12 +113,14 @@ export default function PortfolioPage() {
             setShowDeleteModal(false);
             navigate('/portfolios');
         } catch (err) {
-            alert(err.response?.data?.message || 'Portföy silinirken hata oluştu');
+            alert(err.response?.data?.message || t('portfolio.deleteError'));
         } finally { setSubmitting(false); }
     };
 
-    const categories = ['Tümü', ...Array.from(new Set(holdings.map(h => h.instrumentType)))];
-    const filteredHoldings = activeFilter === 'Tümü' ? holdings : holdings.filter(h => h.instrumentType === activeFilter);
+    const categories = [t('portfolio.all'), ...Array.from(new Set(holdings.map(h => h.instrumentType)))];
+    const filteredHoldings = activeFilter === t('portfolio.all')
+        ? holdings
+        : holdings.filter(h => h.instrumentType === activeFilter);
 
     const typeColors = {
         'FOREX': '#3B82F6', 'STOCK': '#8B5CF6', 'FUND': '#10B981',
@@ -146,11 +133,7 @@ export default function PortfolioPage() {
     }));
 
     const filteredInstruments = (() => {
-        let instruments = availableInstruments;
-
-        instruments = instruments.filter(inst =>
-            inst.type !== 'BOND' );
-
+        let instruments = availableInstruments.filter(inst => inst.type !== 'BOND');
         if (transactionType === 'SELL') {
             const holdingInstrumentIds = holdings.map(h => h.instrumentId);
             instruments = instruments.filter(inst => holdingInstrumentIds.includes(inst.id));
@@ -166,11 +149,14 @@ export default function PortfolioPage() {
     })();
 
     const handleAddTransaction = async () => {
-        if (!selectedInstrument || !quantity || !price) { alert('Lütfen tüm zorunlu alanları doldurun'); return; }
+        if (!selectedInstrument || !quantity || !price) {
+            alert(t('portfolio.fillRequired'));
+            return;
+        }
         if (transactionType === 'SELL') {
             const holding = holdings.find(h => h.instrumentId === selectedInstrument.id);
             if (!holding || parseFloat(quantity) > holding.quantity) {
-                alert(`Yetersiz miktar! Mevcut: ${holding ? holding.quantity : 0}`);
+                alert(t('portfolio.insufficientQuantity', { quantity: holding ? holding.quantity : 0 }));
                 return;
             }
         }
@@ -186,9 +172,9 @@ export default function PortfolioPage() {
             resetForm();
             await loadPortfolioData();
             await loadPerformanceData();
-            alert(`${transactionType === 'BUY' ? 'Alış' : 'Satış'} işlemi başarıyla eklendi!`);
+            alert(transactionType === 'BUY' ? t('portfolio.buySuccess') : t('portfolio.sellSuccess'));
         } catch (err) {
-            alert(err.response?.data?.message || 'İşlem eklenirken hata oluştu');
+            alert(err.response?.data?.message || t('portfolio.transactionError'));
         } finally { setSubmitting(false); }
     };
 
@@ -209,7 +195,6 @@ export default function PortfolioPage() {
         } catch { return 0; }
     };
 
-    // Para birimi sembolü
     const getCurrencySymbol = (currency) => {
         const symbols = { 'TRY': '₺', 'USD': '$', 'EUR': '€', 'GBP': '£' };
         return symbols[currency] || currency || '₺';
@@ -221,7 +206,7 @@ export default function PortfolioPage() {
         <div className="p-8 flex items-center justify-center h-screen">
             <div className="text-center">
                 <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-blue-600 mx-auto mb-4"></div>
-                <p className="text-lg text-gray-700 font-medium">Portföy yükleniyor...</p>
+                <p className="text-lg text-gray-700 font-medium">{t('portfolio.loading')}</p>
             </div>
         </div>
     );
@@ -230,10 +215,10 @@ export default function PortfolioPage() {
         <div className="p-8">
             <div className="bg-red-50 border-2 border-red-200 rounded-lg p-8 text-center max-w-md mx-auto">
                 <div className="text-red-600 text-5xl mb-4">⚠️</div>
-                <p className="text-red-800 font-semibold text-xl mb-2">Hata Oluştu</p>
+                <p className="text-red-800 font-semibold text-xl mb-2">{t('common.error')}</p>
                 <p className="text-red-600 mb-6">{error}</p>
                 <Button className="bg-red-600 hover:bg-red-700" onClick={() => { setError(null); loadAllData(); }}>
-                    <RefreshCw className="w-4 h-4 mr-2" />Tekrar Dene
+                    <RefreshCw className="w-4 h-4 mr-2" />{t('common.refresh')}
                 </Button>
             </div>
         </div>
@@ -243,50 +228,58 @@ export default function PortfolioPage() {
         <div className="p-8">
             <div className="bg-yellow-50 border-2 border-yellow-200 rounded-lg p-8 text-center max-w-md mx-auto">
                 <div className="text-yellow-600 text-5xl mb-4">📂</div>
-                <p className="text-yellow-800 font-semibold text-xl mb-2">Portföy Bulunamadı</p>
-                <p className="text-yellow-600">ID: {PORTFOLIO_ID} numaralı portföy bulunamadı</p>
+                <p className="text-yellow-800 font-semibold text-xl mb-2">{t('portfolio.notFound')}</p>
+                <p className="text-yellow-600">ID: {PORTFOLIO_ID}</p>
             </div>
         </div>
     );
 
     return (
         <div className="p-8">
+
             {/* Header */}
             <div className="mb-6 flex items-center justify-between">
                 <div className="flex-1">
                     <div className="flex items-center gap-3">
                         <h1 className="text-3xl font-bold">{portfolio.name}</h1>
                         {portfolio.active
-                            ? <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">Aktif</span>
-                            : <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-800">Pasif</span>
+                            ? <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">{t('profile.active')}</span>
+                            : <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-800">{t('portfolio.passive')}</span>
                         }
-                        {/* Para birimi badge */}
                         <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
                             {portfolio.currency}
                         </span>
                     </div>
-                    <p className="text-gray-600 mt-2">{portfolio.description || 'Yatırımlarınızın genel görünümü'}</p>
+                    <p className="text-gray-600 mt-2">{portfolio.description || t('portfolio.defaultDesc')}</p>
                 </div>
                 <div className="flex gap-3">
                     <Button variant="outline" onClick={handleRefresh} disabled={refreshing}>
-                        <RefreshCw className={`w-5 h-5 mr-2 ${refreshing ? 'animate-spin' : ''}`} />Yenile
+                        <RefreshCw className={`w-5 h-5 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
+                        {t('common.refresh')}
                     </Button>
-                    <Button variant="outline" onClick={() => { setEditFormData({ name: portfolio.name, description: portfolio.description || '', active: portfolio.active }); setShowEditModal(true); }}>
-                        Düzenle
+                    <Button variant="outline" onClick={() => {
+                        setEditFormData({ name: portfolio.name, description: portfolio.description || '', active: portfolio.active });
+                        setShowEditModal(true);
+                    }}>
+                        {t('common.edit')}
                     </Button>
                     <Button variant="outline" className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                            onClick={() => setShowDeleteModal(true)}>Sil</Button>
-                    <Button variant="default" onClick={() => setShowAddModal(true)} className="bg-[#0066FF] hover:bg-[#0052CC]">
-                        <Plus className="w-5 h-5 mr-2" />İşlem Ekle
+                            onClick={() => setShowDeleteModal(true)}>
+                        {t('common.delete')}
                     </Button>
-                    <Button variant="outline" onClick={() => navigate(`/portfolios/${PORTFOLIO_ID}/transactions`)}>İşlem Geçmişi</Button>
+                    <Button variant="default" onClick={() => setShowAddModal(true)} className="bg-[#0066FF] hover:bg-[#0052CC]">
+                        <Plus className="w-5 h-5 mr-2" />{t('portfolio.addTransaction')}
+                    </Button>
+                    <Button variant="outline" onClick={() => navigate(`/portfolios/${PORTFOLIO_ID}/transactions`)}>
+                        {t('transaction.history')}
+                    </Button>
                 </div>
             </div>
 
-            {/* Summary Cards — portfolio.currency'ye göre sembol */}
+            {/* Summary Cards */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
                 <Card>
-                    <CardHeader className="pb-2"><CardTitle className="text-sm text-gray-600">Toplam Değer</CardTitle></CardHeader>
+                    <CardHeader className="pb-2"><CardTitle className="text-sm text-gray-600">{t('portfolio.totalValue')}</CardTitle></CardHeader>
                     <CardContent>
                         <p className="text-3xl font-semibold text-gray-900">
                             {sym}{portfolio.currentValue?.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
@@ -294,7 +287,7 @@ export default function PortfolioPage() {
                     </CardContent>
                 </Card>
                 <Card>
-                    <CardHeader className="pb-2"><CardTitle className="text-sm text-gray-600">Yatırılan</CardTitle></CardHeader>
+                    <CardHeader className="pb-2"><CardTitle className="text-sm text-gray-600">{t('portfolio.totalInvested')}</CardTitle></CardHeader>
                     <CardContent>
                         <p className="text-3xl font-semibold text-gray-900">
                             {sym}{portfolio.totalInvested?.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
@@ -302,7 +295,7 @@ export default function PortfolioPage() {
                     </CardContent>
                 </Card>
                 <Card>
-                    <CardHeader className="pb-2"><CardTitle className="text-sm text-gray-600">Kar/Zarar</CardTitle></CardHeader>
+                    <CardHeader className="pb-2"><CardTitle className="text-sm text-gray-600">{t('portfolio.unrealizedPnL')}</CardTitle></CardHeader>
                     <CardContent>
                         <p className={`text-3xl font-semibold flex items-center gap-2 ${
                             portfolio.unrealizedPnL === 0 ? 'text-gray-500' :
@@ -316,7 +309,7 @@ export default function PortfolioPage() {
                     </CardContent>
                 </Card>
                 <Card>
-                    <CardHeader className="pb-2"><CardTitle className="text-sm text-gray-600">Getiri Oranı</CardTitle></CardHeader>
+                    <CardHeader className="pb-2"><CardTitle className="text-sm text-gray-600">{t('portfolio.pnlPercent')}</CardTitle></CardHeader>
                     <CardContent>
                         <p className={`text-3xl font-semibold flex items-center gap-2 ${
                             portfolio.pnlPercent === 0 ? 'text-gray-500' :
@@ -333,7 +326,7 @@ export default function PortfolioPage() {
             {/* Performance Chart */}
             {performanceData.length > 0 && (
                 <Card className="mb-6">
-                    <CardHeader><CardTitle>Portföy Performansı (Son 30 Gün)</CardTitle></CardHeader>
+                    <CardHeader><CardTitle>{t('portfolio.performanceChart')}</CardTitle></CardHeader>
                     <CardContent>
                         <div className="h-[400px]">
                             <ResponsiveContainer width="100%" height="100%">
@@ -343,8 +336,8 @@ export default function PortfolioPage() {
                                     <YAxis stroke="#9ca3af" style={{ fontSize: '12px' }}
                                            tickFormatter={(value) => `${sym}${value.toLocaleString('tr-TR')}`} />
                                     <RechartsTooltip
-                                        formatter={(value) => [`${sym}${value.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}`, 'Değer']}
-                                        labelFormatter={(label) => `Tarih: ${label}`}
+                                        formatter={(value) => [`${sym}${value.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}`, t('portfolio.value')]}
+                                        labelFormatter={(label) => `${t('transaction.date')}: ${label}`}
                                     />
                                     <Line type="monotone" dataKey="value"
                                           stroke={portfolio.unrealizedPnL >= 0 ? '#10B981' : '#EF4444'}
@@ -359,10 +352,10 @@ export default function PortfolioPage() {
                 </Card>
             )}
 
-            {/*  Pie Chart */}
+            {/* Pie Chart */}
             {pieChartData.length > 0 && (
                 <Card className="mb-6">
-                    <CardHeader><CardTitle>Portföy Dağılımı</CardTitle></CardHeader>
+                    <CardHeader><CardTitle>{t('portfolio.distribution')}</CardTitle></CardHeader>
                     <CardContent>
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
                             <div className="h-[400px]">
@@ -385,7 +378,7 @@ export default function PortfolioPage() {
                                         <div className="flex items-center gap-3">
                                             <div className="w-4 h-4 rounded-full" style={{ backgroundColor: typeColors[item.instrumentType] || '#6B7280' }} />
                                             <span className="font-medium text-gray-900">{item.instrumentType}</span>
-                                            <span className="text-sm text-gray-500">({item.count} adet)</span>
+                                            <span className="text-sm text-gray-500">({item.count} {t('portfolio.piece')})</span>
                                         </div>
                                         <div className="text-right">
                                             <span className="text-lg font-semibold text-gray-900">
@@ -405,7 +398,7 @@ export default function PortfolioPage() {
             <Card>
                 <CardHeader>
                     <div className="flex items-center justify-between flex-wrap gap-4">
-                        <CardTitle>Varlıklarım ({filteredHoldings.length})</CardTitle>
+                        <CardTitle>{t('portfolio.myHoldings')} ({filteredHoldings.length})</CardTitle>
                         <div className="flex flex-wrap gap-2">
                             {categories.map((category) => (
                                 <Button key={category} variant={activeFilter === category ? 'default' : 'outline'} size="sm"
@@ -422,13 +415,13 @@ export default function PortfolioPage() {
                         <table className="w-full">
                             <thead>
                             <tr className="border-b border-gray-200">
-                                <th className="text-left py-3 px-4 text-sm font-semibold text-gray-600">Enstrüman</th>
-                                <th className="text-left py-3 px-4 text-sm font-semibold text-gray-600">Tür</th>
-                                <th className="text-right py-3 px-4 text-sm font-semibold text-gray-600">Miktar</th>
-                                <th className="text-right py-3 px-4 text-sm font-semibold text-gray-600">Ort. Alış Fiyatı</th>
-                                <th className="text-right py-3 px-4 text-sm font-semibold text-gray-600">Güncel Fiyat ({sym})</th>
-                                <th className="text-right py-3 px-4 text-sm font-semibold text-gray-600">Toplam Değer ({sym})</th>
-                                <th className="text-right py-3 px-4 text-sm font-semibold text-gray-600">Kar/Zarar ({sym})</th>
+                                <th className="text-left py-3 px-4 text-sm font-semibold text-gray-600">{t('holding.name')}</th>
+                                <th className="text-left py-3 px-4 text-sm font-semibold text-gray-600">{t('holding.type')}</th>
+                                <th className="text-right py-3 px-4 text-sm font-semibold text-gray-600">{t('holding.quantity')}</th>
+                                <th className="text-right py-3 px-4 text-sm font-semibold text-gray-600">{t('holding.avgPrice')}</th>
+                                <th className="text-right py-3 px-4 text-sm font-semibold text-gray-600">{t('holding.currentPrice')} ({sym})</th>
+                                <th className="text-right py-3 px-4 text-sm font-semibold text-gray-600">{t('holding.currentValue')} ({sym})</th>
+                                <th className="text-right py-3 px-4 text-sm font-semibold text-gray-600">{t('holding.pnl')} ({sym})</th>
                             </tr>
                             </thead>
                             <tbody>
@@ -436,8 +429,8 @@ export default function PortfolioPage() {
                                 <tr>
                                     <td colSpan={7} className="text-center py-12">
                                         <div className="text-gray-400 text-6xl mb-4">📊</div>
-                                        <p className="text-gray-500 text-lg font-medium">Henüz varlık bulunmuyor</p>
-                                        <p className="text-gray-400 text-sm mt-2">İlk işleminizi ekleyerek başlayın</p>
+                                        <p className="text-gray-500 text-lg font-medium">{t('portfolio.noHoldings')}</p>
+                                        <p className="text-gray-400 text-sm mt-2">{t('portfolio.startWithTransaction')}</p>
                                     </td>
                                 </tr>
                             ) : (
@@ -457,7 +450,6 @@ export default function PortfolioPage() {
                                                     {holding.quantity?.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 8 })}
                                                 </span>
                                         </td>
-                                        {/* Ort. Alış — enstrümanın kendi para biriminde */}
                                         <td className="py-4 px-4 text-right">
                                                 <span className="text-sm text-gray-700">
                                                     {getCurrencySymbol(holding.currency)}{holding.averageBuyPrice?.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 6 })}
@@ -468,7 +460,6 @@ export default function PortfolioPage() {
                                                 </p>
                                             )}
                                         </td>
-                                        {/* Güncel Fiyat — portföy currency */}
                                         <td className="py-4 px-4 text-right">
                                                 <span className="text-sm font-medium text-gray-900">
                                                     {sym}{holding.currentPrice?.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 6 })}
@@ -477,13 +468,11 @@ export default function PortfolioPage() {
                                                 <p className="text-xs text-gray-400">{holding.currency} → {portfolio.currency}</p>
                                             )}
                                         </td>
-                                        {/* Toplam Değer — portföy currency */}
                                         <td className="py-4 px-4 text-right">
                                                 <span className="font-semibold text-gray-900">
                                                     {sym}{holding.currentValue?.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}
                                                 </span>
                                         </td>
-                                        {/* Kar/Zarar — portföy currency */}
                                         <td className="py-4 px-4 text-right">
                                             <div className={`flex items-center justify-end gap-1 ${
                                                 holding.unrealizedPnL === 0 ? 'text-gray-500' :
@@ -511,78 +500,81 @@ export default function PortfolioPage() {
                 </CardContent>
             </Card>
 
-            {/* Edit Portfolio Modal */}
+            {/* Edit Modal */}
             {showEditModal && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
                     <div className="bg-white rounded-lg shadow-2xl w-full max-w-md">
                         <div className="p-6 border-b border-gray-200">
-                            <h2 className="text-2xl font-bold text-gray-900">Portföyü Düzenle</h2>
+                            <h2 className="text-2xl font-bold text-gray-900">{t('portfolio.editTitle')}</h2>
                         </div>
                         <div className="p-6 space-y-5">
                             <div>
-                                <label className="block text-sm font-semibold text-gray-700 mb-2">Portföy Adı *</label>
+                                <label className="block text-sm font-semibold text-gray-700 mb-2">{t('portfolio.name')} *</label>
                                 <input type="text"
-                                       className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0066FF] focus:border-transparent"
-                                       placeholder="Portföy adı" value={editFormData.name}
+                                       className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0066FF]"
+                                       placeholder={t('portfolio.namePlaceholder')} value={editFormData.name}
                                        onChange={(e) => setEditFormData({ ...editFormData, name: e.target.value })}
                                        disabled={submitting} />
                             </div>
                             <div>
-                                <label className="block text-sm font-semibold text-gray-700 mb-2">Açıklama</label>
+                                <label className="block text-sm font-semibold text-gray-700 mb-2">{t('portfolio.description')}</label>
                                 <textarea
-                                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0066FF] focus:border-transparent resize-none"
-                                    placeholder="Portföy açıklaması (opsiyonel)" rows={3} value={editFormData.description}
+                                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0066FF] resize-none"
+                                    placeholder={t('portfolio.descriptionPlaceholder')} rows={3} value={editFormData.description}
                                     onChange={(e) => setEditFormData({ ...editFormData, description: e.target.value })}
                                     disabled={submitting} />
                             </div>
                             <div>
                                 <label className="flex items-center gap-3">
-                                    <input type="checkbox" className="w-5 h-5 text-[#0066FF] border-gray-300 rounded focus:ring-[#0066FF]"
+                                    <input type="checkbox" className="w-5 h-5"
                                            checked={editFormData.active}
                                            onChange={(e) => setEditFormData({ ...editFormData, active: e.target.checked })}
                                            disabled={submitting} />
-                                    <span className="text-sm font-semibold text-gray-700">Portföy Aktif</span>
+                                    <span className="text-sm font-semibold text-gray-700">{t('portfolio.activeLabel')}</span>
                                 </label>
-                                <p className="text-xs text-gray-500 mt-1 ml-8">Pasif portföyler liste sayfasında gizlenir</p>
+                                <p className="text-xs text-gray-500 mt-1 ml-8">{t('portfolio.activeHint')}</p>
                             </div>
                         </div>
                         <div className="p-6 border-t border-gray-200 flex gap-3">
-                            <Button variant="outline" className="flex-1 h-12 font-semibold border-2" onClick={() => setShowEditModal(false)} disabled={submitting}>İptal</Button>
-                            <Button className="flex-1 h-12 font-semibold bg-[#0066FF] hover:bg-[#0052CC]" onClick={handleUpdatePortfolio} disabled={!editFormData.name.trim() || submitting}>
-                                {submitting ? (<><RefreshCw className="w-5 h-5 mr-2 animate-spin" />Güncelleniyor...</>) : 'Güncelle'}
+                            <Button variant="outline" className="flex-1 h-12" onClick={() => setShowEditModal(false)} disabled={submitting}>
+                                {t('common.cancel')}
+                            </Button>
+                            <Button className="flex-1 h-12 bg-[#0066FF] hover:bg-[#0052CC]" onClick={handleUpdatePortfolio} disabled={!editFormData.name.trim() || submitting}>
+                                {submitting
+                                    ? <><RefreshCw className="w-5 h-5 mr-2 animate-spin" />{t('portfolio.updating')}</>
+                                    : t('common.save')}
                             </Button>
                         </div>
                     </div>
                 </div>
             )}
 
+            {/* Delete Modal */}
             {showDeleteModal && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
                     <div className="bg-white rounded-lg shadow-2xl w-full max-w-md">
                         <div className="p-6 border-b border-gray-200">
-                            <h2 className="text-2xl font-bold text-gray-900">Portföyü Sil</h2>
+                            <h2 className="text-2xl font-bold text-gray-900">{t('portfolio.deleteTitle')}</h2>
                         </div>
-                        <div className="p-6 space-y-4">
+                        <div className="p-6">
                             <div className="flex items-center gap-4 p-4 bg-red-50 border-2 border-red-200 rounded-lg">
                                 <div className="text-red-500 text-4xl">⚠️</div>
                                 <div>
-                                    <p className="font-semibold text-red-800">Bu işlem geri alınamaz!</p>
+                                    <p className="font-semibold text-red-800">{t('portfolio.deleteWarning')}</p>
                                     <p className="text-sm text-red-600 mt-1">
-                                        <span className="font-bold">"{portfolio.name}"</span> portföyü ve tüm işlem geçmişi kalıcı olarak silinecek.
+                                        <span className="font-bold">"{portfolio.name}"</span> {t('portfolio.deleteDesc')}
                                     </p>
                                 </div>
                             </div>
                         </div>
                         <div className="p-6 border-t border-gray-200 flex gap-3">
-                            <Button variant="outline" className="flex-1 h-12 font-semibold border-2"
-                                    onClick={() => setShowDeleteModal(false)} disabled={submitting}>
-                                İptal
+                            <Button variant="outline" className="flex-1 h-12" onClick={() => setShowDeleteModal(false)} disabled={submitting}>
+                                {t('common.cancel')}
                             </Button>
-                            <Button className="flex-1 h-12 font-semibold bg-red-600 hover:bg-red-700 text-white"
-                                    onClick={handleDeletePortfolio} disabled={submitting}>
+                            <Button className="flex-1 h-12 bg-red-600 hover:bg-red-700 text-white" onClick={handleDeletePortfolio} disabled={submitting}>
                                 {submitting
-                                    ? <><RefreshCw className="w-5 h-5 mr-2 animate-spin" />Siliniyor...</>
-                                    : 'Kalıcı Olarak Sil'}
+                                    ? <><RefreshCw className="w-5 h-5 mr-2 animate-spin" />{t('portfolio.deleting')}</>
+                                    : t('portfolio.deletePermanent')}
                             </Button>
                         </div>
                     </div>
@@ -594,40 +586,48 @@ export default function PortfolioPage() {
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
                     <div className="bg-white rounded-lg shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto">
                         <div className="sticky top-0 bg-white border-b border-gray-200 p-6 flex items-center justify-between">
-                            <h2 className="text-2xl font-bold text-gray-900">İşlem Ekle</h2>
-                            <button className="text-gray-400 hover:text-gray-600 transition-colors p-1 rounded-full hover:bg-gray-100" onClick={resetForm} disabled={submitting}>
+                            <h2 className="text-2xl font-bold text-gray-900">{t('portfolio.addTransaction')}</h2>
+                            <button className="text-gray-400 hover:text-gray-600 p-1 rounded-full hover:bg-gray-100" onClick={resetForm} disabled={submitting}>
                                 <X className="w-6 h-6" />
                             </button>
                         </div>
                         <div className="p-6 space-y-5">
+
                             {/* Transaction Type */}
                             <div>
-                                <label className="block text-sm font-semibold text-gray-700 mb-2">İşlem Tipi *</label>
+                                <label className="block text-sm font-semibold text-gray-700 mb-2">{t('transaction.type')} *</label>
                                 <div className="grid grid-cols-2 gap-3">
                                     <Button type="button" variant={transactionType === 'BUY' ? 'default' : 'outline'}
                                             onClick={() => setTransactionType('BUY')}
                                             className={`h-12 font-semibold ${transactionType === 'BUY' ? 'bg-green-600 hover:bg-green-700' : 'border-2'}`}
-                                            disabled={submitting}>ALIŞ</Button>
+                                            disabled={submitting}>
+                                        {t('transaction.buy').toUpperCase()}
+                                    </Button>
                                     <Button type="button" variant={transactionType === 'SELL' ? 'default' : 'outline'}
                                             onClick={() => setTransactionType('SELL')}
                                             className={`h-12 font-semibold ${transactionType === 'SELL' ? 'bg-red-600 hover:bg-red-700' : 'border-2'}`}
-                                            disabled={submitting}>SATIŞ</Button>
+                                            disabled={submitting}>
+                                        {t('transaction.sell').toUpperCase()}
+                                    </Button>
                                 </div>
                             </div>
 
                             {/* Instrument Search */}
                             <div>
                                 <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                    Enstrüman Seç *
-                                    {transactionType === 'SELL' && <span className="text-xs text-gray-500 ml-2">(Sadece portföyünüzdeki varlıklar)</span>}
+                                    {t('portfolio.selectInstrument')} *
+                                    {transactionType === 'SELL' && (
+                                        <span className="text-xs text-gray-500 ml-2">({t('portfolio.onlyOwned')})</span>
+                                    )}
                                 </label>
                                 <div className="relative">
                                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
                                     <input type="text"
-                                           className="w-full pl-10 pr-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0066FF] focus:border-transparent"
-                                           placeholder="Enstrüman ara..." value={searchTerm}
+                                           className="w-full pl-10 pr-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0066FF]"
+                                           placeholder={t('markets.search')} value={searchTerm}
                                            onChange={(e) => setSearchTerm(e.target.value)} disabled={submitting} />
                                 </div>
+
                                 {searchTerm && (
                                     <div className="mt-2 max-h-60 overflow-y-auto border-2 border-gray-200 rounded-lg bg-white shadow-lg">
                                         {filteredInstruments.length > 0 ? filteredInstruments.map((inst) => (
@@ -653,12 +653,13 @@ export default function PortfolioPage() {
                                         )) : (
                                             <div className="px-4 py-6 text-center">
                                                 <p className="text-gray-500 font-medium">
-                                                    {transactionType === 'SELL' ? 'Portföyünüzde bu kriterde varlık yok' : 'Enstrüman bulunamadı'}
+                                                    {transactionType === 'SELL' ? t('portfolio.noHoldingFound') : t('markets.noData')}
                                                 </p>
                                             </div>
                                         )}
                                     </div>
                                 )}
+
                                 {selectedInstrument && !searchTerm && (
                                     <div className="mt-2 p-4 bg-blue-50 border-2 border-blue-200 rounded-lg">
                                         <div className="flex items-center justify-between">
@@ -668,11 +669,15 @@ export default function PortfolioPage() {
                                                     <span className="font-semibold text-gray-900 block">{selectedInstrument.symbol}</span>
                                                     <span className="text-xs text-gray-600">{selectedInstrument.name}</span>
                                                     {selectedInstrument.currency && selectedInstrument.currency !== 'TRY' && (
-                                                        <span className="text-xs text-blue-600 block">Para birimi: {selectedInstrument.currency}</span>
+                                                        <span className="text-xs text-blue-600 block">{t('portfolio.currency')}: {selectedInstrument.currency}</span>
                                                     )}
                                                     {transactionType === 'SELL' && (() => {
                                                         const holding = holdings.find(h => h.instrumentId === selectedInstrument.id);
-                                                        return holding ? <span className="text-xs text-green-600 block mt-1">Mevcut: {holding.quantity.toFixed(2)}</span> : null;
+                                                        return holding ? (
+                                                            <span className="text-xs text-green-600 block mt-1">
+                                                                {t('portfolio.available')}: {holding.quantity.toFixed(2)}
+                                                            </span>
+                                                        ) : null;
                                                     })()}
                                                 </div>
                                             </div>
@@ -688,10 +693,10 @@ export default function PortfolioPage() {
                             {/* Quantity */}
                             <div>
                                 <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                    Miktar *
+                                    {t('transaction.quantity')} *
                                     {transactionType === 'SELL' && selectedInstrument && (
                                         <span className="text-xs text-gray-500 ml-2">
-                                            (Mevcut: {(() => {
+                                            ({t('portfolio.available')}: {(() => {
                                             const holding = holdings.find(h => h.instrumentId === selectedInstrument.id);
                                             return holding ? holding.quantity.toFixed(2) : '0';
                                         })()})
@@ -699,71 +704,82 @@ export default function PortfolioPage() {
                                     )}
                                 </label>
                                 <input type="number" step="any"
-                                       className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0066FF] focus:border-transparent"
-                                       placeholder="Örn: 100" value={quantity} onChange={(e) => setQuantity(e.target.value)} disabled={submitting} />
+                                       className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0066FF]"
+                                       placeholder={t('portfolio.quantityPlaceholder')} value={quantity}
+                                       onChange={(e) => setQuantity(e.target.value)} disabled={submitting} />
                             </div>
 
                             {/* Price */}
                             <div>
                                 <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                    Fiyat {selectedInstrument?.currency ? `(${getCurrencySymbol(selectedInstrument.currency)})` : `(${sym})`} *
+                                    {t('transaction.price')} {selectedInstrument?.currency ? `(${getCurrencySymbol(selectedInstrument.currency)})` : `(${sym})`} *
                                 </label>
                                 <input type="number" step="any"
-                                       className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0066FF] focus:border-transparent"
-                                       placeholder="Örn: 34.50" value={price} onChange={(e) => setPrice(e.target.value)} disabled={submitting} />
+                                       className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0066FF]"
+                                       placeholder={t('portfolio.pricePlaceholder')} value={price}
+                                       onChange={(e) => setPrice(e.target.value)} disabled={submitting} />
                             </div>
 
                             {/* Commission */}
                             <div>
-                                <label className="block text-sm font-semibold text-gray-700 mb-2">Komisyon ({sym})</label>
+                                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                    {t('transaction.commission')} ({sym})
+                                </label>
                                 <input type="number" step="any"
-                                       className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0066FF] focus:border-transparent"
-                                       placeholder="Opsiyonel" value={commission} onChange={(e) => setCommission(e.target.value)} disabled={submitting} />
+                                       className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0066FF]"
+                                       placeholder={t('portfolio.optional')} value={commission}
+                                       onChange={(e) => setCommission(e.target.value)} disabled={submitting} />
                             </div>
 
                             {/* Tax */}
                             <div>
-                                <label className="block text-sm font-semibold text-gray-700 mb-2">Vergi ({sym})</label>
+                                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                    {t('transaction.tax')} ({sym})
+                                </label>
                                 <input type="number" step="any"
-                                       className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0066FF] focus:border-transparent"
-                                       placeholder="Opsiyonel" value={tax} onChange={(e) => setTax(e.target.value)} disabled={submitting} />
+                                       className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0066FF]"
+                                       placeholder={t('portfolio.optional')} value={tax}
+                                       onChange={(e) => setTax(e.target.value)} disabled={submitting} />
                             </div>
 
                             {/* Notes */}
                             <div>
-                                <label className="block text-sm font-semibold text-gray-700 mb-2">Notlar</label>
+                                <label className="block text-sm font-semibold text-gray-700 mb-2">{t('transaction.note')}</label>
                                 <textarea
-                                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0066FF] focus:border-transparent resize-none"
-                                    placeholder="İşlem notları (opsiyonel)" rows={3} value={notes}
+                                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0066FF] resize-none"
+                                    placeholder={t('portfolio.notesPlaceholder')} rows={3} value={notes}
                                     onChange={(e) => setNotes(e.target.value)} disabled={submitting} />
                             </div>
 
                             {/* Summary */}
                             {quantity && price && (
                                 <div className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-lg">
-                                    <p className="text-sm font-semibold text-gray-700 mb-1">Toplam Tutar</p>
+                                    <p className="text-sm font-semibold text-gray-700 mb-1">{t('transaction.total')}</p>
                                     <p className="text-3xl font-bold text-gray-900">
                                         {getCurrencySymbol(selectedInstrument?.currency)}{calculateTotal().toLocaleString('tr-TR', { minimumFractionDigits: 2 })}
                                     </p>
                                     {(commission || tax) && (
                                         <p className="text-xs text-gray-600 mt-2">
-                                            İşlem Tutarı: {getCurrencySymbol(selectedInstrument?.currency)}{(parseFloat(quantity) * parseFloat(price)).toLocaleString('tr-TR', { minimumFractionDigits: 2 })}
+                                            {t('portfolio.transactionAmount')}: {getCurrencySymbol(selectedInstrument?.currency)}{(parseFloat(quantity) * parseFloat(price)).toLocaleString('tr-TR', { minimumFractionDigits: 2 })}
                                             <br />
-                                            Ek Masraflar: {sym}{((parseFloat(commission) || 0) + (parseFloat(tax) || 0)).toLocaleString('tr-TR', { minimumFractionDigits: 2 })}
+                                            {t('portfolio.additionalCosts')}: {sym}{((parseFloat(commission) || 0) + (parseFloat(tax) || 0)).toLocaleString('tr-TR', { minimumFractionDigits: 2 })}
                                         </p>
                                     )}
                                 </div>
                             )}
                         </div>
 
-                        {/* Action Buttons */}
                         <div className="sticky bottom-0 bg-gray-50 border-t border-gray-200 p-6 flex gap-3">
-                            <Button variant="outline" className="flex-1 h-12 font-semibold border-2" onClick={resetForm} disabled={submitting}>İptal</Button>
+                            <Button variant="outline" className="flex-1 h-12 font-semibold border-2" onClick={resetForm} disabled={submitting}>
+                                {t('common.cancel')}
+                            </Button>
                             <Button variant="default"
                                     className={`flex-1 h-12 font-semibold ${transactionType === 'BUY' ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'}`}
                                     onClick={handleAddTransaction}
                                     disabled={!selectedInstrument || !quantity || !price || submitting}>
-                                {submitting ? (<><RefreshCw className="w-5 h-5 mr-2 animate-spin" />İşleniyor...</>) : (transactionType === 'BUY' ? 'AL' : 'SAT')}
+                                {submitting
+                                    ? <><RefreshCw className="w-5 h-5 mr-2 animate-spin" />{t('portfolio.processing')}</>
+                                    : transactionType === 'BUY' ? t('portfolio.buy') : t('portfolio.sell')}
                             </Button>
                         </div>
                     </div>

@@ -3,10 +3,12 @@ import { TrendingUp, TrendingDown, Star, Plus, X, Search, Trash2, RefreshCw } fr
 import { Card, CardContent, CardHeader, CardTitle } from '../UI/Card';
 import { Button } from '../UI/Button';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { getWatchlist, addToWatchlist, removeFromWatchlist, searchInstruments } from '../../API/watchlistApi';
 
 export default function WatchlistPage() {
     const navigate = useNavigate();
+    const { t } = useTranslation();
     const [watchlistItems, setWatchlistItems] = useState([]);
     const [loading, setLoading] = useState(true);
     const [showAddModal, setShowAddModal] = useState(false);
@@ -27,7 +29,6 @@ export default function WatchlistPage() {
                 setSearchResults([]);
             }
         }, 300);
-
         return () => clearTimeout(delaySearch);
     }, [searchTerm]);
 
@@ -57,52 +58,43 @@ export default function WatchlistPage() {
 
     const handleAddToWatchlist = async () => {
         if (!selectedInstrument) return;
-
         try {
             await addToWatchlist(selectedInstrument.id);
             setShowAddModal(false);
             setSelectedInstrument(null);
             setSearchTerm('');
             setSearchResults([]);
-            fetchWatchlist(); // Listeyi yenile
+            fetchWatchlist();
         } catch (error) {
             console.error('Add error:', error);
-            alert('Eklenirken hata oluştu');
+            alert(t('watchlist.addError'));
         }
     };
 
     const handleRemoveFromWatchlist = async (item) => {
-        if (!confirm(`${item.instrument.symbol} takip listesinden çıkarılsın mı?`)) return;
-
+        if (!confirm(t('watchlist.removeConfirm', { symbol: item.instrument.symbol }))) return;
         try {
             await removeFromWatchlist(item.instrument.id);
-            fetchWatchlist(); // Listeyi yenile
+            fetchWatchlist();
         } catch (error) {
             console.error('Remove error:', error);
-            alert('Çıkarılırken hata oluştu');
+            alert(t('watchlist.removeError'));
         }
     };
 
     const getCategoryColor = (type) => {
         const colors = {
-            'FOREX': '#3B82F6',
-            'STOCK': '#8B5CF6',
-            'CRYPTO': '#EC4899',
-            'PRECIOUS': '#F59E0B',
-            'FUND': '#10B981',
-            'BOND': '#6366F1',
+            'FOREX': '#3B82F6', 'STOCK': '#8B5CF6', 'CRYPTO': '#EC4899',
+            'PRECIOUS': '#F59E0B', 'FUND': '#10B981', 'BOND': '#6366F1',
         };
         return colors[type] || '#6B7280';
     };
 
     const getCategoryName = (type) => {
         const names = {
-            'FOREX': 'Döviz',
-            'STOCK': 'Hisse',
-            'CRYPTO': 'Kripto',
-            'PRECIOUS': 'Altın/Gümüş',
-            'FUND': 'Fon',
-            'BOND': 'Tahvil',
+            'FOREX': t('markets.forex'), 'STOCK': t('markets.stocks'),
+            'CRYPTO': t('markets.crypto'), 'PRECIOUS': t('markets.precious'),
+            'FUND': t('markets.funds'), 'BOND': t('markets.bonds'),
         };
         return names[type] || type;
     };
@@ -120,7 +112,7 @@ export default function WatchlistPage() {
             <div className="min-h-screen bg-gray-50 flex items-center justify-center">
                 <div className="text-center">
                     <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-                    <p className="text-gray-600">Yükleniyor...</p>
+                    <p className="text-gray-600">{t('common.loading')}</p>
                 </div>
             </div>
         );
@@ -139,27 +131,21 @@ export default function WatchlistPage() {
     return (
         <div className="min-h-screen bg-gray-50 p-8">
             <div className="max-w-7xl mx-auto">
+
+                {/* Header */}
                 <div className="mb-6 flex items-center justify-between">
                     <div>
-                        <h1 className="text-4xl font-bold text-gray-900 mb-2">Takip Listesi</h1>
-                        <p className="text-gray-600">Favori enstrümanlarınızı takip edin</p>
+                        <h1 className="text-4xl font-bold text-gray-900 mb-2">{t('watchlist.title')}</h1>
+                        <p className="text-gray-600">{t('watchlist.subtitle')}</p>
                     </div>
                     <div className="flex gap-3">
-                        <Button
-                            variant="outline"
-                            onClick={fetchWatchlist}
-                            className="border-gray-300"
-                        >
+                        <Button variant="outline" onClick={fetchWatchlist} className="border-gray-300">
                             <RefreshCw className="w-5 h-5 mr-2" />
-                            Yenile
+                            {t('common.refresh')}
                         </Button>
-                        <Button
-                            variant="default"
-                            onClick={() => setShowAddModal(true)}
-                            className="bg-blue-600 hover:bg-blue-700"
-                        >
+                        <Button variant="default" onClick={() => setShowAddModal(true)} className="bg-blue-600 hover:bg-blue-700">
                             <Plus className="w-5 h-5 mr-2" />
-                            Enstrüman Ekle
+                            {t('watchlist.addInstrument')}
                         </Button>
                     </div>
                 </div>
@@ -168,34 +154,31 @@ export default function WatchlistPage() {
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
                     <Card className="border-0 shadow-sm">
                         <CardHeader className="pb-2">
-                            <CardTitle className="text-sm text-gray-600">Toplam Enstrüman</CardTitle>
+                            <CardTitle className="text-sm text-gray-600">{t('watchlist.totalInstruments')}</CardTitle>
                         </CardHeader>
                         <CardContent>
                             <p className="text-3xl font-bold text-gray-900">{watchlistItems.length}</p>
                         </CardContent>
                     </Card>
-
                     <Card className="border-0 shadow-sm">
                         <CardHeader className="pb-2">
-                            <CardTitle className="text-sm text-gray-600">Yükselenler</CardTitle>
+                            <CardTitle className="text-sm text-gray-600">{t('home.rising')}</CardTitle>
                         </CardHeader>
                         <CardContent>
                             <p className="text-3xl font-bold text-emerald-600">{risingCount}</p>
                         </CardContent>
                     </Card>
-
                     <Card className="border-0 shadow-sm">
                         <CardHeader className="pb-2">
-                            <CardTitle className="text-sm text-gray-600">Düşenler</CardTitle>
+                            <CardTitle className="text-sm text-gray-600">{t('home.falling')}</CardTitle>
                         </CardHeader>
                         <CardContent>
                             <p className="text-3xl font-bold text-red-500">{fallingCount}</p>
                         </CardContent>
                     </Card>
-
                     <Card className="border-0 shadow-sm">
                         <CardHeader className="pb-2">
-                            <CardTitle className="text-sm text-gray-600">Kategoriler</CardTitle>
+                            <CardTitle className="text-sm text-gray-600">{t('watchlist.categories')}</CardTitle>
                         </CardHeader>
                         <CardContent>
                             <p className="text-3xl font-bold text-gray-900">{categoriesCount}</p>
@@ -207,10 +190,10 @@ export default function WatchlistPage() {
                 <Card className="border-0 shadow-sm">
                     <CardHeader>
                         <div className="flex items-center justify-between">
-                            <CardTitle>Takip Edilen Enstrümanlar</CardTitle>
+                            <CardTitle>{t('watchlist.trackedInstruments')}</CardTitle>
                             <div className="flex items-center gap-2 text-sm text-gray-600">
                                 <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                                <span>{watchlistItems.length} enstrüman</span>
+                                <span>{t('watchlist.instrumentCount', { count: watchlistItems.length })}</span>
                             </div>
                         </div>
                     </CardHeader>
@@ -218,13 +201,10 @@ export default function WatchlistPage() {
                         {watchlistItems.length === 0 ? (
                             <div className="text-center py-12">
                                 <Star className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                                <p className="text-gray-500 mb-4">Takip listeniz boş</p>
-                                <Button
-                                    onClick={() => setShowAddModal(true)}
-                                    className="bg-blue-600 hover:bg-blue-700"
-                                >
+                                <p className="text-gray-500 mb-4">{t('watchlist.empty')}</p>
+                                <Button onClick={() => setShowAddModal(true)} className="bg-blue-600 hover:bg-blue-700">
                                     <Plus className="w-5 h-5 mr-2" />
-                                    İlk Enstrümanı Ekle
+                                    {t('watchlist.addFirst')}
                                 </Button>
                             </div>
                         ) : (
@@ -232,12 +212,12 @@ export default function WatchlistPage() {
                                 <table className="w-full">
                                     <thead>
                                     <tr className="border-b border-gray-200">
-                                        <th className="text-left py-4 px-4 text-sm font-semibold text-gray-700">Enstrüman</th>
-                                        <th className="text-left py-4 px-4 text-sm font-semibold text-gray-700">Kategori</th>
-                                        <th className="text-right py-4 px-4 text-sm font-semibold text-gray-700">Fiyat</th>
-                                        <th className="text-right py-4 px-4 text-sm font-semibold text-gray-700">Değişim</th>
-                                        <th className="text-right py-4 px-4 text-sm font-semibold text-gray-700">Günlük Yüksek</th>
-                                        <th className="text-right py-4 px-4 text-sm font-semibold text-gray-700">Günlük Düşük</th>
+                                        <th className="text-left py-4 px-4 text-sm font-semibold text-gray-700">{t('holding.name')}</th>
+                                        <th className="text-left py-4 px-4 text-sm font-semibold text-gray-700">{t('watchlist.category')}</th>
+                                        <th className="text-right py-4 px-4 text-sm font-semibold text-gray-700">{t('markets.price')}</th>
+                                        <th className="text-right py-4 px-4 text-sm font-semibold text-gray-700">{t('markets.change')}</th>
+                                        <th className="text-right py-4 px-4 text-sm font-semibold text-gray-700">{t('watchlist.dailyHigh')}</th>
+                                        <th className="text-right py-4 px-4 text-sm font-semibold text-gray-700">{t('watchlist.dailyLow')}</th>
                                         <th className="text-right py-4 px-4 text-sm font-semibold text-gray-700"></th>
                                     </tr>
                                     </thead>
@@ -266,60 +246,33 @@ export default function WatchlistPage() {
                                                 </td>
                                                 <td className="py-4 px-4">
                                                     <div className="flex items-center gap-2">
-                                                        <div
-                                                            className="w-2 h-2 rounded-full flex-shrink-0"
-                                                            style={{ backgroundColor: getCategoryColor(inst.type) }}
-                                                        />
-                                                        <span className="text-sm text-gray-600">
-                                                                {getCategoryName(inst.type)}
-                                                            </span>
+                                                        <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: getCategoryColor(inst.type) }} />
+                                                        <span className="text-sm text-gray-600">{getCategoryName(inst.type)}</span>
                                                     </div>
                                                 </td>
                                                 <td className="py-4 px-4 text-right">
-                                                        <span className="font-semibold text-gray-900">
-                                                            {formatPrice(price?.current)}
-                                                        </span>
+                                                    <span className="font-semibold text-gray-900">{formatPrice(price?.current)}</span>
                                                 </td>
                                                 <td className="py-4 px-4 text-right">
-                                                    <div className={`flex items-center justify-end gap-1 ${
-                                                        isNeutral ? 'text-gray-500' :
-                                                            isPositive ? 'text-emerald-600' : 'text-red-500'
-                                                    }`}>
-                                                        {isNeutral ? (
-                                                            <span>—</span>
-                                                        ) : isPositive ? (
-                                                            <TrendingUp className="w-4 h-4" />
-                                                        ) : (
-                                                            <TrendingDown className="w-4 h-4" />
-                                                        )}
+                                                    <div className={`flex items-center justify-end gap-1 ${isNeutral ? 'text-gray-500' : isPositive ? 'text-emerald-600' : 'text-red-500'}`}>
+                                                        {isNeutral ? <span>—</span> : isPositive ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}
                                                         <div className="text-right">
-                                                            <p className="text-sm font-semibold">
-                                                                {formatPrice(price?.changeAmount)}
-                                                            </p>
-                                                            <p className="text-xs">
-                                                                {changePercent.toFixed(2)}%
-                                                            </p>
+                                                            <p className="text-sm font-semibold">{formatPrice(price?.changeAmount)}</p>
+                                                            <p className="text-xs">{changePercent.toFixed(2)}%</p>
                                                         </div>
                                                     </div>
                                                 </td>
                                                 <td className="py-4 px-4 text-right">
-                                                        <span className="text-sm text-gray-600">
-                                                            {formatPrice(price?.high)}
-                                                        </span>
+                                                    <span className="text-sm text-gray-600">{formatPrice(price?.high)}</span>
                                                 </td>
                                                 <td className="py-4 px-4 text-right">
-                                                        <span className="text-sm text-gray-600">
-                                                            {formatPrice(price?.low)}
-                                                        </span>
+                                                    <span className="text-sm text-gray-600">{formatPrice(price?.low)}</span>
                                                 </td>
                                                 <td className="py-4 px-4 text-right">
                                                     <Button
                                                         variant="ghost"
                                                         size="sm"
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            handleRemoveFromWatchlist(item);
-                                                        }}
+                                                        onClick={(e) => { e.stopPropagation(); handleRemoveFromWatchlist(item); }}
                                                         className="text-gray-400 hover:text-red-600"
                                                     >
                                                         <Trash2 className="w-4 h-4" />
@@ -341,15 +294,10 @@ export default function WatchlistPage() {
                         <div className="bg-white rounded-lg shadow-xl w-full max-w-md">
                             <div className="p-6">
                                 <div className="flex items-center justify-between mb-6">
-                                    <h2 className="text-2xl font-bold text-gray-900">Takip Listesine Ekle</h2>
+                                    <h2 className="text-2xl font-bold text-gray-900">{t('watchlist.addToWatchlist')}</h2>
                                     <button
                                         className="text-gray-400 hover:text-gray-600 transition-colors"
-                                        onClick={() => {
-                                            setShowAddModal(false);
-                                            setSelectedInstrument(null);
-                                            setSearchTerm('');
-                                            setSearchResults([]);
-                                        }}
+                                        onClick={() => { setShowAddModal(false); setSelectedInstrument(null); setSearchTerm(''); setSearchResults([]); }}
                                     >
                                         <X className="w-6 h-6" />
                                     </button>
@@ -358,14 +306,14 @@ export default function WatchlistPage() {
                                 <div className="space-y-4">
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                                            Enstrüman Ara
+                                            {t('watchlist.searchInstrument')}
                                         </label>
                                         <div className="relative">
                                             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
                                             <input
                                                 type="text"
                                                 className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                                placeholder="Sembol, isim veya kategori..."
+                                                placeholder={t('watchlist.searchPlaceholder')}
                                                 value={searchTerm}
                                                 onChange={(e) => setSearchTerm(e.target.value)}
                                                 autoFocus
@@ -376,40 +324,28 @@ export default function WatchlistPage() {
                                             <div className="mt-2 max-h-64 overflow-y-auto border border-gray-200 rounded-lg">
                                                 {searching ? (
                                                     <div className="px-4 py-3 text-sm text-gray-500 text-center">
-                                                        Aranıyor...
+                                                        {t('common.search')}...
                                                     </div>
                                                 ) : searchResults.length > 0 ? (
                                                     searchResults.map((inst) => (
                                                         <button
                                                             key={inst.id}
-                                                            className={`w-full flex items-center justify-between px-4 py-3 hover:bg-gray-50 transition-colors ${
-                                                                selectedInstrument?.id === inst.id
-                                                                    ? 'bg-blue-50 border-l-4 border-blue-600'
-                                                                    : ''
-                                                            }`}
-                                                            onClick={() => {
-                                                                setSelectedInstrument(inst);
-                                                                setSearchTerm('');
-                                                            }}
+                                                            className={`w-full flex items-center justify-between px-4 py-3 hover:bg-gray-50 transition-colors ${selectedInstrument?.id === inst.id ? 'bg-blue-50 border-l-4 border-blue-600' : ''}`}
+                                                            onClick={() => { setSelectedInstrument(inst); setSearchTerm(''); }}
                                                         >
                                                             <div className="flex items-center gap-3">
-                                                                <div
-                                                                    className="w-3 h-3 rounded-full"
-                                                                    style={{ backgroundColor: getCategoryColor(inst.type) }}
-                                                                />
+                                                                <div className="w-3 h-3 rounded-full" style={{ backgroundColor: getCategoryColor(inst.type) }} />
                                                                 <div className="text-left">
                                                                     <p className="font-medium text-gray-900">{inst.name}</p>
                                                                     <p className="text-xs text-gray-500">{inst.symbol}</p>
                                                                 </div>
                                                             </div>
-                                                            <span className="text-sm text-gray-600">
-                                                                {getCategoryName(inst.type)}
-                                                            </span>
+                                                            <span className="text-sm text-gray-600">{getCategoryName(inst.type)}</span>
                                                         </button>
                                                     ))
                                                 ) : (
                                                     <div className="px-4 py-3 text-sm text-gray-500 text-center">
-                                                        Enstrüman bulunamadı
+                                                        {t('markets.noData')}
                                                     </div>
                                                 )}
                                             </div>
@@ -419,14 +355,9 @@ export default function WatchlistPage() {
                                             <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-lg flex items-center justify-between">
                                                 <div className="flex items-center gap-2">
                                                     <Star className="w-4 h-4 text-yellow-500" />
-                                                    <span className="font-medium text-gray-900">
-                                                        {selectedInstrument.name}
-                                                    </span>
+                                                    <span className="font-medium text-gray-900">{selectedInstrument.name}</span>
                                                 </div>
-                                                <button
-                                                    onClick={() => setSelectedInstrument(null)}
-                                                    className="text-gray-400 hover:text-gray-600"
-                                                >
+                                                <button onClick={() => setSelectedInstrument(null)} className="text-gray-400 hover:text-gray-600">
                                                     <X className="w-4 h-4" />
                                                 </button>
                                             </div>
@@ -438,14 +369,9 @@ export default function WatchlistPage() {
                                     <Button
                                         variant="outline"
                                         className="flex-1"
-                                        onClick={() => {
-                                            setShowAddModal(false);
-                                            setSelectedInstrument(null);
-                                            setSearchTerm('');
-                                            setSearchResults([]);
-                                        }}
+                                        onClick={() => { setShowAddModal(false); setSelectedInstrument(null); setSearchTerm(''); setSearchResults([]); }}
                                     >
-                                        İptal
+                                        {t('common.cancel')}
                                     </Button>
                                     <Button
                                         variant="default"
@@ -453,7 +379,7 @@ export default function WatchlistPage() {
                                         onClick={handleAddToWatchlist}
                                         disabled={!selectedInstrument}
                                     >
-                                        Ekle
+                                        {t('watchlist.add')}
                                     </Button>
                                 </div>
                             </div>

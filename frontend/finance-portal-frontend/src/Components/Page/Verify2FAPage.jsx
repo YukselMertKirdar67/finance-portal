@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Shield, Loader2, XCircle, ArrowLeft } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../context/AuthContext';
 import { verifyTotpLogin } from '../../API/totpApi';
 import api from '../../API/instrumentsApi';
@@ -9,6 +10,7 @@ const Verify2FAPage = () => {
     const navigate = useNavigate();
     const location = useLocation();
     const { login } = useAuth();
+    const { t } = useTranslation();
 
     const { keycloakId, username, password, rememberMe } = location.state || {};
 
@@ -16,7 +18,6 @@ const Verify2FAPage = () => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
 
-    // State yoksa login'e yönlendir
     if (!keycloakId) {
         navigate('/login');
         return null;
@@ -24,7 +25,7 @@ const Verify2FAPage = () => {
 
     const handleVerify = async () => {
         if (code.length !== 6) {
-            setError('Lütfen 6 haneli kodu girin');
+            setError(t('setup2fa.codeLength'));
             return;
         }
 
@@ -32,15 +33,13 @@ const Verify2FAPage = () => {
         setError('');
 
         try {
-            // 1. TOTP kodunu doğrula
             const totpResponse = await verifyTotpLogin(keycloakId, code);
 
             if (!totpResponse.success) {
-                setError('Geçersiz kod. Lütfen tekrar deneyin.');
+                setError(t('setup2fa.invalidCode'));
                 return;
             }
 
-            // 2. Kod doğrulandı, login yap
             const loginResponse = await api.post('/auth/login', {
                 username,
                 password,
@@ -52,11 +51,11 @@ const Verify2FAPage = () => {
                 login(loginResponse.data, rememberMe);
                 window.location.href = '/home';
             } else {
-                setError('Giriş başarısız. Lütfen tekrar deneyin.');
+                setError(t('verify2fa.loginFailed'));
             }
 
         } catch {
-            setError('Doğrulama başarısız. Lütfen tekrar deneyin.');
+            setError(t('setup2fa.verifyError'));
         } finally {
             setLoading(false);
         }
@@ -72,10 +71,10 @@ const Verify2FAPage = () => {
                         <Shield className="w-8 h-8 text-white" />
                     </div>
                     <h1 className="text-2xl font-bold text-gray-900 mb-2">
-                        İki Faktörlü Doğrulama
+                        {t('auth.twoFactor')}
                     </h1>
                     <p className="text-gray-500 text-sm">
-                        Google Authenticator uygulamasındaki 6 haneli kodu girin
+                        {t('verify2fa.subtitle')}
                     </p>
                 </div>
 
@@ -90,7 +89,7 @@ const Verify2FAPage = () => {
                 {/* Code Input */}
                 <div className="mb-6">
                     <label className="block text-sm font-medium text-gray-700 mb-2 text-center">
-                        Doğrulama Kodu
+                        {t('auth.enterCode')}
                     </label>
                     <input
                         type="text"
@@ -109,7 +108,7 @@ const Verify2FAPage = () => {
                         }}
                     />
                     <p className="text-xs text-gray-400 text-center mt-2">
-                        Kod her 30 saniyede bir yenilenir
+                        {t('verify2fa.codeRefresh')}
                     </p>
                 </div>
 
@@ -122,12 +121,12 @@ const Verify2FAPage = () => {
                     {loading ? (
                         <>
                             <Loader2 className="w-5 h-5 animate-spin" />
-                            Doğrulanıyor...
+                            {t('setup2fa.verifying')}
                         </>
                     ) : (
                         <>
                             <Shield className="w-5 h-5" />
-                            Doğrula ve Giriş Yap
+                            {t('verify2fa.verifyAndLogin')}
                         </>
                     )}
                 </button>
@@ -138,7 +137,7 @@ const Verify2FAPage = () => {
                     className="w-full flex items-center justify-center gap-2 text-gray-500 hover:text-gray-700 text-sm"
                 >
                     <ArrowLeft className="w-4 h-4" />
-                    Giriş Sayfasına Dön
+                    {t('verify2fa.backToLogin')}
                 </button>
             </div>
         </div>

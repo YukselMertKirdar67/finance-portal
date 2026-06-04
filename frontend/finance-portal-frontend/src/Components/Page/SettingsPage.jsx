@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useLocation } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { User, Lock, Bell, Eye, Database, HelpCircle } from 'lucide-react';
 import { Card } from '../UI/Card';
 import AccountSettings from './AccountSettings';
@@ -9,19 +10,18 @@ import DataPrivacySettings from './DataPrivacySettings';
 import NotificationSettings from './NotificationSettings';
 import SecuritySettings from './SecuritySettings';
 
-
 export default function SettingsPage() {
-    const location = useLocation()
+    const location = useLocation();
+    const { t } = useTranslation();
     const [activeTab, setActiveTab] = useState(location.state?.tab || 'account');
 
-
     const tabs = [
-        { id: 'account', label: 'Hesap', icon: <User className="w-5 h-5" /> },
-        { id: 'security', label: 'Güvenlik', icon: <Lock className="w-5 h-5" /> },
-        { id: 'notifications', label: 'Bildirimler', icon: <Bell className="w-5 h-5" /> },
-        { id: 'appearance', label: 'Görünüm', icon: <Eye className="w-5 h-5" /> },
-        { id: 'data', label: 'Veri & Gizlilik', icon: <Database className="w-5 h-5" /> },
-        { id: 'help', label: 'Yardım', icon: <HelpCircle className="w-5 h-5" /> }
+        { id: 'account',       label: t('settings.account'),       icon: <User className="w-5 h-5" /> },
+        { id: 'security',      label: t('settings.security'),      icon: <Lock className="w-5 h-5" /> },
+        { id: 'notifications', label: t('settings.notifications'), icon: <Bell className="w-5 h-5" /> },
+        { id: 'appearance',    label: t('settings.appearance'),    icon: <Eye className="w-5 h-5" /> },
+        { id: 'data',          label: t('settings.data'),          icon: <Database className="w-5 h-5" /> },
+        { id: 'help',          label: t('settings.help'),          icon: <HelpCircle className="w-5 h-5" /> }
     ];
 
     return (
@@ -30,8 +30,10 @@ export default function SettingsPage() {
 
                 {/* Header */}
                 <div className="mb-8">
-                    <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">Ayarlar</h1>
-                    <p className="text-gray-600 dark:text-gray-400">Hesabınızı ve tercihlerinizi yönetin</p>
+                    <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+                        {t('nav.settings')}
+                    </h1>
+                    <p className="text-gray-600 dark:text-gray-400">{t('settings.subtitle')}</p>
                 </div>
 
                 <div className="grid lg:grid-cols-4 gap-6">
@@ -58,12 +60,12 @@ export default function SettingsPage() {
 
                     {/* Content */}
                     <div className="lg:col-span-3">
-                        {activeTab === 'account' && <AccountSettings onNavigateToSecurity={() => setActiveTab('security')} />}
-                        {activeTab === 'security' && <SecuritySettings />}
+                        {activeTab === 'account'       && <AccountSettings onNavigateToSecurity={() => setActiveTab('security')} />}
+                        {activeTab === 'security'      && <SecuritySettings />}
                         {activeTab === 'notifications' && <NotificationSettings />}
-                        {activeTab === 'appearance' && <AppearanceSettings />}
-                        {activeTab === 'data' && <DataPrivacySettings />}
-                        {activeTab === 'help' && <HelpSettings />}
+                        {activeTab === 'appearance'    && <AppearanceSettings />}
+                        {activeTab === 'data'          && <DataPrivacySettings />}
+                        {activeTab === 'help'          && <HelpSettings />}
                     </div>
                 </div>
             </div>

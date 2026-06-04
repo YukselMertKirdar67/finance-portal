@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Mail, Lock, LogIn, AlertCircle } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../context/AuthContext';
 import api from '../../API/instrumentsApi';
 
 const LoginPage = () => {
     const navigate = useNavigate();
     const { authenticated, login } = useAuth();
+    const { t } = useTranslation();
 
     const [formData, setFormData] = useState({
         username: '',
@@ -17,7 +19,6 @@ const LoginPage = () => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
 
-    // Zaten login ise home'a yönlendir
     useEffect(() => {
         if (authenticated) {
             navigate('/home', { replace: true });
@@ -36,7 +37,7 @@ const LoginPage = () => {
         e.preventDefault();
 
         if (!formData.username || !formData.password) {
-            setError('Kullanıcı adı ve şifre gerekli');
+            setError(t('login.requiredFields'));
             return;
         }
 
@@ -62,8 +63,7 @@ const LoginPage = () => {
                 } else {
                     window.location.href = '/home';
                 }
-            }
-            else if (loginResponse.data.message === '2FA_REQUIRED') {
+            } else if (loginResponse.data.message === '2FA_REQUIRED') {
                 navigate('/verify-2fa', {
                     state: {
                         keycloakId: loginResponse.data.keycloakId,
@@ -73,11 +73,11 @@ const LoginPage = () => {
                     }
                 });
             } else {
-                setError(loginResponse.data.message || 'Giriş başarısız');
+                setError(loginResponse.data.message || t('auth.loginFailed'));
             }
 
         } catch (err) {
-            const errorMsg = err.response?.data?.message || 'Giriş başarısız. Lütfen tekrar deneyin.';
+            const errorMsg = err.response?.data?.message || t('login.retryError');
             setError(errorMsg);
         } finally {
             setLoading(false);
@@ -93,8 +93,8 @@ const LoginPage = () => {
                     <div className="w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
                         <LogIn className="w-8 h-8 text-white" />
                     </div>
-                    <h1 className="text-3xl font-bold text-gray-900 mb-2">Hoş Geldiniz</h1>
-                    <p className="text-gray-600">Hesabınıza giriş yapın</p>
+                    <h1 className="text-3xl font-bold text-gray-900 mb-2">{t('login.welcome')}</h1>
+                    <p className="text-gray-600">{t('login.subtitle')}</p>
                 </div>
 
                 {/* Error Message */}
@@ -111,7 +111,7 @@ const LoginPage = () => {
                     {/* Username */}
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Kullanıcı Adı
+                            {t('auth.username')}
                         </label>
                         <div className="relative">
                             <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
@@ -121,7 +121,7 @@ const LoginPage = () => {
                                 value={formData.username}
                                 onChange={handleChange}
                                 className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
-                                placeholder="Kullanıcı adınız"
+                                placeholder={t('login.usernamePlaceholder')}
                                 required
                             />
                         </div>
@@ -130,7 +130,7 @@ const LoginPage = () => {
                     {/* Password */}
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Şifre
+                            {t('auth.password')}
                         </label>
                         <div className="relative">
                             <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
@@ -157,7 +157,7 @@ const LoginPage = () => {
                                 className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                             />
                             <label htmlFor="rememberMe" className="ml-2 text-sm text-gray-700">
-                                Beni Hatırla (30 gün)
+                                {t('login.rememberMe')}
                             </label>
                         </div>
 
@@ -165,7 +165,7 @@ const LoginPage = () => {
                             to="/forgot-password"
                             className="text-sm text-blue-600 hover:text-blue-800 font-medium"
                         >
-                            Şifremi Unuttum?
+                            {t('auth.forgotPassword')}
                         </Link>
                     </div>
 
@@ -178,12 +178,12 @@ const LoginPage = () => {
                         {loading ? (
                             <>
                                 <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                                Giriş Yapılıyor...
+                                {t('login.loggingIn')}
                             </>
                         ) : (
                             <>
                                 <LogIn className="w-5 h-5" />
-                                Giriş Yap
+                                {t('auth.login')}
                             </>
                         )}
                     </button>
@@ -192,9 +192,9 @@ const LoginPage = () => {
                 {/* Register Link */}
                 <div className="mt-6 text-center">
                     <p className="text-gray-600">
-                        Hesabınız yok mu?{' '}
+                        {t('auth.noAccount')}{' '}
                         <Link to="/register" className="text-blue-600 hover:text-blue-800 font-semibold">
-                            Kayıt Olun
+                            {t('auth.register')}
                         </Link>
                     </p>
                 </div>

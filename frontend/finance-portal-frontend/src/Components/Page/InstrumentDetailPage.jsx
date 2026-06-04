@@ -4,6 +4,7 @@ import {
     RefreshCw, Building2, Globe, Activity, Bell, Trash2
 } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardHeader, CardTitle } from '../UI/Card';
 import { Button } from '../UI/Button';
 import { createChart, CandlestickSeries, LineSeries } from 'lightweight-charts';
@@ -17,23 +18,8 @@ import { createPriceAlert, getActiveUserAlerts, deletePriceAlert } from '../../A
 import { useInstrumentWebSocket } from '../../Hooks/useWebSocket';
 
 const TYPE_COLORS = {
-    FOREX: '#3B82F6',
-    STOCK: '#8B5CF6',
-    BOND: '#F59E0B',
-    FUND: '#F97316',
-    PRECIOUS: '#EAB308',
-    CRYPTO: '#EC4899',
-    VIOP: '#EF4444',
-};
-
-const TYPE_LABELS = {
-    FOREX: 'Döviz',
-    STOCK: 'Hisse Senedi',
-    BOND: 'Tahvil/Bono',
-    FUND: 'Fon / ETF',
-    PRECIOUS: 'Kıymetli Metal',
-    CRYPTO: 'Kripto Para',
-    VIOP: 'VİOP Vadeli İşlem',
+    FOREX: '#3B82F6', STOCK: '#8B5CF6', BOND: '#F59E0B',
+    FUND: '#F97316', PRECIOUS: '#EAB308', CRYPTO: '#EC4899', VIOP: '#EF4444',
 };
 
 function CandlestickChart({ data }) {
@@ -42,47 +28,29 @@ function CandlestickChart({ data }) {
 
     useEffect(() => {
         if (!chartContainerRef.current || !data || data.length === 0) return;
-
-        if (chartRef.current) {
-            chartRef.current.remove();
-            chartRef.current = null;
-        }
+        if (chartRef.current) { chartRef.current.remove(); chartRef.current = null; }
 
         const chart = createChart(chartContainerRef.current, {
-            width: chartContainerRef.current.clientWidth,
-            height: 450,
-            layout: {
-                background: { color: 'transparent' },
-                textColor: '#9ca3af',
-            },
-            grid: {
-                vertLines: { color: '#f0f0f0' },
-                horzLines: { color: '#f0f0f0' },
-            },
+            width: chartContainerRef.current.clientWidth, height: 450,
+            layout: { background: { color: 'transparent' }, textColor: '#9ca3af' },
+            grid: { vertLines: { color: '#f0f0f0' }, horzLines: { color: '#f0f0f0' } },
             crosshair: { mode: 1 },
             rightPriceScale: { borderColor: '#e5e7eb' },
             timeScale: { borderColor: '#e5e7eb', timeVisible: true },
         });
-
         chartRef.current = chart;
 
         const candleSeries = chart.addSeries(CandlestickSeries, {
-            upColor: '#10b981',
-            downColor: '#ef4444',
-            borderUpColor: '#10b981',
-            borderDownColor: '#ef4444',
-            wickUpColor: '#10b981',
-            wickDownColor: '#ef4444',
+            upColor: '#10b981', downColor: '#ef4444',
+            borderUpColor: '#10b981', borderDownColor: '#ef4444',
+            wickUpColor: '#10b981', wickDownColor: '#ef4444',
         });
 
         const chartData = data
             .filter(h => h.open && h.high && h.low && h.close)
             .map(h => ({
-                time: h.date,
-                open: parseFloat(h.open),
-                high: parseFloat(h.high),
-                low: parseFloat(h.low),
-                close: parseFloat(h.close),
+                time: h.date, open: parseFloat(h.open), high: parseFloat(h.high),
+                low: parseFloat(h.low), close: parseFloat(h.close),
             }))
             .sort((a, b) => a.time.localeCompare(b.time));
 
@@ -94,32 +62,21 @@ function CandlestickChart({ data }) {
                 const slice = chartData.slice(index - period + 1, index + 1);
                 const avg = slice.reduce((sum, d) => sum + d.close, 0) / period;
                 return { time: item.time, value: parseFloat(avg.toFixed(4)) };
-            })
-            .filter(Boolean);
+            }).filter(Boolean);
 
-        const maSeries = chart.addSeries(LineSeries, {
-            color: '#f97316',
-            lineWidth: 2,
-            title: 'MA20',
-        });
+        const maSeries = chart.addSeries(LineSeries, { color: '#f97316', lineWidth: 2, title: 'MA20' });
         maSeries.setData(maData);
         chart.timeScale().fitContent();
 
         const handleResize = () => {
             if (chartContainerRef.current && chartRef.current) {
-                chartRef.current.applyOptions({
-                    width: chartContainerRef.current.clientWidth
-                });
+                chartRef.current.applyOptions({ width: chartContainerRef.current.clientWidth });
             }
         };
         window.addEventListener('resize', handleResize);
-
         return () => {
             window.removeEventListener('resize', handleResize);
-            if (chartRef.current) {
-                chartRef.current.remove();
-                chartRef.current = null;
-            }
+            if (chartRef.current) { chartRef.current.remove(); chartRef.current = null; }
         };
     }, [data]);
 
@@ -129,6 +86,7 @@ function CandlestickChart({ data }) {
 export default function InstrumentDetailPage() {
     const navigate = useNavigate();
     const { id } = useParams();
+    const { t, i18n } = useTranslation();
 
     const [instrument, setInstrument] = useState(null);
     const [history, setHistory] = useState([]);
@@ -138,7 +96,6 @@ export default function InstrumentDetailPage() {
     const [watchlistLoading, setWatchlistLoading] = useState(false);
     const [timeframe, setTimeframe] = useState('1H');
     const [chartType, setChartType] = useState('candlestick');
-
     const [showAlertModal, setShowAlertModal] = useState(false);
     const [alertTargetPrice, setAlertTargetPrice] = useState('');
     const [alertCondition, setAlertCondition] = useState('ABOVE');
@@ -146,20 +103,22 @@ export default function InstrumentDetailPage() {
     const [activeAlerts, setActiveAlerts] = useState([]);
     const [livePrice, setLivePrice] = useState(null);
 
-    useEffect(() => {
-        fetchInstrument();
-    }, [id]);
+    const TYPE_LABELS = {
+        FOREX: t('markets.forex'),
+        STOCK: t('markets.stocks'),
+        BOND: t('markets.bonds'),
+        FUND: t('instruments.fund.title'),
+        PRECIOUS: t('markets.precious'),
+        CRYPTO: t('markets.crypto'),
+        VIOP: t('markets.viop'),
+    };
 
+    useEffect(() => { fetchInstrument(); }, [id]);
     useEffect(() => {
-        if (instrument) {
-            checkWatchlistStatus();
-            fetchHistory();
-            fetchActiveAlerts();
-        }
+        if (instrument) { checkWatchlistStatus(); fetchHistory(); fetchActiveAlerts(); }
     }, [instrument, timeframe]);
 
     useInstrumentWebSocket(instrument?.id, (priceUpdate) => {
-        console.log('🔴 Live price update:', priceUpdate);
         setLivePrice(priceUpdate);
     });
 
@@ -170,8 +129,7 @@ export default function InstrumentDetailPage() {
             const data = await getInstrumentById(id);
             setInstrument(data);
         } catch (e) {
-            console.error('Load instrument error:', e);
-            setError('Enstrüman yüklenirken hata oluştu');
+            setError(t('instrumentDetail.loadError'));
         } finally {
             setLoading(false);
         }
@@ -206,8 +164,7 @@ export default function InstrumentDetailPage() {
                 setInWatchlist(true);
             }
         } catch (error) {
-            console.error('Watchlist toggle error:', error);
-            alert('İşlem başarısız');
+            alert(t('instrumentDetail.watchlistError'));
         } finally {
             setWatchlistLoading(false);
         }
@@ -218,7 +175,6 @@ export default function InstrumentDetailPage() {
         try {
             const end = new Date();
             const start = new Date();
-
             switch (timeframe) {
                 case '1H': start.setDate(end.getDate() - 7); break;
                 case '1A': start.setMonth(end.getMonth() - 1); break;
@@ -227,11 +183,7 @@ export default function InstrumentDetailPage() {
                 case '1Y': start.setFullYear(end.getFullYear() - 1); break;
                 default: start.setMonth(end.getMonth() - 1);
             }
-
-            const startDate = start.toISOString().split('T')[0];
-            const endDate = end.toISOString().split('T')[0];
-
-            const data = await getHistoricalPrices(id, startDate, endDate);
+            const data = await getHistoricalPrices(id, start.toISOString().split('T')[0], end.toISOString().split('T')[0]);
             setHistory(data || []);
         } catch (e) {
             console.error('History fetch error:', e);
@@ -247,8 +199,7 @@ export default function InstrumentDetailPage() {
             setAlertTargetPrice('');
             await fetchActiveAlerts();
         } catch (e) {
-            console.error('Alert create error:', e);
-            alert('Alarm oluşturulamadı');
+            alert(t('instrumentDetail.alertCreateError'));
         } finally {
             setAlertLoading(false);
         }
@@ -271,10 +222,37 @@ export default function InstrumentDetailPage() {
     };
 
     const formatDate = (dateStr) => {
-        return new Date(dateStr).toLocaleString('tr-TR', {
+        const locale = i18n.language === 'en' ? 'en-US' : 'tr-TR';
+        return new Date(dateStr).toLocaleString(locale, {
             day: '2-digit', month: 'long', year: 'numeric',
             hour: '2-digit', minute: '2-digit',
         });
+    };
+
+    const getTypeSpecificFields = () => {
+        const fields = [];
+        if (instrument.sector) fields.push({ label: t('instrumentDetail.fields.sector'), value: instrument.sector });
+        if (instrument.marketCap) fields.push({ label: t('instrumentDetail.fields.marketCap'), value: instrument.marketCap.toLocaleString('tr-TR') });
+        if (instrument.baseCurrency) fields.push({ label: t('instrumentDetail.fields.baseCurrency'), value: instrument.baseCurrency });
+        if (instrument.quoteCurrency) fields.push({ label: t('instrumentDetail.fields.quoteCurrency'), value: instrument.quoteCurrency });
+        if (instrument.blockchain) fields.push({ label: t('instrumentDetail.fields.blockchain'), value: instrument.blockchain });
+        if (instrument.totalSupply) fields.push({ label: t('instrumentDetail.fields.totalSupply'), value: instrument.totalSupply.toLocaleString('tr-TR') });
+        if (instrument.circulatingSupply) fields.push({ label: t('instrumentDetail.fields.circulatingSupply'), value: instrument.circulatingSupply.toLocaleString('tr-TR') });
+        if (instrument.maturityDate) fields.push({ label: t('instrumentDetail.fields.maturityDate'), value: new Date(instrument.maturityDate).toLocaleDateString(i18n.language === 'en' ? 'en-US' : 'tr-TR') });
+        if (instrument.couponRate) fields.push({ label: t('instrumentDetail.fields.couponRate'), value: `%${instrument.couponRate}` });
+        if (instrument.faceValue) fields.push({ label: t('instrumentDetail.fields.faceValue'), value: instrument.faceValue.toLocaleString('tr-TR') });
+        if (instrument.issuer) fields.push({ label: t('instrumentDetail.fields.issuer'), value: instrument.issuer });
+        if (instrument.metalType) fields.push({ label: t('instrumentDetail.fields.metalType'), value: instrument.metalType });
+        if (instrument.unit) fields.push({ label: t('instrumentDetail.fields.unit'), value: instrument.unit });
+        if (instrument.fundCode) fields.push({ label: t('instrumentDetail.fields.fundCode'), value: instrument.fundCode });
+        if (instrument.fundType) fields.push({ label: t('instrumentDetail.fields.fundType'), value: instrument.fundType });
+        if (instrument.totalValue) fields.push({ label: t('instrumentDetail.fields.portfolioSize'), value: instrument.totalValue.toLocaleString('tr-TR') + ' USD' });
+        if (instrument.investorCount) fields.push({ label: t('instrumentDetail.fields.investorCount'), value: instrument.investorCount.toLocaleString('tr-TR') });
+        if (instrument.underlyingAsset) fields.push({ label: t('instrumentDetail.fields.underlyingAsset'), value: instrument.underlyingAsset });
+        if (instrument.contractType) fields.push({ label: t('instrumentDetail.fields.contractType'), value: instrument.contractType });
+        if (instrument.expiryDate) fields.push({ label: t('instrumentDetail.fields.expiryDate'), value: new Date(instrument.expiryDate).toLocaleDateString(i18n.language === 'en' ? 'en-US' : 'tr-TR') });
+        if (instrument.initialMargin) fields.push({ label: t('instrumentDetail.fields.initialMargin'), value: '₺' + instrument.initialMargin.toLocaleString('tr-TR') });
+        return fields;
     };
 
     if (loading) {
@@ -288,31 +266,26 @@ export default function InstrumentDetailPage() {
     if (error || !instrument) {
         return (
             <div className="p-8 text-center">
-                <p className="text-red-500 mb-4">{error || 'Enstrüman bulunamadı'}</p>
-                <Button onClick={() => navigate(-1)}>Geri Dön</Button>
+                <p className="text-red-500 mb-4">{error || t('instrumentDetail.notFound')}</p>
+                <Button onClick={() => navigate(-1)}>{t('common.back')}</Button>
             </div>
         );
     }
 
     const price = livePrice ? {
-        current: livePrice.currentPrice,
-        changeAmount: livePrice.changeAmount,
-        changePercent: livePrice.changePercent,
-        previousClose: livePrice.previousClose,
-        open: instrument.currentPrice?.open,
-        high: instrument.currentPrice?.high,
-        low: instrument.currentPrice?.low,
-        timestamp: livePrice.timestamp,
+        current: livePrice.currentPrice, changeAmount: livePrice.changeAmount,
+        changePercent: livePrice.changePercent, previousClose: livePrice.previousClose,
+        open: instrument.currentPrice?.open, high: instrument.currentPrice?.high,
+        low: instrument.currentPrice?.low, timestamp: livePrice.timestamp,
         yieldRate: instrument.currentPrice?.yieldRate,
     } : instrument.currentPrice;
+
     const isPositive = (price?.changePercent || 0) > 0;
     const isNeutral = (price?.changePercent || 0) === 0;
     const accentColor = TYPE_COLORS[instrument.type] || '#3B82F6';
+    const typeFields = getTypeSpecificFields();
 
-    const areaChartData = history.map(h => ({
-        time: h.date,
-        value: h.close,
-    }));
+    const areaChartData = history.map(h => ({ time: h.date, value: h.close }));
     const period = 20;
     const areaChartDataWithMA = areaChartData.map((item, index) => {
         if (index < period - 1) return { ...item, ma: null };
@@ -320,34 +293,6 @@ export default function InstrumentDetailPage() {
         const avg = slice.reduce((sum, d) => sum + d.value, 0) / period;
         return { ...item, ma: parseFloat(avg.toFixed(4)) };
     });
-
-    const getTypeSpecificFields = () => {
-        const fields = [];
-        if (instrument.sector) fields.push({ label: 'Sektör', value: instrument.sector });
-        if (instrument.marketCap) fields.push({ label: 'Piyasa Değeri', value: instrument.marketCap.toLocaleString('tr-TR') });
-        if (instrument.baseCurrency) fields.push({ label: 'Baz Para', value: instrument.baseCurrency });
-        if (instrument.quoteCurrency) fields.push({ label: 'Karşı Para', value: instrument.quoteCurrency });
-        if (instrument.blockchain) fields.push({ label: 'Blockchain', value: instrument.blockchain });
-        if (instrument.totalSupply) fields.push({ label: 'Toplam Arz', value: instrument.totalSupply.toLocaleString('tr-TR') });
-        if (instrument.circulatingSupply) fields.push({ label: 'Dolaşım Arzı', value: instrument.circulatingSupply.toLocaleString('tr-TR') });
-        if (instrument.maturityDate) fields.push({ label: 'Vade Tarihi', value: new Date(instrument.maturityDate).toLocaleDateString('tr-TR') });
-        if (instrument.couponRate) fields.push({ label: 'Kupon Oranı', value: `%${instrument.couponRate}` });
-        if (instrument.faceValue) fields.push({ label: 'Nominal Değer', value: instrument.faceValue.toLocaleString('tr-TR') });
-        if (instrument.issuer) fields.push({ label: 'İhraçcı', value: instrument.issuer });
-        if (instrument.metalType) fields.push({ label: 'Metal Türü', value: instrument.metalType });
-        if (instrument.unit) fields.push({ label: 'Birim', value: instrument.unit });
-        if (instrument.fundCode) fields.push({ label: 'Fon Kodu', value: instrument.fundCode });
-        if (instrument.fundType) fields.push({ label: 'Fon Türü', value: instrument.fundType });
-        if (instrument.totalValue) fields.push({ label: 'Portföy Büyüklüğü', value: instrument.totalValue.toLocaleString('tr-TR') + ' USD' });
-        if (instrument.investorCount) fields.push({ label: 'Yatırımcı Sayısı', value: instrument.investorCount.toLocaleString('tr-TR') });
-        if (instrument.underlyingAsset) fields.push({ label: 'Dayanak Varlık', value: instrument.underlyingAsset });
-        if (instrument.contractType) fields.push({ label: 'Kontrat Tipi', value: instrument.contractType });
-        if (instrument.expiryDate) fields.push({ label: 'Vade Tarihi', value: new Date(instrument.expiryDate).toLocaleDateString('tr-TR') });
-        if (instrument.initialMargin) fields.push({ label: 'Başlangıç Teminatı', value: '₺' + instrument.initialMargin.toLocaleString('tr-TR') });
-        return fields;
-    };
-
-    const typeFields = getTypeSpecificFields();
 
     return (
         <div className="min-h-screen bg-gray-50">
@@ -358,12 +303,12 @@ export default function InstrumentDetailPage() {
                     <div className="flex items-center justify-between mb-6">
                         <Button variant="ghost" onClick={() => navigate(-1)} className="-ml-2 text-gray-500">
                             <ArrowLeft className="w-4 h-4 mr-2" />
-                            Geri
+                            {t('common.back')}
                         </Button>
                         <div className="flex gap-2">
                             <Button variant="outline" size="sm" onClick={() => setShowAlertModal(true)}>
                                 <Bell className="w-4 h-4 mr-2" />
-                                Fiyat Alarmı
+                                {t('instrumentDetail.priceAlert')}
                             </Button>
                             <Button
                                 variant={inWatchlist ? 'default' : 'outline'}
@@ -373,7 +318,11 @@ export default function InstrumentDetailPage() {
                                 className={inWatchlist ? 'bg-yellow-500 hover:bg-yellow-600 text-white' : ''}
                             >
                                 <Star className={`w-4 h-4 mr-2 ${inWatchlist ? 'fill-white' : ''}`} />
-                                {watchlistLoading ? 'İşleniyor...' : inWatchlist ? 'Takipte' : 'Takip Et'}
+                                {watchlistLoading
+                                    ? t('instrumentDetail.processing')
+                                    : inWatchlist
+                                        ? t('instrumentDetail.following')
+                                        : t('instrumentDetail.follow')}
                             </Button>
                         </div>
                     </div>
@@ -388,7 +337,7 @@ export default function InstrumentDetailPage() {
                                     {instrument.exchange}
                                 </span>
                                 <span className={`text-xs font-semibold px-2 py-1 rounded-full ${instrument.active ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-500'}`}>
-                                    {instrument.active ? 'Aktif' : 'Pasif'}
+                                    {instrument.active ? t('profile.active') : t('portfolio.passive')}
                                 </span>
                             </div>
                             <h1 className="text-4xl font-bold text-gray-900 mb-1">{instrument.name}</h1>
@@ -398,12 +347,10 @@ export default function InstrumentDetailPage() {
                         {price && (
                             <div className="text-right">
                                 {instrument.type === 'BOND' ? (
-                                    <>
-                                        <p className="text-5xl font-bold text-gray-900 mb-2">
-                                            %{formatPrice(price.current)}
-                                            <span className="text-lg text-gray-400 ml-2">Getiri</span>
-                                        </p>
-                                    </>
+                                    <p className="text-5xl font-bold text-gray-900 mb-2">
+                                        %{formatPrice(price.current)}
+                                        <span className="text-lg text-gray-400 ml-2">{t('instrumentDetail.yield')}</span>
+                                    </p>
                                 ) : (
                                     <p className="text-5xl font-bold text-gray-900 mb-2">
                                         {formatPrice(price.current)}
@@ -411,12 +358,11 @@ export default function InstrumentDetailPage() {
                                     </p>
                                 )}
                                 <div className={`flex items-center justify-end gap-2 text-lg font-semibold ${
-                                    isNeutral ? 'text-gray-500' :
-                                        isPositive ? 'text-emerald-600' : 'text-red-500'
+                                    isNeutral ? 'text-gray-500' : isPositive ? 'text-emerald-600' : 'text-red-500'
                                 }`}>
                                     {isNeutral ? <span>—</span> : isPositive ? <TrendingUp className="w-5 h-5" /> : <TrendingDown className="w-5 h-5" />}
                                     <span>
-                                          {isPositive ? '+' : ''}{formatPrice(price.changeAmount)} ({Math.abs(price.changePercent).toFixed(2)}%)
+                                        {isPositive ? '+' : ''}{formatPrice(price.changeAmount)} ({Math.abs(price.changePercent).toFixed(2)}%)
                                     </span>
                                 </div>
                                 <p className="text-xs text-gray-400 mt-2">{formatDate(price.timestamp)}</p>
@@ -431,13 +377,12 @@ export default function InstrumentDetailPage() {
                 {price && (
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
                         {instrument.type === 'BOND' ? (
-                            // Tahvil için özel kartlar
                             <>
                                 {[
-                                    { label: 'Güncel Getiri', value: `%${formatPrice(price.current)}`, color: 'text-amber-600' },
-                                    { label: 'Önceki Kapanış', value: `%${formatPrice(price.previousClose)}`, color: 'text-gray-900' },
-                                    { label: 'Değişim', value: `${price.changeAmount >= 0 ? '+' : ''}${formatPrice(price.changeAmount)}`, color: price.changeAmount >= 0 ? 'text-emerald-600' : 'text-red-500' },
-                                    { label: 'Değişim %', value: `${price.changePercent >= 0 ? '+' : ''}${Math.abs(price.changePercent).toFixed(2)}%`, color: price.changePercent >= 0 ? 'text-emerald-600' : 'text-red-500' },
+                                    { label: t('instrumentDetail.currentYield'), value: `%${formatPrice(price.current)}`, color: 'text-amber-600' },
+                                    { label: t('instrumentDetail.prevClose'), value: `%${formatPrice(price.previousClose)}`, color: 'text-gray-900' },
+                                    { label: t('instrumentDetail.change'), value: `${price.changeAmount >= 0 ? '+' : ''}${formatPrice(price.changeAmount)}`, color: price.changeAmount >= 0 ? 'text-emerald-600' : 'text-red-500' },
+                                    { label: t('instrumentDetail.changePercent'), value: `${price.changePercent >= 0 ? '+' : ''}${Math.abs(price.changePercent).toFixed(2)}%`, color: price.changePercent >= 0 ? 'text-emerald-600' : 'text-red-500' },
                                 ].map(stat => (
                                     <Card key={stat.label} className="border-0 shadow-sm">
                                         <CardContent className="pt-5 pb-5">
@@ -448,13 +393,12 @@ export default function InstrumentDetailPage() {
                                 ))}
                             </>
                         ) : (
-                            // Normal enstrümanlar
                             <>
                                 {[
-                                    { label: 'Açılış', value: formatPrice(price.open), color: 'text-gray-900' },
-                                    { label: 'Gün Yüksek', value: formatPrice(price.high), color: 'text-emerald-600' },
-                                    { label: 'Gün Düşük', value: formatPrice(price.low), color: 'text-red-500' },
-                                    { label: 'Önceki Kapanış', value: formatPrice(price.previousClose), color: 'text-gray-900' },
+                                    { label: t('instrumentDetail.open'), value: formatPrice(price.open), color: 'text-gray-900' },
+                                    { label: t('instrumentDetail.dayHigh'), value: formatPrice(price.high), color: 'text-emerald-600' },
+                                    { label: t('instrumentDetail.dayLow'), value: formatPrice(price.low), color: 'text-red-500' },
+                                    { label: t('instrumentDetail.prevClose'), value: formatPrice(price.previousClose), color: 'text-gray-900' },
                                 ].map(stat => (
                                     <Card key={stat.label} className="border-0 shadow-sm">
                                         <CardContent className="pt-5 pb-5">
@@ -474,7 +418,7 @@ export default function InstrumentDetailPage() {
                             <div className="flex items-center gap-3">
                                 <Activity className="w-5 h-5" style={{ color: accentColor }} />
                                 <div>
-                                    <p className="text-xs text-gray-500 uppercase tracking-wide">Getiri Oranı</p>
+                                    <p className="text-xs text-gray-500 uppercase tracking-wide">{t('instrumentDetail.yieldRate')}</p>
                                     <p className="text-2xl font-bold text-gray-900">%{price.yieldRate.toFixed(2)}</p>
                                 </div>
                             </div>
@@ -482,33 +426,28 @@ export default function InstrumentDetailPage() {
                     </Card>
                 )}
 
-                {/* Grafik */}
+                {/* Chart */}
                 <Card className="border-0 shadow-sm mb-6">
                     <CardHeader className="pb-4">
                         <div className="flex items-center justify-between">
                             <div className="flex items-center gap-3">
-                                <CardTitle className="text-lg font-bold text-gray-900">Fiyat Grafiği</CardTitle>
-                                {/* Chart Type Toggle */}
+                                <CardTitle className="text-lg font-bold text-gray-900">{t('instrumentDetail.priceChart')}</CardTitle>
                                 <div className="flex items-center bg-gray-100 rounded-lg p-1">
                                     <button
                                         onClick={() => setChartType('candlestick')}
                                         className={`px-3 py-1 text-xs font-semibold rounded-md transition-all ${
-                                            chartType === 'candlestick'
-                                                ? 'bg-white text-gray-900 shadow-sm'
-                                                : 'text-gray-500 hover:text-gray-700'
+                                            chartType === 'candlestick' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
                                         }`}
                                     >
-                                        Mum
+                                        {t('instrumentDetail.candlestick')}
                                     </button>
                                     <button
                                         onClick={() => setChartType('area')}
                                         className={`px-3 py-1 text-xs font-semibold rounded-md transition-all ${
-                                            chartType === 'area'
-                                                ? 'bg-white text-gray-900 shadow-sm'
-                                                : 'text-gray-500 hover:text-gray-700'
+                                            chartType === 'area' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
                                         }`}
                                     >
-                                        Alan
+                                        {t('instrumentDetail.area')}
                                     </button>
                                 </div>
                             </div>
@@ -544,31 +483,13 @@ export default function InstrumentDetailPage() {
                                             </defs>
                                             <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                                             <XAxis dataKey="time" stroke="#9ca3af" tick={{ fontSize: 11 }} />
-                                            <YAxis
-                                                stroke="#9ca3af"
-                                                tick={{ fontSize: 11 }}
-                                                domain={['dataMin - 0.1', 'dataMax + 0.1']}
-                                                tickFormatter={(v) => v.toFixed(2)}
-                                            />
+                                            <YAxis stroke="#9ca3af" tick={{ fontSize: 11 }} domain={['dataMin - 0.1', 'dataMax + 0.1']} tickFormatter={(v) => v.toFixed(2)} />
                                             <Tooltip
-                                                formatter={(value) => [formatPrice(value), 'Fiyat']}
+                                                formatter={(value) => [formatPrice(value), t('instrumentDetail.price')]}
                                                 contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
                                             />
-                                            <Area
-                                                type="monotone"
-                                                dataKey="value"
-                                                stroke={accentColor}
-                                                strokeWidth={2}
-                                                fill="url(#colorValue)"
-                                            />
-                                            <Line
-                                                type="monotone"
-                                                dataKey="ma"
-                                                stroke="#f97316"
-                                                strokeWidth={2}
-                                                dot={false}
-                                                name="MA20"
-                                            />
+                                            <Area type="monotone" dataKey="value" stroke={accentColor} strokeWidth={2} fill="url(#colorValue)" />
+                                            <Line type="monotone" dataKey="ma" stroke="#f97316" strokeWidth={2} dot={false} name="MA20" />
                                         </AreaChart>
                                     </ResponsiveContainer>
                                 </div>
@@ -577,28 +498,28 @@ export default function InstrumentDetailPage() {
                             <div className="h-[450px] flex items-center justify-center text-gray-400">
                                 <div className="text-center">
                                     <Activity className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                                    <p className="text-sm">Tarihsel veri bulunamadı</p>
+                                    <p className="text-sm">{t('instrumentDetail.noHistory')}</p>
                                 </div>
                             </div>
                         )}
                     </CardContent>
                 </Card>
 
-                {/* Bilgiler */}
+                {/* Info Cards */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <Card className="border-0 shadow-sm">
                         <CardHeader className="pb-3">
                             <CardTitle className="text-sm font-semibold text-gray-500 uppercase tracking-wide flex items-center gap-2">
                                 <Globe className="w-4 h-4" />
-                                Genel Bilgiler
+                                {t('instrumentDetail.generalInfo')}
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="pt-0">
                             <div className="space-y-3">
                                 {[
-                                    { label: 'Tür', value: TYPE_LABELS[instrument.type] || instrument.type },
-                                    { label: 'Borsa', value: instrument.exchange },
-                                    { label: 'Para Birimi', value: instrument.currency },
+                                    { label: t('holding.type'), value: TYPE_LABELS[instrument.type] || instrument.type },
+                                    { label: t('instrumentDetail.exchange'), value: instrument.exchange },
+                                    { label: t('portfolio.currency'), value: instrument.currency },
                                 ].map(field => (
                                     <div key={field.label} className="flex justify-between items-center py-2 border-b border-gray-50 last:border-0">
                                         <span className="text-sm text-gray-500">{field.label}</span>
@@ -613,12 +534,12 @@ export default function InstrumentDetailPage() {
                         <CardHeader className="pb-3">
                             <CardTitle className="text-sm font-semibold text-gray-500 uppercase tracking-wide flex items-center gap-2">
                                 <Bell className="w-4 h-4" />
-                                Fiyat Alarmları
+                                {t('alert.title')}
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="pt-0">
                             {activeAlerts.length === 0 ? (
-                                <p className="text-sm text-gray-400 mb-3">Aktif alarm yok</p>
+                                <p className="text-sm text-gray-400 mb-3">{t('alert.empty')}</p>
                             ) : (
                                 <div className="space-y-2 mb-3">
                                     {activeAlerts.map(alert => (
@@ -628,7 +549,7 @@ export default function InstrumentDetailPage() {
                                                     {alert.condition === 'ABOVE' ? '↑' : '↓'} {formatPrice(alert.targetPrice)} {instrument.currency}
                                                 </p>
                                                 <p className="text-xs text-gray-400">
-                                                    {alert.condition === 'ABOVE' ? 'Üzerine çıkınca' : 'Altına düşünce'}
+                                                    {alert.condition === 'ABOVE' ? t('alert.aboveCondition') : t('alert.belowCondition')}
                                                 </p>
                                             </div>
                                             <button onClick={() => handleDeleteAlert(alert.id)} className="text-red-400 hover:text-red-600">
@@ -640,7 +561,7 @@ export default function InstrumentDetailPage() {
                             )}
                             <Button variant="outline" size="sm" className="w-full" onClick={() => setShowAlertModal(true)}>
                                 <Bell className="w-4 h-4 mr-2" />
-                                Alarm Ekle
+                                {t('instrumentDetail.addAlert')}
                             </Button>
                         </CardContent>
                     </Card>
@@ -650,7 +571,7 @@ export default function InstrumentDetailPage() {
                             <CardHeader className="pb-3">
                                 <CardTitle className="text-sm font-semibold text-gray-500 uppercase tracking-wide flex items-center gap-2">
                                     <Building2 className="w-4 h-4" />
-                                    {TYPE_LABELS[instrument.type]} Bilgileri
+                                    {TYPE_LABELS[instrument.type]} {t('instrumentDetail.info')}
                                 </CardTitle>
                             </CardHeader>
                             <CardContent className="pt-0">
@@ -670,7 +591,9 @@ export default function InstrumentDetailPage() {
                 {instrument.description && (
                     <Card className="border-0 shadow-sm mt-6">
                         <CardHeader className="pb-3">
-                            <CardTitle className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Açıklama</CardTitle>
+                            <CardTitle className="text-sm font-semibold text-gray-500 uppercase tracking-wide">
+                                {t('instrumentDetail.description')}
+                            </CardTitle>
                         </CardHeader>
                         <CardContent className="pt-0">
                             <p className="text-sm text-gray-600 leading-relaxed">{instrument.description}</p>
@@ -679,17 +602,20 @@ export default function InstrumentDetailPage() {
                 )}
             </div>
 
+            {/* Alert Modal */}
             {showAlertModal && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
                     <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6">
-                        <h3 className="text-xl font-bold text-gray-900 mb-4">Fiyat Alarmı Oluştur</h3>
+                        <h3 className="text-xl font-bold text-gray-900 mb-4">{t('instrumentDetail.createAlert')}</h3>
                         <div className="mb-4">
                             <p className="text-sm text-gray-500 mb-4">
-                                Güncel Fiyat: <span className="font-semibold text-gray-900">
+                                {t('instrumentDetail.currentPrice')}: <span className="font-semibold text-gray-900">
                                     {formatPrice(price?.current)} {instrument.currency}
                                 </span>
                             </p>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Alarm Koşulu</label>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                {t('alert.condition')}
+                            </label>
                             <div className="flex gap-2 mb-4">
                                 <button
                                     onClick={() => setAlertCondition('ABOVE')}
@@ -697,7 +623,7 @@ export default function InstrumentDetailPage() {
                                         alertCondition === 'ABOVE' ? 'bg-green-50 border-green-500 text-green-700' : 'border-gray-200 text-gray-600'
                                     }`}
                                 >
-                                    ↑ Üzerine Çıkınca
+                                    {t('alert.above')}
                                 </button>
                                 <button
                                     onClick={() => setAlertCondition('BELOW')}
@@ -705,11 +631,11 @@ export default function InstrumentDetailPage() {
                                         alertCondition === 'BELOW' ? 'bg-red-50 border-red-500 text-red-700' : 'border-gray-200 text-gray-600'
                                     }`}
                                 >
-                                    ↓ Altına Düşünce
+                                    {t('alert.below')}
                                 </button>
                             </div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Hedef Fiyat ({instrument.currency})
+                                {t('alert.targetPrice')} ({instrument.currency})
                             </label>
                             <input
                                 type="number"
@@ -727,7 +653,7 @@ export default function InstrumentDetailPage() {
                                 onClick={() => { setShowAlertModal(false); setAlertTargetPrice(''); }}
                                 disabled={alertLoading}
                             >
-                                İptal
+                                {t('common.cancel')}
                             </Button>
                             <Button
                                 className="flex-1"
@@ -735,9 +661,9 @@ export default function InstrumentDetailPage() {
                                 disabled={!alertTargetPrice || alertLoading}
                             >
                                 {alertLoading ? (
-                                    <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Oluşturuluyor...</>
+                                    <><Loader2 className="w-4 h-4 mr-2 animate-spin" />{t('instrumentDetail.creating')}</>
                                 ) : (
-                                    <><Bell className="w-4 h-4 mr-2" />Alarm Oluştur</>
+                                    <><Bell className="w-4 h-4 mr-2" />{t('alert.create')}</>
                                 )}
                             </Button>
                         </div>

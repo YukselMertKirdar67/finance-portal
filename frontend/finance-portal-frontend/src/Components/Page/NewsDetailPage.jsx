@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Clock, ExternalLink, Share2 } from 'lucide-react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Card, CardContent } from '../UI/Card';
 import { Button } from '../UI/Button';
 import { getNewsById } from '../../API/newsApi';
@@ -8,6 +9,7 @@ import { getNewsById } from '../../API/newsApi';
 export default function NewsDetailPage() {
     const { id } = useParams();
     const navigate = useNavigate();
+    const { t, i18n } = useTranslation();
 
     const [news, setNews] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -15,7 +17,6 @@ export default function NewsDetailPage() {
 
     useEffect(() => {
         if (!id) return;
-
         let cancelled = false;
 
         const loadDetail = async () => {
@@ -25,7 +26,7 @@ export default function NewsDetailPage() {
                 const data = await getNewsById(id);
                 if (!cancelled) setNews(data);
             } catch (err) {
-                if (!cancelled) setError('Haber detayı yüklenirken bir hata oluştu.');
+                if (!cancelled) setError(t('newsDetail.loadError'));
                 console.error(err);
             } finally {
                 if (!cancelled) setLoading(false);
@@ -35,11 +36,12 @@ export default function NewsDetailPage() {
         loadDetail();
         return () => { cancelled = true; };
 
-    }, [id]);
+    }, [id, i18n.language]); // ✅ dil değişince yeniden fetch
 
     const formatDate = (dateString) => {
-        if (!dateString) return 'Tarih belirtilmemiş';
-        return new Date(dateString).toLocaleDateString('tr-TR', {
+        if (!dateString) return t('newsDetail.noDate');
+        const locale = i18n.language === 'en' ? 'en-US' : 'tr-TR';
+        return new Date(dateString).toLocaleDateString(locale, {
             year: 'numeric', month: 'long', day: 'numeric',
             hour: '2-digit', minute: '2-digit'
         });
@@ -53,7 +55,7 @@ export default function NewsDetailPage() {
                 url: window.location.href,
             }).catch(() => {});
         } else {
-            alert('Paylaşma özelliği bu tarayıcıda desteklenmiyor.');
+            alert(t('newsDetail.shareNotSupported'));
         }
     };
 
@@ -76,10 +78,10 @@ export default function NewsDetailPage() {
                 <div className="max-w-4xl mx-auto">
                     <Button onClick={() => navigate('/news')} variant="outline" className="mb-6">
                         <ArrowLeft className="w-4 h-4 mr-2" />
-                        Geri Dön
+                        {t('common.back')}
                     </Button>
                     <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
-                        {error || 'Haber bulunamadı'}
+                        {error || t('newsDetail.notFound')}
                     </div>
                 </div>
             </div>
@@ -92,7 +94,7 @@ export default function NewsDetailPage() {
 
                 <Button onClick={() => navigate('/news')} variant="outline" className="mb-6">
                     <ArrowLeft className="w-4 h-4 mr-2" />
-                    Haberlere Dön
+                    {t('newsDetail.backToNews')}
                 </Button>
 
                 <Card>
@@ -106,7 +108,7 @@ export default function NewsDetailPage() {
                     <CardContent className="p-8">
                         <div className="flex items-center gap-4 mb-6">
                             <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-medium">
-                                {news.category || 'Genel'}
+                                {news.category || t('news.general')}
                             </span>
                             <div className="flex items-center gap-2 text-gray-500 text-sm">
                                 <Clock className="w-4 h-4" />
@@ -121,7 +123,7 @@ export default function NewsDetailPage() {
                         {news.source && (
                             <p className="text-gray-500 mb-6 flex items-center gap-2">
                                 <ExternalLink className="w-4 h-4" />
-                                Kaynak: {news.source}
+                                {t('newsDetail.source')}: {news.source}
                             </p>
                         )}
 
@@ -134,7 +136,7 @@ export default function NewsDetailPage() {
                         <div className="mt-8 pt-6 border-t flex gap-3">
                             <Button onClick={handleShare} variant="outline">
                                 <Share2 className="w-4 h-4 mr-2" />
-                                Paylaş
+                                {t('newsDetail.share')}
                             </Button>
                         </div>
                     </CardContent>

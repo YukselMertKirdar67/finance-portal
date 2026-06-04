@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
-import { Sun, Moon, Monitor, Loader2, CheckCircle, XCircle } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import { Sun, Moon, Loader2, CheckCircle, XCircle } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from '../UI/Card';
 import { Button } from '../UI/Button';
 import { updatePreferences } from '../../API/userApi';
@@ -9,20 +10,29 @@ import { updatePreferences } from '../../API/userApi';
 export default function AppearanceSettings() {
     const { user, refreshUser } = useAuth();
     const { setTheme } = useTheme();
+    const { t } = useTranslation();
 
     const [selectedTheme, setSelectedTheme] = useState(user?.theme || 'light');
     const [loading, setLoading] = useState(false);
     const [toast, setToast] = useState(null);
 
     useEffect(() => {
-        if (user?.theme) {
-            setSelectedTheme(user.theme);
-        }
+        if (user?.theme) setSelectedTheme(user.theme);
     }, [user?.theme]);
 
     const themes = [
-        { value: 'light', label: 'Açık Mod', icon: <Sun className="w-5 h-5" />, desc: 'Klasik beyaz tema' },
-        { value: 'dark', label: 'Koyu Mod', icon: <Moon className="w-5 h-5" />, desc: 'Göz dostu koyu tema' },
+        {
+            value: 'light',
+            label: t('appearance.light'),
+            icon: <Sun className="w-5 h-5" />,
+            desc: t('appearance.lightDesc')
+        },
+        {
+            value: 'dark',
+            label: t('appearance.dark'),
+            icon: <Moon className="w-5 h-5" />,
+            desc: t('appearance.darkDesc')
+        },
     ];
 
     const showToast = (message, type = 'success') => {
@@ -36,9 +46,9 @@ export default function AppearanceSettings() {
             await updatePreferences(selectedTheme);
             await refreshUser();
             setTheme(selectedTheme);
-            showToast('Tercihleriniz kaydedildi');
+            showToast(t('appearance.saveSuccess'));
         } catch (error) {
-            showToast(error.response?.data?.message || 'Tercihler kaydedilemedi', 'error');
+            showToast(error.response?.data?.message || t('appearance.saveError'), 'error');
         } finally {
             setLoading(false);
         }
@@ -65,7 +75,7 @@ export default function AppearanceSettings() {
             {/* Tema Seçimi */}
             <Card>
                 <CardHeader>
-                    <CardTitle>Tema</CardTitle>
+                    <CardTitle>{t('appearance.themeTitle')}</CardTitle>
                 </CardHeader>
                 <CardContent>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -98,7 +108,6 @@ export default function AppearanceSettings() {
                 </CardContent>
             </Card>
 
-
             {/* Kaydet Butonu */}
             {hasChanges && (
                 <div className="flex justify-end">
@@ -106,10 +115,10 @@ export default function AppearanceSettings() {
                         {loading ? (
                             <>
                                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                                Kaydediliyor...
+                                {t('common.saving')}
                             </>
                         ) : (
-                            'Değişiklikleri Kaydet'
+                            t('appearance.saveChanges')
                         )}
                     </Button>
                 </div>

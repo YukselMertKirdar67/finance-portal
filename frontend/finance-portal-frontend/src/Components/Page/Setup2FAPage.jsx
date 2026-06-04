@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Shield, Loader2, CheckCircle, XCircle, Copy, Check } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '../UI/Button';
 import { setupTotp, verifyTotpSetup } from '../../API/totpApi';
 
 export default function Setup2FAPage() {
     const navigate = useNavigate();
+    const { t } = useTranslation();
 
-    const [step, setStep] = useState(1); // 1: QR göster, 2: Kod doğrula, 3: Başarılı
+    const [step, setStep] = useState(1);
     const [qrCode, setQrCode] = useState('');
     const [secret, setSecret] = useState('');
     const [code, setCode] = useState('');
@@ -27,7 +29,7 @@ export default function Setup2FAPage() {
             setQrCode(data.qrCode);
             setSecret(data.secret);
         } catch {
-            setError('QR kod oluşturulamadı. Lütfen tekrar deneyin.');
+            setError(t('setup2fa.qrError'));
         } finally {
             setLoading(false);
         }
@@ -35,7 +37,7 @@ export default function Setup2FAPage() {
 
     const handleVerify = async () => {
         if (code.length !== 6) {
-            setError('Lütfen 6 haneli kodu girin');
+            setError(t('setup2fa.codeLength'));
             return;
         }
         setVerifying(true);
@@ -45,10 +47,10 @@ export default function Setup2FAPage() {
             if (result.success) {
                 setStep(3);
             } else {
-                setError('Geçersiz kod. Lütfen tekrar deneyin.');
+                setError(t('setup2fa.invalidCode'));
             }
         } catch {
-            setError('Doğrulama başarısız. Lütfen tekrar deneyin.');
+            setError(t('setup2fa.verifyError'));
         } finally {
             setVerifying(false);
         }
@@ -65,13 +67,12 @@ export default function Setup2FAPage() {
             <div className="min-h-screen flex items-center justify-center bg-gray-50">
                 <div className="text-center">
                     <Loader2 className="w-16 h-16 text-blue-600 animate-spin mx-auto mb-4" />
-                    <p className="text-gray-600">QR kod oluşturuluyor...</p>
+                    <p className="text-gray-600">{t('setup2fa.generating')}</p>
                 </div>
             </div>
         );
     }
 
-    // Başarılı
     if (step === 3) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -82,13 +83,13 @@ export default function Setup2FAPage() {
                         </div>
                     </div>
                     <h1 className="text-2xl font-bold text-gray-900 mb-2">
-                        2FA Aktif Edildi!
+                        {t('setup2fa.success.title')}
                     </h1>
                     <p className="text-gray-500 mb-6">
-                        İki faktörlü doğrulama başarıyla aktif edildi. Artık her girişte Google Authenticator kodunuzu girmeniz gerekecek.
+                        {t('setup2fa.success.description')}
                     </p>
                     <Button className="w-full" onClick={() => navigate('/settings')}>
-                        Ayarlara Dön
+                        {t('setup2fa.success.goToSettings')}
                     </Button>
                 </div>
             </div>
@@ -107,10 +108,10 @@ export default function Setup2FAPage() {
                         </div>
                     </div>
                     <h1 className="text-2xl font-bold text-gray-900 mb-2">
-                        İki Faktörlü Doğrulama Kurulumu
+                        {t('setup2fa.title')}
                     </h1>
                     <p className="text-gray-500 text-sm">
-                        Hesabınızı daha güvenli hale getirmek için 2FA kurun
+                        {t('setup2fa.subtitle')}
                     </p>
                 </div>
 
@@ -125,17 +126,24 @@ export default function Setup2FAPage() {
                     <>
                         <div className="space-y-4 mb-6">
                             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                                <p className="text-sm text-blue-800 font-semibold mb-2">📱 Adım 1: Uygulamayı İndirin</p>
-                                <p className="text-sm text-blue-700">Google Authenticator veya Authy uygulamasını telefonunuza indirin.</p>
+                                <p className="text-sm text-blue-800 font-semibold mb-2">
+                                    {t('setup2fa.step1.downloadTitle')}
+                                </p>
+                                <p className="text-sm text-blue-700">
+                                    {t('setup2fa.step1.downloadDesc')}
+                                </p>
                             </div>
 
                             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                                <p className="text-sm text-blue-800 font-semibold mb-2">📷 Adım 2: QR Kodu Tarayın</p>
-                                <p className="text-sm text-blue-700">Uygulamayı açıp aşağıdaki QR kodu tarayın.</p>
+                                <p className="text-sm text-blue-800 font-semibold mb-2">
+                                    {t('setup2fa.step1.scanTitle')}
+                                </p>
+                                <p className="text-sm text-blue-700">
+                                    {t('setup2fa.step1.scanDesc')}
+                                </p>
                             </div>
                         </div>
 
-                        {/* QR Code */}
                         {qrCode && (
                             <div className="flex justify-center mb-6">
                                 <div className="border-4 border-gray-100 rounded-xl p-2">
@@ -144,9 +152,8 @@ export default function Setup2FAPage() {
                             </div>
                         )}
 
-                        {/* Secret Key */}
                         <div className="bg-gray-50 rounded-lg p-4 mb-6">
-                            <p className="text-xs text-gray-500 mb-2">QR kod çalışmıyorsa bu kodu manuel girin:</p>
+                            <p className="text-xs text-gray-500 mb-2">{t('setup2fa.step1.manualEntry')}</p>
                             <div className="flex items-center gap-2">
                                 <code className="flex-1 text-sm font-mono text-gray-800 break-all">{secret}</code>
                                 <button
@@ -159,7 +166,7 @@ export default function Setup2FAPage() {
                         </div>
 
                         <Button className="w-full" onClick={() => setStep(2)}>
-                            QR Kodu Taradım →
+                            {t('setup2fa.step1.scanned')}
                         </Button>
                     </>
                 )}
@@ -167,13 +174,17 @@ export default function Setup2FAPage() {
                 {step === 2 && (
                     <>
                         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-                            <p className="text-sm text-blue-800 font-semibold mb-1">✅ Adım 3: Kodu Doğrulayın</p>
-                            <p className="text-sm text-blue-700">Uygulamadaki 6 haneli kodu girin.</p>
+                            <p className="text-sm text-blue-800 font-semibold mb-1">
+                                {t('setup2fa.step2.title')}
+                            </p>
+                            <p className="text-sm text-blue-700">
+                                {t('setup2fa.step2.description')}
+                            </p>
                         </div>
 
                         <div className="mb-6">
                             <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Doğrulama Kodu
+                                {t('auth.enterCode')}
                             </label>
                             <input
                                 type="text"
@@ -203,7 +214,7 @@ export default function Setup2FAPage() {
                                 onClick={() => { setStep(1); setCode(''); setError(''); }}
                                 disabled={verifying}
                             >
-                                Geri
+                                {t('common.back')}
                             </Button>
                             <Button
                                 className="flex-1"
@@ -211,9 +222,9 @@ export default function Setup2FAPage() {
                                 disabled={verifying || code.length !== 6}
                             >
                                 {verifying ? (
-                                    <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Doğrulanıyor...</>
+                                    <><Loader2 className="w-4 h-4 mr-2 animate-spin" />{t('setup2fa.verifying')}</>
                                 ) : (
-                                    'Doğrula'
+                                    t('auth.verify')
                                 )}
                             </Button>
                         </div>

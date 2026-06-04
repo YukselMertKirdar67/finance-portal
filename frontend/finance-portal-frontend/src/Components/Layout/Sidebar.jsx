@@ -15,6 +15,7 @@ import {
     ShieldCheck
 } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Button } from '../UI/Button';
 import { Avatar, AvatarFallback } from '../UI/Avatar';
 
@@ -24,6 +25,8 @@ export default function Sidebar({
                                     onLogout,
                                     user = null
                                 }) {
+
+    const { t } = useTranslation();
 
     const navClass = ({ isActive }) =>
         `w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
@@ -56,7 +59,7 @@ export default function Sidebar({
                     <li>
                         <NavLink to="/home" className={navClass}>
                             <Home className="w-5 h-5" />
-                            <span>Ana Sayfa</span>
+                            <span>{t('nav.home')}</span>
                         </NavLink>
                     </li>
                     <li>
@@ -68,25 +71,25 @@ export default function Sidebar({
                     <li>
                         <NavLink to="/portfolios" className={navClass}>
                             <Briefcase className="w-5 h-5" />
-                            <span>Portföylerim</span>
+                            <span>{t('portfolio.title')}</span>
                         </NavLink>
                     </li>
                     <li>
                         <NavLink to="/watchlist" className={navClass}>
                             <Star className="w-5 h-5" />
-                            <span>Takip Listesi</span>
+                            <span>{t('watchlist.title')}</span>
                         </NavLink>
                     </li>
                     <li>
                         <NavLink to="/price-alerts" className={navClass}>
                             <AlarmClock className="w-5 h-5" />
-                            <span>Fiyat Alarmları</span>
+                            <span>{t('alert.title')}</span>
                         </NavLink>
                     </li>
                     <li>
                         <NavLink to="/settings" className={navClass}>
                             <Settings className="w-5 h-5" />
-                            <span>Ayarlar</span>
+                            <span>{t('nav.settings')}</span>
                         </NavLink>
                     </li>
 
@@ -101,31 +104,31 @@ export default function Sidebar({
                             <li>
                                 <NavLink to="/admin/dashboard" className={navClass}>
                                     <ShieldCheck className="w-5 h-5" />
-                                    <span>Admin Dashboard</span>
+                                    <span>{t('admin.dashboard.title')}</span>
                                 </NavLink>
                             </li>
                             <li>
                                 <NavLink to="/admin/users" className={navClass}>
                                     <Users className="w-5 h-5" />
-                                    <span>Kullanıcı Yönetimi</span>
+                                    <span>{t('admin.users.title')}</span>
                                 </NavLink>
                             </li>
                             <li>
                                 <NavLink to="/admin/instruments" className={navClass}>
                                     <RefreshCw className="w-5 h-5" />
-                                    <span>Fiyat Güncellemesi</span>
+                                    <span>{t('admin.instruments.title')}</span>
                                 </NavLink>
                             </li>
                             <li>
                                 <NavLink to="/admin/news" className={navClass}>
                                     <Newspaper className="w-5 h-5" />
-                                    <span>Haber Yönetimi</span>
+                                    <span>{t('admin.news.title')}</span>
                                 </NavLink>
                             </li>
                             <li>
                                 <NavLink to="/admin/portfolios" className={navClass}>
                                     <Briefcase className="w-5 h-5" />
-                                    <span>Portföy Yönetimi</span>
+                                    <span>{t('admin.portfolio.title')}</span>
                                 </NavLink>
                             </li>
                         </>
@@ -162,7 +165,7 @@ export default function Sidebar({
                             <NavLink to="/profile">
                                 <Button variant="outline" size="sm" className="w-full dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-800">
                                     <User className="w-4 h-4 mr-2" />
-                                    Profilim
+                                    {t('profile.title')}
                                 </Button>
                             </NavLink>
                             <Button
@@ -172,7 +175,7 @@ export default function Sidebar({
                                 className="w-full text-red-600 hover:bg-red-50 hover:border-red-200 dark:text-red-400 dark:hover:bg-red-900/20 dark:border-gray-600 dark:hover:border-red-800"
                             >
                                 <LogOut className="w-4 h-4 mr-2" />
-                                Çıkış Yap
+                                {t('auth.logout')}
                             </Button>
                         </div>
                     </>

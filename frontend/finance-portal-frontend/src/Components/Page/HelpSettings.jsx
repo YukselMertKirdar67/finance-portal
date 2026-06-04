@@ -1,52 +1,33 @@
 import React, { useState } from 'react';
 import { ChevronDown, ChevronUp, Info, HelpCircle } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { Card, CardHeader, CardTitle, CardContent } from '../UI/Card';
 
-const faqs = [
-    {
-        question: 'Portföy nasıl oluşturulur?',
-        answer: 'Sol menüden "Portföyler" sayfasına gidin. Sağ üstteki "Yeni Portföy" butonuna tıklayın. Portföy adı, açıklama ve para birimi seçerek oluşturabilirsiniz.'
-    },
-    {
-        question: 'Portföye enstrüman nasıl eklenir?',
-        answer: 'Portföy detay sayfasında "İşlem Ekle" butonuna tıklayın. Enstrüman arayın, miktar ve fiyat girerek alış veya satış işlemi ekleyebilirsiniz.'
-    },
-    {
-        question: 'Hangi para birimlerini kullanabilirim?',
-        answer: 'Portföy oluştururken TRY, USD veya EUR seçebilirsiniz. Tüm hesaplamalar seçtiğiniz para birimine göre otomatik dönüştürülür.'
-    },
-    {
-        question: 'Enstrüman karşılaştırma nasıl yapılır?',
-        answer: 'Sol menüden "Karşılaştırma" sayfasına gidin. İki enstrüman seçin ve zaman aralığını belirleyin. Grafik ve performans metrikleri otomatik hesaplanır.'
-    },
-    {
-        question: 'Takip listesi ne işe yarar?',
-        answer: 'Enstrüman detay sayfasındaki "Takip Et" butonuyla enstrümanları takip listenize ekleyebilirsiniz. Sol menüdeki Watchlist sayfasından takip ettiğiniz enstrümanları görüntüleyebilirsiniz.'
-    },
-    {
-        question: 'Geçmiş fiyat verileri nereden geliyor?',
-        answer: 'Geçmiş fiyat verileri Yahoo Finance\'den çekilmektedir. Döviz kurları için TCMB arşiv verileri kullanılmaktadır. 1 yıllık geçmiş veri mevcuttur.'
-    },
-    {
-        question: 'İşlem silersem ne olur?',
-        answer: 'İşlemler soft delete ile silinir, yani veri kaybolmaz ancak hesaplamalara dahil edilmez. Holding miktarları buna göre güncellenmez.'
-    },
-];
-
-const appInfo = [
-    { label: 'Versiyon', value: '1.0.0' },
-    { label: 'Döviz Veri Kaynağı', value: 'TCMB (Türkiye Cumhuriyet Merkez Bankası)' },
-    { label: 'Hisse & Kripto Veri Kaynağı', value: 'Yahoo Finance' },
-    { label: 'Tahvil/Bono Veri Kaynağı', value: 'TCMB EVDS' },
-    { label: 'VİOP Veri Kaynağı', value: 'İş Yatırım' },
-    { label: 'Backend', value: 'Spring Boot (Java)' },
-    { label: 'Frontend', value: 'React + Tailwind CSS' },
-    { label: 'Veritabanı', value: 'PostgreSQL' },
-    { label: 'Cache', value: 'Redis' },
-];
-
 export default function HelpSettings() {
+    const { t } = useTranslation();
     const [openFaq, setOpenFaq] = useState(null);
+
+    const faqs = [
+        { question: t('help.faq.q1'), answer: t('help.faq.a1') },
+        { question: t('help.faq.q2'), answer: t('help.faq.a2') },
+        { question: t('help.faq.q3'), answer: t('help.faq.a3') },
+        { question: t('help.faq.q4'), answer: t('help.faq.a4') },
+        { question: t('help.faq.q5'), answer: t('help.faq.a5') },
+        { question: t('help.faq.q6'), answer: t('help.faq.a6') },
+        { question: t('help.faq.q7'), answer: t('help.faq.a7') },
+    ];
+
+    const appInfo = [
+        { label: t('help.appInfo.version'),        value: '1.0.0' },
+        { label: t('help.appInfo.forexSource'),    value: 'TCMB (Türkiye Cumhuriyet Merkez Bankası)' },
+        { label: t('help.appInfo.stockSource'),    value: 'Yahoo Finance' },
+        { label: t('help.appInfo.bondSource'),     value: 'TCMB EVDS' },
+        { label: t('help.appInfo.viopSource'),     value: 'İş Yatırım' },
+        { label: t('help.appInfo.backend'),        value: 'Spring Boot (Java)' },
+        { label: t('help.appInfo.frontend'),       value: 'React + Tailwind CSS' },
+        { label: t('help.appInfo.database'),       value: 'PostgreSQL' },
+        { label: t('help.appInfo.cache'),          value: 'Redis' },
+    ];
 
     const toggleFaq = (index) => {
         setOpenFaq(openFaq === index ? null : index);
@@ -60,7 +41,7 @@ export default function HelpSettings() {
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                         <HelpCircle className="w-5 h-5 text-blue-600" />
-                        Sık Sorulan Sorular
+                        {t('help.faqTitle')}
                     </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -98,7 +79,7 @@ export default function HelpSettings() {
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                         <Info className="w-5 h-5 text-blue-600" />
-                        Uygulama Bilgisi
+                        {t('help.appInfoTitle')}
                     </CardTitle>
                 </CardHeader>
                 <CardContent>

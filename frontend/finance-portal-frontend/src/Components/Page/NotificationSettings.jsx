@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Bell, TrendingUp, Newspaper, Activity, Loader2, CheckCircle, XCircle } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from '../UI/Card';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../context/AuthContext';
 import { updatePreferences } from '../../API/userApi';
 
 export default function NotificationSettings() {
     const { user, refreshUser } = useAuth();
+    const { t } = useTranslation();
 
     const [settings, setSettings] = useState({
         notifyTransaction: true,
@@ -35,7 +37,6 @@ export default function NotificationSettings() {
     const handleToggle = async (key) => {
         const newSettings = { ...settings, [key]: !settings[key] };
         setSettings(newSettings);
-
         setLoading(true);
         try {
             await updatePreferences(
@@ -46,11 +47,10 @@ export default function NotificationSettings() {
                 newSettings.notifyNews
             );
             await refreshUser();
-            showToast('Bildirim tercihi güncellendi');
-        } catch{
-            // Hata olursa eski değere dön
+            showToast(t('notificationSettings.updated'));
+        } catch {
             setSettings(settings);
-            showToast('Güncelleme başarısız', 'error');
+            showToast(t('notificationSettings.updateFailed'), 'error');
         } finally {
             setLoading(false);
         }
@@ -61,29 +61,29 @@ export default function NotificationSettings() {
             key: 'notifyTransaction',
             icon: <Activity className="w-5 h-5 text-green-600" />,
             iconBg: 'bg-green-100',
-            title: 'İşlem Bildirimleri',
-            description: 'Alış ve satış işlemleriniz gerçekleştiğinde bildirim alın',
+            title: t('notificationSettings.transaction.title'),
+            description: t('notificationSettings.transaction.desc'),
         },
         {
             key: 'notifyPortfolioChange',
             icon: <TrendingUp className="w-5 h-5 text-blue-600" />,
             iconBg: 'bg-blue-100',
-            title: 'Portföy Değer Değişimi',
-            description: 'Portföyünüz %5\'ten fazla değiştiğinde bildirim alın',
+            title: t('notificationSettings.portfolioChange.title'),
+            description: t('notificationSettings.portfolioChange.desc'),
         },
         {
             key: 'notifyPriceAlert',
             icon: <Bell className="w-5 h-5 text-yellow-600" />,
             iconBg: 'bg-yellow-100',
-            title: 'Fiyat Alarmları',
-            description: 'Takip ettiğiniz enstrümanların fiyat değişimlerinde bildirim alın',
+            title: t('notificationSettings.priceAlert.title'),
+            description: t('notificationSettings.priceAlert.desc'),
         },
         {
             key: 'notifyNews',
             icon: <Newspaper className="w-5 h-5 text-purple-600" />,
             iconBg: 'bg-purple-100',
-            title: 'Haber Bildirimleri',
-            description: 'Yeni finansal haberler geldiğinde bildirim alın',
+            title: t('notificationSettings.news.title'),
+            description: t('notificationSettings.news.desc'),
         },
     ];
 
@@ -97,7 +97,9 @@ export default function NotificationSettings() {
                         ? 'bg-green-50 text-green-800 border border-green-200'
                         : 'bg-red-50 text-red-800 border border-red-200'
                 }`}>
-                    {toast.type === 'success' ? <CheckCircle className="w-5 h-5" /> : <XCircle className="w-5 h-5" />}
+                    {toast.type === 'success'
+                        ? <CheckCircle className="w-5 h-5" />
+                        : <XCircle className="w-5 h-5" />}
                     <span>{toast.message}</span>
                 </div>
             )}
@@ -106,7 +108,7 @@ export default function NotificationSettings() {
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                         <Bell className="w-5 h-5 text-blue-600" />
-                        Bildirim Tercihleri
+                        {t('notificationSettings.title')}
                     </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -126,7 +128,6 @@ export default function NotificationSettings() {
                                     </div>
                                 </div>
 
-                                {/* Toggle Switch */}
                                 <button
                                     onClick={() => handleToggle(item.key)}
                                     disabled={loading}
@@ -147,7 +148,7 @@ export default function NotificationSettings() {
                     {loading && (
                         <div className="flex items-center gap-2 mt-4 text-sm text-gray-500">
                             <Loader2 className="w-4 h-4 animate-spin" />
-                            Kaydediliyor...
+                            {t('common.saving')}
                         </div>
                     )}
                 </CardContent>

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Clock, Newspaper, RefreshCw } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Card, CardContent } from '../UI/Card';
 import { Button } from '../UI/Button';
 import Pagination from '../UI/Pagination';
@@ -10,6 +11,7 @@ import { useAuth } from '../../context/AuthContext';
 export default function NewsPage() {
     const navigate = useNavigate();
     const { isAdmin } = useAuth();
+    const { t, i18n } = useTranslation();
     const { category: urlCategory } = useParams();
 
     const [selectedCategory, setSelectedCategory] = useState(urlCategory || 'all');
@@ -22,10 +24,10 @@ export default function NewsPage() {
     const pageSize = 20;
 
     const categories = [
-        { id: 'all',    name: 'Tümü' },
-        { id: 'FINANS', name: 'Finans' },
-        { id: 'DOVIZ',  name: 'Döviz' },
-        { id: 'KRIPTO', name: 'Kripto' },
+        { id: 'all',    name: t('news.all') },
+        { id: 'FINANS', name: t('news.finance') },
+        { id: 'DOVIZ',  name: t('news.forex') },
+        { id: 'KRIPTO', name: t('news.crypto') },
     ];
 
     useEffect(() => {
@@ -65,7 +67,7 @@ export default function NewsPage() {
                 setTotalPages(0);
                 setTotalElements(0);
                 if (err.response?.status !== 404) {
-                    setError('Haberler yüklenirken bir hata oluştu.');
+                    setError(t('news.loadError'));
                 }
             } finally {
                 if (!cancelled) setLoading(false);
@@ -75,7 +77,7 @@ export default function NewsPage() {
         fetchNews();
         return () => { cancelled = true; };
 
-    }, [selectedCategory, currentPage]);
+    }, [selectedCategory, currentPage, i18n.language]); // ✅ dil değişince yeniden fetch
 
     const handleRefresh = () => {
         setCurrentPage(0);
@@ -100,13 +102,13 @@ export default function NewsPage() {
     };
 
     const formatTime = (dateString) => {
-        if (!dateString) return 'Bilinmiyor';
+        if (!dateString) return t('news.unknownTime');
         const date = new Date(dateString);
         const now = new Date();
         const diffHours = Math.floor((now - date) / (1000 * 60 * 60));
-        if (diffHours < 1) return 'Az önce';
-        if (diffHours < 24) return `${diffHours} saat önce`;
-        return `${Math.floor(diffHours / 24)} gün önce`;
+        if (diffHours < 1) return t('news.justNow');
+        if (diffHours < 24) return t('news.hoursAgo', { count: diffHours });
+        return t('news.daysAgo', { count: Math.floor(diffHours / 24) });
     };
 
     return (
@@ -116,14 +118,13 @@ export default function NewsPage() {
                 {/* Header */}
                 <div className="mb-6 flex justify-between items-center">
                     <div>
-                        <h1 className="text-3xl font-bold mb-2">Haberler</h1>
-                        <p className="text-gray-600">Finansal piyasalardan son dakika haberleri</p>
+                        <h1 className="text-3xl font-bold mb-2">{t('news.title')}</h1>
+                        <p className="text-gray-600">{t('news.subtitle')}</p>
                     </div>
-                    {/* Sadece user için yenile butonu */}
                     {!isAdmin && (
                         <Button onClick={handleRefresh} disabled={loading}>
                             <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
-                            Yenile
+                            {t('common.refresh')}
                         </Button>
                     )}
                 </div>
@@ -146,7 +147,7 @@ export default function NewsPage() {
                 {loading && (
                     <div className="text-center py-12">
                         <RefreshCw className="w-8 h-8 animate-spin mx-auto text-blue-600" />
-                        <p className="mt-4 text-gray-600">Haberler yükleniyor...</p>
+                        <p className="mt-4 text-gray-600">{t('news.loading')}</p>
                     </div>
                 )}
 
@@ -163,7 +164,7 @@ export default function NewsPage() {
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
                             {news.length === 0 ? (
                                 <div className="col-span-2 text-center py-12 text-gray-500">
-                                    Henüz haber bulunmuyor.
+                                    {t('news.noNews')}
                                 </div>
                             ) : (
                                 news.map((item) => (
@@ -186,7 +187,7 @@ export default function NewsPage() {
                                         <CardContent className="pt-6">
                                             <div className="flex items-center gap-2 mb-3">
                                                 <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs font-medium">
-                                                    {item.category || 'Genel'}
+                                                    {item.category || t('news.general')}
                                                 </span>
                                                 <div className="flex items-center gap-1 text-sm text-gray-500">
                                                     <Clock className="w-4 h-4" />
@@ -204,10 +205,10 @@ export default function NewsPage() {
 
                                             <div className="flex items-center justify-between">
                                                 <span className="text-sm text-gray-500">
-                                                    {item.source || 'Kaynak Belirtilmemiş'}
+                                                    {item.source || t('news.unknownSource')}
                                                 </span>
                                                 <Button variant="ghost" size="sm">
-                                                    Devamını Oku
+                                                    {t('news.readMore')}
                                                 </Button>
                                             </div>
                                         </CardContent>

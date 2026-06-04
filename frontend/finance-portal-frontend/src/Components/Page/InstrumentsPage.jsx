@@ -4,66 +4,68 @@ import {
     Coins, Bitcoin, ChevronRight, RefreshCw, BarChart3, TrendingUp
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Card, CardContent } from '../UI/Card';
 import { getInstrumentsByType } from '../../API/instrumentsApi';
 
-const CATEGORIES = [
-    {
-        title: 'Döviz',
-        apiType: 'FOREX',
-        icon: DollarSign,
-        color: 'bg-blue-500',
-        description: 'USD, EUR, GBP ve diğer döviz çiftleri',
-    },
-    {
-        title: 'Borsa',
-        apiType: 'STOCK',
-        icon: Building2,
-        color: 'bg-purple-500',
-        description: 'BIST ve ABD hisse senetleri',
-    },
-    {
-        title: 'Tahvil/Bono',
-        apiType: 'BOND',
-        icon: FileText,
-        color: 'bg-orange-500',
-        description: 'Devlet tahvilleri ve hazine bonoları',
-    },
-    {
-        title: 'Fonlar / ETF',
-        apiType: 'FUND',
-        icon: BarChart3,
-        color: 'bg-green-500',
-        description: 'SPY, QQQ, GLD ve diğer global ETF\'ler',
-    },
-    {
-        title: 'Altın/Gümüş',
-        apiType: 'PRECIOUS',
-        icon: Coins,
-        color: 'bg-yellow-500',
-        description: 'Kıymetli metaller ve emtia',
-    },
-    {
-        title: 'Kripto',
-        apiType: 'CRYPTO',
-        icon: Bitcoin,
-        color: 'bg-pink-500',
-        description: 'Bitcoin, Ethereum ve altcoinler',
-    },
-    {
-        title: 'VİOP',
-        apiType: 'VIOP',
-        icon: TrendingUp,
-        color: 'bg-red-500',
-        description: 'Vadeli işlem ve opsiyon sözleşmeleri',
-    },
-];
-
 export default function InstrumentsPage() {
     const navigate = useNavigate();
+    const { t } = useTranslation();
     const [counts, setCounts] = useState({});
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+
+    const CATEGORIES = [
+        {
+            title: t('markets.forex'),
+            apiType: 'FOREX',
+            icon: DollarSign,
+            color: 'bg-blue-500',
+            description: t('instruments.forex.desc'),
+        },
+        {
+            title: t('instruments.stock.title'),
+            apiType: 'STOCK',
+            icon: Building2,
+            color: 'bg-purple-500',
+            description: t('instruments.stock.desc'),
+        },
+        {
+            title: t('markets.bonds'),
+            apiType: 'BOND',
+            icon: FileText,
+            color: 'bg-orange-500',
+            description: t('instruments.bond.desc'),
+        },
+        {
+            title: t('instruments.fund.title'),
+            apiType: 'FUND',
+            icon: BarChart3,
+            color: 'bg-green-500',
+            description: t('instruments.fund.desc'),
+        },
+        {
+            title: t('markets.precious'),
+            apiType: 'PRECIOUS',
+            icon: Coins,
+            color: 'bg-yellow-500',
+            description: t('instruments.precious.desc'),
+        },
+        {
+            title: t('markets.crypto'),
+            apiType: 'CRYPTO',
+            icon: Bitcoin,
+            color: 'bg-pink-500',
+            description: t('instruments.crypto.desc'),
+        },
+        {
+            title: t('markets.viop'),
+            apiType: 'VIOP',
+            icon: TrendingUp,
+            color: 'bg-red-500',
+            description: t('instruments.viop.desc'),
+        },
+    ];
 
     useEffect(() => {
         let cancelled = false;
@@ -96,7 +98,7 @@ export default function InstrumentsPage() {
             } catch (err) {
                 if (cancelled) return;
                 console.error('Count fetch error:', err);
-                setError('Veriler yüklenirken hata oluştu.');
+                setError(t('instruments.loadError'));
             } finally {
                 if (!cancelled) setLoading(false);
             }
@@ -117,17 +119,15 @@ export default function InstrumentsPage() {
 
                 {/* Header */}
                 <div className="mb-8">
-                    <h1 className="text-3xl font-bold mb-2">Finansal Enstrümanlar</h1>
-                    <p className="text-gray-600">
-                        Tüm piyasalara göz atın ve yatırım fırsatlarını keşfedin
-                    </p>
+                    <h1 className="text-3xl font-bold mb-2">{t('markets.title')}</h1>
+                    <p className="text-gray-600">{t('instruments.subtitle')}</p>
                 </div>
 
                 {/* Loading */}
                 {loading && (
                     <div className="text-center py-12">
                         <RefreshCw className="w-8 h-8 animate-spin mx-auto text-blue-600" />
-                        <p className="mt-4 text-gray-600">Yükleniyor...</p>
+                        <p className="mt-4 text-gray-600">{t('common.loading')}</p>
                     </div>
                 )}
 
@@ -147,33 +147,28 @@ export default function InstrumentsPage() {
 
                             return (
                                 <Card
-                                    key={category.title}
+                                    key={category.apiType}
                                     className="overflow-hidden cursor-pointer hover:shadow-lg transition-all hover:scale-105"
                                     onClick={() => handleCategoryClick(category.apiType)}
                                 >
                                     <CardContent className="p-6">
-                                        {/* Icon */}
                                         <div className={`${category.color} w-12 h-12 rounded-lg flex items-center justify-center mb-4`}>
                                             <Icon className="w-6 h-6 text-white" />
                                         </div>
 
-                                        {/* Title */}
                                         <h2 className="text-xl font-semibold text-gray-900 mb-2">
                                             {category.title}
                                         </h2>
 
-                                        {/* Description */}
                                         <p className="text-sm text-gray-600 mb-3">
                                             {category.description}
                                         </p>
 
-                                        {/* Footer */}
                                         <div className="flex items-center justify-between">
                                             <span className="text-xs text-gray-500">
                                                 {count !== undefined
-                                                    ? `${count} Enstrüman`
-                                                    : '-'
-                                                }
+                                                    ? t('instruments.count', { count })
+                                                    : '-'}
                                             </span>
                                             <ChevronRight className="w-5 h-5 text-gray-400" />
                                         </div>

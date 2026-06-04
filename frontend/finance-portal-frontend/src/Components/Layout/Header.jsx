@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { BarChart2, Newspaper, GitCompare, Bell, LogOut, Check, CheckCheck } from 'lucide-react';
+import { BarChart2, Newspaper, GitCompare, Bell, LogOut, Check, CheckCheck, Globe } from 'lucide-react';
 import { NavLink, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Button } from '../UI/Button';
 import { getUnreadNotifications, markAllAsRead, markAsRead, getUnreadCount } from '../../API/notificationApi';
 
@@ -10,17 +11,24 @@ export default function Header({
                                    user = null
                                }) {
     const navigate = useNavigate();
+    const { t, i18n } = useTranslation();
     const [showNotifications, setShowNotifications] = useState(false);
     const [notifications, setNotifications] = useState([]);
     const [unreadCount, setUnreadCount] = useState(0);
+    const [showLangMenu, setShowLangMenu] = useState(false);
     const dropdownRef = useRef(null);
+    const langRef = useRef(null);
 
     const tabClass = ({ isActive }) =>
         `px-4 py-2 rounded-lg transition-colors flex items-center gap-2 ${
             isActive ? 'bg-blue-600 text-white' : 'text-gray-700 hover:bg-gray-100'
         }`;
 
-    // fetchUnreadCount'tan sonra useEffect
+    const handleLanguageChange = (lang) => {
+        i18n.changeLanguage(lang);
+        setShowLangMenu(false);
+    };
+
     useEffect(() => {
         if (!isLoggedIn) return;
 
@@ -38,6 +46,9 @@ export default function Header({
         const handleClickOutside = (e) => {
             if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
                 setShowNotifications(false);
+            }
+            if (langRef.current && !langRef.current.contains(e.target)) {
+                setShowLangMenu(false);
             }
         };
         document.addEventListener('mousedown', handleClickOutside);
@@ -89,10 +100,10 @@ export default function Header({
     const formatTime = (dateStr) => {
         if (!dateStr) return '';
         const diff = Math.floor((new Date() - new Date(dateStr)) / 60000);
-        if (diff < 1) return 'Az önce';
-        if (diff < 60) return `${diff}dk önce`;
-        if (diff < 1440) return `${Math.floor(diff / 60)}sa önce`;
-        return `${Math.floor(diff / 1440)}g önce`;
+        if (diff < 1) return t('common.justNow') || 'Az önce';
+        if (diff < 60) return `${diff}${t('common.minutesAgo') || 'dk önce'}`;
+        if (diff < 1440) return `${Math.floor(diff / 60)}${t('common.hoursAgo') || 'sa önce'}`;
+        return `${Math.floor(diff / 1440)}${t('common.daysAgo') || 'g önce'}`;
     };
 
     return (
@@ -103,20 +114,61 @@ export default function Header({
                 <div className="flex gap-2">
                     <NavLink to="/news" className={tabClass}>
                         <Newspaper className="w-4 h-4" />
-                        <span>Haberler</span>
+                        <span>{t('nav.news')}</span>
                     </NavLink>
                     <NavLink to="/instruments" className={tabClass}>
                         <BarChart2 className="w-4 h-4" />
-                        <span>Finansal Enstrümanlar</span>
+                        <span>{t('markets.title')}</span>
                     </NavLink>
                     <NavLink to="/comparison" className={tabClass}>
                         <GitCompare className="w-4 h-4" />
-                        <span>Karşılaştır</span>
+                        <span>{t('nav.comparison')}</span>
                     </NavLink>
                 </div>
 
                 {/* RIGHT */}
                 <div className="flex items-center gap-4">
+
+                    {/* Dil Değiştirme Butonu */}
+                    <div className="relative" ref={langRef}>
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => setShowLangMenu(!showLangMenu)}
+                            className="relative flex items-center gap-1 px-2"
+                            title={t('common.language')}
+                        >
+                            <Globe className="w-5 h-5 text-gray-600" />
+                            <span className="text-xs font-medium text-gray-600 uppercase">
+                                {i18n.language === 'tr' ? 'TR' : 'EN'}
+                            </span>
+                        </Button>
+
+                        {showLangMenu && (
+                            <div className="absolute right-0 top-12 w-36 bg-white border border-gray-200 rounded-xl shadow-xl z-50">
+                                <button
+                                    onClick={() => handleLanguageChange('tr')}
+                                    className={`w-full flex items-center gap-2 px-4 py-2.5 text-sm hover:bg-gray-50 transition-colors rounded-t-xl ${
+                                        i18n.language === 'tr' ? 'text-blue-600 font-medium' : 'text-gray-700'
+                                    }`}
+                                >
+                                    <span>🇹🇷</span>
+                                    <span>{t('common.turkish')}</span>
+                                    {i18n.language === 'tr' && <Check className="w-3 h-3 ml-auto" />}
+                                </button>
+                                <button
+                                    onClick={() => handleLanguageChange('en')}
+                                    className={`w-full flex items-center gap-2 px-4 py-2.5 text-sm hover:bg-gray-50 transition-colors rounded-b-xl ${
+                                        i18n.language === 'en' ? 'text-blue-600 font-medium' : 'text-gray-700'
+                                    }`}
+                                >
+                                    <span>🇬🇧</span>
+                                    <span>{t('common.english')}</span>
+                                    {i18n.language === 'en' && <Check className="w-3 h-3 ml-auto" />}
+                                </button>
+                            </div>
+                        )}
+                    </div>
 
                     {/* Bildirim Butonu */}
                     <div className="relative" ref={dropdownRef}>
@@ -138,14 +190,16 @@ export default function Header({
                         {showNotifications && (
                             <div className="absolute right-0 top-12 w-96 bg-white border border-gray-200 rounded-xl shadow-xl z-50">
                                 <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
-                                    <h3 className="font-semibold text-gray-900">Bildirimler</h3>
+                                    <h3 className="font-semibold text-gray-900">
+                                        {t('nav.notifications') || 'Bildirimler'}
+                                    </h3>
                                     {unreadCount > 0 && (
                                         <button
                                             onClick={handleMarkAllRead}
                                             className="text-xs text-blue-600 hover:text-blue-700 flex items-center gap-1"
                                         >
                                             <CheckCheck className="w-3 h-3" />
-                                            Tümünü Okundu İşaretle
+                                            {t('common.markAllRead') || 'Tümünü Okundu İşaretle'}
                                         </button>
                                     )}
                                 </div>
@@ -154,7 +208,9 @@ export default function Header({
                                     {notifications.length === 0 ? (
                                         <div className="text-center py-8 text-gray-400">
                                             <Bell className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                                            <p className="text-sm">Bildirim yok</p>
+                                            <p className="text-sm">
+                                                {t('common.noNotifications') || 'Bildirim yok'}
+                                            </p>
                                         </div>
                                     ) : (
                                         notifications.map(n => (
@@ -164,7 +220,9 @@ export default function Header({
                                                     !n.read ? 'bg-blue-50' : ''
                                                 }`}
                                             >
-                                                <span className="text-xl flex-shrink-0">{getNotificationIcon(n.type)}</span>
+                                                <span className="text-xl flex-shrink-0">
+                                                    {getNotificationIcon(n.type)}
+                                                </span>
                                                 <div className="flex-1 min-w-0">
                                                     <p className="text-sm font-medium text-gray-900">{n.title}</p>
                                                     <p className="text-xs text-gray-600 mt-0.5 truncate">{n.message}</p>
@@ -191,7 +249,7 @@ export default function Header({
                                         }}
                                         className="text-xs text-blue-600 hover:text-blue-700 w-full text-center"
                                     >
-                                        Tüm Bildirimleri Gör
+                                        {t('common.seeAllNotifications') || 'Tüm Bildirimleri Gör'}
                                     </button>
                                 </div>
                             </div>
@@ -203,12 +261,19 @@ export default function Header({
                             <div className="flex flex-col items-end">
                                 <span className="text-sm font-medium text-gray-900">{user.username}</span>
                                 {user.isAdmin && (
-                                    <span className="text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded">ADMIN</span>
+                                    <span className="text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded">
+                                        ADMIN
+                                    </span>
                                 )}
                             </div>
-                            <Button onClick={onLogout} variant="outline" size="sm" className="flex items-center gap-2">
+                            <Button
+                                onClick={onLogout}
+                                variant="outline"
+                                size="sm"
+                                className="flex items-center gap-2"
+                            >
                                 <LogOut className="w-4 h-4" />
-                                Çıkış
+                                {t('auth.logout')}
                             </Button>
                         </div>
                     ) : null}

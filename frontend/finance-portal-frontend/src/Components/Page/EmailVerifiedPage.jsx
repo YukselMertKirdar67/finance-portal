@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { CheckCircle, XCircle, Loader2 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '../UI/Button';
 import axios from 'axios';
 
 export default function EmailVerifiedPage() {
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
+    const { t } = useTranslation();
     const [status, setStatus] = useState('loading');
     const [countdown, setCountdown] = useState(5);
 
@@ -42,7 +44,7 @@ export default function EmailVerifiedPage() {
             <div className="min-h-screen flex items-center justify-center bg-gray-50">
                 <div className="text-center">
                     <Loader2 className="w-16 h-16 text-blue-600 animate-spin mx-auto mb-4" />
-                    <p className="text-gray-600">Email doğrulanıyor...</p>
+                    <p className="text-gray-600">{t('emailVerified.verifying')}</p>
                 </div>
             </div>
         );
@@ -58,13 +60,13 @@ export default function EmailVerifiedPage() {
                         </div>
                     </div>
                     <h1 className="text-2xl font-bold text-gray-900 mb-2">
-                        Doğrulama Başarısız!
+                        {t('emailVerified.error.title')}
                     </h1>
                     <p className="text-gray-500 mb-6">
-                        Link geçersiz veya süresi dolmuş.
+                        {t('emailVerified.error.description')}
                     </p>
                     <Button className="w-full" onClick={() => navigate('/login')}>
-                        Giriş Sayfasına Dön
+                        {t('verify2fa.backToLogin')}
                     </Button>
                 </div>
             </div>
@@ -80,16 +82,16 @@ export default function EmailVerifiedPage() {
                     </div>
                 </div>
                 <h1 className="text-2xl font-bold text-gray-900 mb-2">
-                    E-posta Doğrulandı!
+                    {t('emailVerified.success.title')}
                 </h1>
                 <p className="text-gray-500 mb-6">
-                    E-posta adresiniz başarıyla doğrulandı. Şimdi iki faktörlü doğrulamayı kurun.
+                    {t('emailVerified.success.description')}
                 </p>
                 <p className="text-sm text-gray-400 mb-6">
-                    {countdown} saniye içinde 2FA kurulum sayfasına yönlendirileceksiniz...
+                    {t('emailVerified.success.redirect', { count: countdown })}
                 </p>
                 <Button className="w-full" onClick={() => navigate('/setup-2fa')}>
-                    2FA Kurulumuna Git
+                    {t('emailVerified.success.goTo2FA')}
                 </Button>
             </div>
         </div>

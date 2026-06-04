@@ -2,10 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { Search, X, Plus, Loader2, Calendar } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '../UI/Card';
 import { Button } from '../UI/Button';
+import { useTranslation } from 'react-i18next';
 import { LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContainer, Legend } from 'recharts';
 import { compareInstruments, searchInstruments } from '../../API/comparisonApi.js';
 
 export default function ComparisonPage() {
+    const { t, i18n } = useTranslation();
+
     const [instrument1, setInstrument1] = useState(null);
     const [instrument2, setInstrument2] = useState(null);
     const [showSelector1, setShowSelector1] = useState(false);
@@ -18,21 +21,24 @@ export default function ComparisonPage() {
     const [comparisonData, setComparisonData] = useState(null);
     const [timeframe, setTimeframe] = useState('1A');
 
-    // Enstrüman ara (debounced)
+    const timeframes = [
+        { value: '1H', label: t('comparison.tf1W') },
+        { value: '1A', label: t('comparison.tf1M') },
+        { value: '3A', label: t('comparison.tf3M') },
+        { value: '6A', label: t('comparison.tf6M') },
+        { value: '1Y', label: t('comparison.tf1Y') },
+    ];
+
     useEffect(() => {
         if (searchTerm1.length >= 2) {
             const timer = setTimeout(async () => {
                 try {
                     const data = await searchInstruments(searchTerm1);
                     setSearchResults1(data.content || []);
-                } catch (e) {
-                    console.error('Search error:', e);
-                }
+                } catch (e) { console.error('Search error:', e); }
             }, 300);
             return () => clearTimeout(timer);
-        } else {
-            setSearchResults1([]);
-        }
+        } else { setSearchResults1([]); }
     }, [searchTerm1]);
 
     useEffect(() => {
@@ -41,26 +47,18 @@ export default function ComparisonPage() {
                 try {
                     const data = await searchInstruments(searchTerm2);
                     setSearchResults2(data.content || []);
-                } catch (e) {
-                    console.error('Search error:', e);
-                }
+                } catch (e) { console.error('Search error:', e); }
             }, 300);
             return () => clearTimeout(timer);
-        } else {
-            setSearchResults2([]);
-        }
+        } else { setSearchResults2([]); }
     }, [searchTerm2]);
 
-    // Karşılaştır - timeframe değişince otomatik çağır
     useEffect(() => {
-        if (instrument1 && instrument2) {
-            handleCompare();
-        }
+        if (instrument1 && instrument2) { handleCompare(); }
     }, [instrument1, instrument2, timeframe]);
 
     const handleCompare = async () => {
         if (!instrument1 || !instrument2) return;
-
         setComparing(true);
         try {
             const data = await compareInstruments(instrument1.id, instrument2.id, timeframe);
@@ -72,17 +70,8 @@ export default function ComparisonPage() {
         }
     };
 
-    const selectInstrument1 = (inst) => {
-        setInstrument1(inst);
-        setShowSelector1(false);
-        setSearchTerm1('');
-    };
-
-    const selectInstrument2 = (inst) => {
-        setInstrument2(inst);
-        setShowSelector2(false);
-        setSearchTerm2('');
-    };
+    const selectInstrument1 = (inst) => { setInstrument1(inst); setShowSelector1(false); setSearchTerm1(''); };
+    const selectInstrument2 = (inst) => { setInstrument2(inst); setShowSelector2(false); setSearchTerm2(''); };
 
     const formatPrice = (price) => {
         if (!price && price !== 0) return '-';
@@ -96,9 +85,8 @@ export default function ComparisonPage() {
         return `${value >= 0 ? '+' : ''}${value.toFixed(2)}%`;
     };
 
-    // Chart data
     const chartData = comparisonData?.historicalData?.map(point => ({
-        date: new Date(point.date).toLocaleDateString('tr-TR', { day: '2-digit', month: 'short' }),
+        date: new Date(point.date).toLocaleDateString(i18n.language === 'en' ? 'en-US' : 'tr-TR', { day: '2-digit', month: 'short' }),
         inst1: parseFloat(point.price1),
         inst2: parseFloat(point.price2),
     })) || [];
@@ -106,197 +94,99 @@ export default function ComparisonPage() {
     const metrics1 = comparisonData?.metrics?.instrument1Metrics;
     const metrics2 = comparisonData?.metrics?.instrument2Metrics;
 
+    const renderSelector = (num, instrument, showSelector, searchTerm, searchResults, setShow, setSearch, selectFn, clearFn) => (
+        <Card className="border-0 shadow-sm">
+            <CardHeader className="pb-3">
+                <CardTitle className="text-lg font-semibold">
+                    {t('comparison.instrument', { num })}
+                </CardTitle>
+            </CardHeader>
+            <CardContent>
+                {!instrument ? (
+                    showSelector ? (
+                        <div>
+                            <div className="relative mb-3">
+                                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                <input
+                                    type="text"
+                                    placeholder={t('markets.searchPlaceholder')}
+                                    value={searchTerm}
+                                    onChange={(e) => setSearch(e.target.value)}
+                                    className="w-full pl-10 pr-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    autoFocus
+                                />
+                            </div>
+                            <div className="max-h-64 overflow-y-auto space-y-1">
+                                {searchResults.length > 0 ? (
+                                    searchResults.map(inst => (
+                                        <button
+                                            key={inst.id}
+                                            onClick={() => selectFn(inst)}
+                                            className="w-full text-left px-3 py-2 hover:bg-gray-50 rounded-lg transition-colors"
+                                        >
+                                            <p className="font-medium text-gray-900">{inst.name}</p>
+                                            <p className="text-xs text-gray-500">{inst.symbol} • {inst.type}</p>
+                                        </button>
+                                    ))
+                                ) : (
+                                    <p className="text-sm text-gray-400 text-center py-4">
+                                        {searchTerm.length >= 2 ? t('comparison.noResults') : t('comparison.startSearch')}
+                                    </p>
+                                )}
+                            </div>
+                            <Button variant="outline" className="w-full mt-3"
+                                    onClick={() => { setShow(false); setSearch(''); }}>
+                                {t('common.cancel')}
+                            </Button>
+                        </div>
+                    ) : (
+                        <Button variant="outline" className="w-full h-24 hover:bg-blue-50 hover:border-blue-300 transition-all"
+                                onClick={() => setShow(true)}>
+                            <Plus className="w-5 h-5 mr-2" />
+                            {t('comparison.selectInstrument')}
+                        </Button>
+                    )
+                ) : (
+                    <div>
+                        <div className="flex items-center justify-between mb-2">
+                            <div>
+                                <p className="text-sm font-medium text-gray-900">{instrument.name}</p>
+                                <p className="text-xs text-gray-500">{instrument.symbol} • {instrument.type}</p>
+                            </div>
+                            <Button variant="ghost" size="sm" onClick={clearFn}>
+                                <X className="w-4 h-4" />
+                            </Button>
+                        </div>
+                        <p className="text-3xl font-bold text-gray-900">
+                            {formatPrice(num === 1 ? comparisonData?.instrument1?.currentPrice : comparisonData?.instrument2?.currentPrice)}
+                        </p>
+                    </div>
+                )}
+            </CardContent>
+        </Card>
+    );
+
     return (
         <div className="min-h-screen bg-gray-50 p-8">
             <div className="max-w-7xl mx-auto">
+
                 <div className="mb-6">
-                    <h1 className="text-3xl font-bold text-gray-900 mb-2">Enstrüman Karşılaştırma</h1>
-                    <p className="text-gray-600">İki farklı enstrümanı karşılaştırın ve performanslarını analiz edin</p>
+                    <h1 className="text-3xl font-bold text-gray-900 mb-2">{t('comparison.title')}</h1>
+                    <p className="text-gray-600">{t('comparison.subtitle')}</p>
                 </div>
 
                 {/* Instrument Selectors */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                    {/* Selector 1 */}
-                    <Card className="border-0 shadow-sm">
-                        <CardHeader className="pb-3">
-                            <CardTitle className="text-lg font-semibold">1. Enstrüman</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            {!instrument1 ? (
-                                showSelector1 ? (
-                                    <div>
-                                        <div className="relative mb-3">
-                                            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-                                            <input
-                                                type="text"
-                                                placeholder="Sembol veya isim ara..."
-                                                value={searchTerm1}
-                                                onChange={(e) => setSearchTerm1(e.target.value)}
-                                                className="w-full pl-10 pr-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                                autoFocus
-                                            />
-                                        </div>
-                                        <div className="max-h-64 overflow-y-auto space-y-1">
-                                            {searchResults1.length > 0 ? (
-                                                searchResults1.map(inst => (
-                                                    <button
-                                                        key={inst.id}
-                                                        onClick={() => selectInstrument1(inst)}
-                                                        className="w-full text-left px-3 py-2 hover:bg-gray-50 rounded-lg transition-colors"
-                                                    >
-                                                        <div className="flex items-center justify-between">
-                                                            <div>
-                                                                <p className="font-medium text-gray-900">{inst.name}</p>
-                                                                <p className="text-xs text-gray-500">{inst.symbol} • {inst.type}</p>
-                                                            </div>
-                                                        </div>
-                                                    </button>
-                                                ))
-                                            ) : (
-                                                <p className="text-sm text-gray-400 text-center py-4">
-                                                    {searchTerm1.length >= 2 ? 'Sonuç bulunamadı' : 'Aramaya başlayın...'}
-                                                </p>
-                                            )}
-                                        </div>
-                                        <Button
-                                            variant="outline"
-                                            className="w-full mt-3"
-                                            onClick={() => {
-                                                setShowSelector1(false);
-                                                setSearchTerm1('');
-                                            }}
-                                        >
-                                            İptal
-                                        </Button>
-                                    </div>
-                                ) : (
-                                    <Button
-                                        variant="outline"
-                                        className="w-full h-24 hover:bg-blue-50 hover:border-blue-300 transition-all"
-                                        onClick={() => setShowSelector1(true)}
-                                    >
-                                        <Plus className="w-5 h-5 mr-2" />
-                                        Enstrüman Seç
-                                    </Button>
-                                )
-                            ) : (
-                                <div className="relative">
-                                    <div className="mb-3">
-                                        <div className="flex items-center justify-between mb-2">
-                                            <div>
-                                                <p className="text-sm font-medium text-gray-900">{instrument1.name}</p>
-                                                <p className="text-xs text-gray-500">{instrument1.symbol} • {instrument1.type}</p>
-                                            </div>
-                                            <Button
-                                                variant="ghost"
-                                                size="sm"
-                                                onClick={() => {
-                                                    setInstrument1(null);
-                                                    setComparisonData(null);
-                                                }}
-                                            >
-                                                <X className="w-4 h-4" />
-                                            </Button>
-                                        </div>
-                                        <p className="text-3xl font-bold text-gray-900">
-                                            {formatPrice(comparisonData?.instrument1?.currentPrice)}
-                                        </p>
-                                    </div>
-                                </div>
-                            )}
-                        </CardContent>
-                    </Card>
-
-                    {/* Selector 2 */}
-                    <Card className="border-0 shadow-sm">
-                        <CardHeader className="pb-3">
-                            <CardTitle className="text-lg font-semibold">2. Enstrüman</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            {!instrument2 ? (
-                                showSelector2 ? (
-                                    <div>
-                                        <div className="relative mb-3">
-                                            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-                                            <input
-                                                type="text"
-                                                placeholder="Sembol veya isim ara..."
-                                                value={searchTerm2}
-                                                onChange={(e) => setSearchTerm2(e.target.value)}
-                                                className="w-full pl-10 pr-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                                autoFocus
-                                            />
-                                        </div>
-                                        <div className="max-h-64 overflow-y-auto space-y-1">
-                                            {searchResults2.length > 0 ? (
-                                                searchResults2.map(inst => (
-                                                    <button
-                                                        key={inst.id}
-                                                        onClick={() => selectInstrument2(inst)}
-                                                        className="w-full text-left px-3 py-2 hover:bg-gray-50 rounded-lg transition-colors"
-                                                    >
-                                                        <div className="flex items-center justify-between">
-                                                            <div>
-                                                                <p className="font-medium text-gray-900">{inst.name}</p>
-                                                                <p className="text-xs text-gray-500">{inst.symbol} • {inst.type}</p>
-                                                            </div>
-                                                        </div>
-                                                    </button>
-                                                ))
-                                            ) : (
-                                                <p className="text-sm text-gray-400 text-center py-4">
-                                                    {searchTerm2.length >= 2 ? 'Sonuç bulunamadı' : 'Aramaya başlayın...'}
-                                                </p>
-                                            )}
-                                        </div>
-                                        <Button
-                                            variant="outline"
-                                            className="w-full mt-3"
-                                            onClick={() => {
-                                                setShowSelector2(false);
-                                                setSearchTerm2('');
-                                            }}
-                                        >
-                                            İptal
-                                        </Button>
-                                    </div>
-                                ) : (
-                                    <Button
-                                        variant="outline"
-                                        className="w-full h-24 hover:bg-blue-50 hover:border-blue-300 transition-all"
-                                        onClick={() => setShowSelector2(true)}
-                                    >
-                                        <Plus className="w-5 h-5 mr-2" />
-                                        Enstrüman Seç
-                                    </Button>
-                                )
-                            ) : (
-                                <div className="relative">
-                                    <div className="mb-3">
-                                        <div className="flex items-center justify-between mb-2">
-                                            <div>
-                                                <p className="text-sm font-medium text-gray-900">{instrument2.name}</p>
-                                                <p className="text-xs text-gray-500">{instrument2.symbol} • {instrument2.type}</p>
-                                            </div>
-                                            <Button
-                                                variant="ghost"
-                                                size="sm"
-                                                onClick={() => {
-                                                    setInstrument2(null);
-                                                    setComparisonData(null);
-                                                }}
-                                            >
-                                                <X className="w-4 h-4" />
-                                            </Button>
-                                        </div>
-                                        <p className="text-3xl font-bold text-gray-900">
-                                            {formatPrice(comparisonData?.instrument2?.currentPrice)}
-                                        </p>
-                                    </div>
-                                </div>
-                            )}
-                        </CardContent>
-                    </Card>
+                    {renderSelector(
+                        1, instrument1, showSelector1, searchTerm1, searchResults1,
+                        setShowSelector1, setSearchTerm1, selectInstrument1,
+                        () => { setInstrument1(null); setComparisonData(null); }
+                    )}
+                    {renderSelector(
+                        2, instrument2, showSelector2, searchTerm2, searchResults2,
+                        setShowSelector2, setSearchTerm2, selectInstrument2,
+                        () => { setInstrument2(null); setComparisonData(null); }
+                    )}
                 </div>
 
                 {/* Timeframe Selector */}
@@ -304,20 +194,17 @@ export default function ComparisonPage() {
                     <div className="mb-6 flex items-center gap-3">
                         <Calendar className="w-5 h-5 text-gray-500" />
                         <div className="flex gap-2">
-                            {['1H', '1A', '3A', '6A', '1Y'].map(tf => (
+                            {timeframes.map(tf => (
                                 <button
-                                    key={tf}
-                                    onClick={() => setTimeframe(tf)}
+                                    key={tf.value}
+                                    onClick={() => setTimeframe(tf.value)}
                                     className={`px-4 py-2 text-sm font-semibold rounded-lg transition-all ${
-                                        timeframe === tf
+                                        timeframe === tf.value
                                             ? 'bg-blue-600 text-white shadow-md'
                                             : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200'
                                     }`}
                                 >
-                                    {tf === '1H' ? '1 Hafta' :
-                                        tf === '1A' ? '1 Ay' :
-                                            tf === '3A' ? '3 Ay' :
-                                                tf === '6A' ? '6 Ay' : '1 Yıl'}
+                                    {tf.label}
                                 </button>
                             ))}
                         </div>
@@ -337,7 +224,7 @@ export default function ComparisonPage() {
                         {/* Price Chart */}
                         <Card className="border-0 shadow-sm mb-6">
                             <CardHeader>
-                                <CardTitle>Fiyat Karşılaştırması</CardTitle>
+                                <CardTitle>{t('comparison.priceComparison')}</CardTitle>
                             </CardHeader>
                             <CardContent>
                                 {chartData.length > 0 ? (
@@ -346,50 +233,21 @@ export default function ComparisonPage() {
                                             <LineChart data={chartData}>
                                                 <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                                                 <XAxis dataKey="date" stroke="#9ca3af" tick={{ fontSize: 11 }} />
-                                                <YAxis
-                                                    yAxisId="left"
-                                                    stroke="#3B82F6"
-                                                    tick={{ fontSize: 11 }}
-                                                />
-                                                <YAxis
-                                                    yAxisId="right"
-                                                    orientation="right"
-                                                    stroke="#EC4899"
-                                                    tick={{ fontSize: 11 }}
-                                                />
+                                                <YAxis yAxisId="left" stroke="#3B82F6" tick={{ fontSize: 11 }} />
+                                                <YAxis yAxisId="right" orientation="right" stroke="#EC4899" tick={{ fontSize: 11 }} />
                                                 <Tooltip
                                                     formatter={(value) => formatPrice(value)}
-                                                    contentStyle={{
-                                                        borderRadius: '8px',
-                                                        border: 'none',
-                                                        boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
-                                                    }}
+                                                    contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
                                                 />
                                                 <Legend />
-                                                <Line
-                                                    yAxisId="left"
-                                                    type="monotone"
-                                                    dataKey="inst1"
-                                                    stroke="#3B82F6"
-                                                    strokeWidth={2}
-                                                    name={instrument1.symbol}
-                                                    dot={false}
-                                                />
-                                                <Line
-                                                    yAxisId="right"
-                                                    type="monotone"
-                                                    dataKey="inst2"
-                                                    stroke="#EC4899"
-                                                    strokeWidth={2}
-                                                    name={instrument2.symbol}
-                                                    dot={false}
-                                                />
+                                                <Line yAxisId="left" type="monotone" dataKey="inst1" stroke="#3B82F6" strokeWidth={2} name={instrument1.symbol} dot={false} />
+                                                <Line yAxisId="right" type="monotone" dataKey="inst2" stroke="#EC4899" strokeWidth={2} name={instrument2.symbol} dot={false} />
                                             </LineChart>
                                         </ResponsiveContainer>
                                     </div>
                                 ) : (
                                     <div className="h-[400px] flex items-center justify-center text-gray-400">
-                                        <p className="text-sm">Yeterli tarihsel veri yok</p>
+                                        <p className="text-sm">{t('comparison.noHistoricalData')}</p>
                                     </div>
                                 )}
                             </CardContent>
@@ -398,57 +256,74 @@ export default function ComparisonPage() {
                         {/* Metrics Table */}
                         <Card className="border-0 shadow-sm">
                             <CardHeader>
-                                <CardTitle>Performans Karşılaştırması</CardTitle>
+                                <CardTitle>{t('comparison.performanceComparison')}</CardTitle>
                             </CardHeader>
                             <CardContent>
                                 <div className="overflow-x-auto">
                                     <table className="w-full">
                                         <thead>
                                         <tr className="border-b border-gray-200">
-                                            <th className="text-left py-3 px-4 text-sm font-semibold text-gray-600">Metrik</th>
+                                            <th className="text-left py-3 px-4 text-sm font-semibold text-gray-600">{t('comparison.metric')}</th>
                                             <th className="text-right py-3 px-4 text-sm font-semibold text-gray-600">{instrument1.symbol}</th>
                                             <th className="text-right py-3 px-4 text-sm font-semibold text-gray-600">{instrument2.symbol}</th>
                                         </tr>
                                         </thead>
                                         <tbody>
-                                        <tr className="border-b border-gray-100">
-                                            <td className="py-4 px-4 text-gray-900">Güncel Fiyat</td>
-                                            <td className="py-4 px-4 text-right font-medium">{formatPrice(comparisonData?.instrument1?.currentPrice)}</td>
-                                            <td className="py-4 px-4 text-right font-medium">{formatPrice(comparisonData?.instrument2?.currentPrice)}</td>
-                                        </tr>
-                                        <tr className="border-b border-gray-100">
-                                            <td className="py-4 px-4 text-gray-900">Dönem Değişimi</td>
-                                            <td className={`py-4 px-4 text-right font-semibold ${
-                                                (metrics1?.periodChange || 0) >= 0 ? 'text-emerald-600' : 'text-red-500'
-                                            }`}>
-                                                {formatPercent(metrics1?.periodChange)}
-                                            </td>
-                                            <td className={`py-4 px-4 text-right font-semibold ${
-                                                (metrics2?.periodChange || 0) >= 0 ? 'text-emerald-600' : 'text-red-500'
-                                            }`}>
-                                                {formatPercent(metrics2?.periodChange)}
-                                            </td>
-                                        </tr>
-                                        <tr className="border-b border-gray-100">
-                                            <td className="py-4 px-4 text-gray-900">Volatilite</td>
-                                            <td className="py-4 px-4 text-right">{formatPercent(metrics1?.volatility)}</td>
-                                            <td className="py-4 px-4 text-right">{formatPercent(metrics2?.volatility)}</td>
-                                        </tr>
-                                        <tr className="border-b border-gray-100">
-                                            <td className="py-4 px-4 text-gray-900">En Yüksek</td>
-                                            <td className="py-4 px-4 text-right text-emerald-600 font-medium">{formatPrice(metrics1?.highestPrice)}</td>
-                                            <td className="py-4 px-4 text-right text-emerald-600 font-medium">{formatPrice(metrics2?.highestPrice)}</td>
-                                        </tr>
-                                        <tr className="border-b border-gray-100">
-                                            <td className="py-4 px-4 text-gray-900">En Düşük</td>
-                                            <td className="py-4 px-4 text-right text-red-500 font-medium">{formatPrice(metrics1?.lowestPrice)}</td>
-                                            <td className="py-4 px-4 text-right text-red-500 font-medium">{formatPrice(metrics2?.lowestPrice)}</td>
-                                        </tr>
-                                        <tr>
-                                            <td className="py-4 px-4 text-gray-900">Fiyat Aralığı</td>
-                                            <td className="py-4 px-4 text-right">{formatPrice(metrics1?.priceRange)}</td>
-                                            <td className="py-4 px-4 text-right">{formatPrice(metrics2?.priceRange)}</td>
-                                        </tr>
+                                        {[
+                                            {
+                                                label: t('instrumentDetail.currentPrice'),
+                                                v1: formatPrice(comparisonData?.instrument1?.currentPrice),
+                                                v2: formatPrice(comparisonData?.instrument2?.currentPrice),
+                                            },
+                                            {
+                                                label: t('comparison.periodChange'),
+                                                v1: formatPercent(metrics1?.periodChange),
+                                                v2: formatPercent(metrics2?.periodChange),
+                                                colored: true,
+                                                val1: metrics1?.periodChange,
+                                                val2: metrics2?.periodChange,
+                                            },
+                                            {
+                                                label: t('comparison.volatility'),
+                                                v1: formatPercent(metrics1?.volatility),
+                                                v2: formatPercent(metrics2?.volatility),
+                                            },
+                                            {
+                                                label: t('comparison.highest'),
+                                                v1: formatPrice(metrics1?.highestPrice),
+                                                v2: formatPrice(metrics2?.highestPrice),
+                                                color: 'text-emerald-600',
+                                            },
+                                            {
+                                                label: t('comparison.lowest'),
+                                                v1: formatPrice(metrics1?.lowestPrice),
+                                                v2: formatPrice(metrics2?.lowestPrice),
+                                                color: 'text-red-500',
+                                            },
+                                            {
+                                                label: t('comparison.priceRange'),
+                                                v1: formatPrice(metrics1?.priceRange),
+                                                v2: formatPrice(metrics2?.priceRange),
+                                            },
+                                        ].map((row, i, arr) => (
+                                            <tr key={row.label} className={i !== arr.length - 1 ? 'border-b border-gray-100' : ''}>
+                                                <td className="py-4 px-4 text-gray-900">{row.label}</td>
+                                                <td className={`py-4 px-4 text-right font-medium ${
+                                                    row.colored
+                                                        ? (row.val1 || 0) >= 0 ? 'text-emerald-600 font-semibold' : 'text-red-500 font-semibold'
+                                                        : row.color || ''
+                                                }`}>
+                                                    {row.v1}
+                                                </td>
+                                                <td className={`py-4 px-4 text-right font-medium ${
+                                                    row.colored
+                                                        ? (row.val2 || 0) >= 0 ? 'text-emerald-600 font-semibold' : 'text-red-500 font-semibold'
+                                                        : row.color || ''
+                                                }`}>
+                                                    {row.v2}
+                                                </td>
+                                            </tr>
+                                        ))}
                                         </tbody>
                                     </table>
                                 </div>
@@ -465,10 +340,8 @@ export default function ComparisonPage() {
                                 <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
                                     <Search className="w-8 h-8 text-blue-600" />
                                 </div>
-                                <h3 className="text-xl font-semibold text-gray-900 mb-2">Karşılaştırma Başlatın</h3>
-                                <p className="text-gray-600">
-                                    Yukarıdaki kartlardan iki enstrüman seçerek karşılaştırma yapmaya başlayın
-                                </p>
+                                <h3 className="text-xl font-semibold text-gray-900 mb-2">{t('comparison.emptyTitle')}</h3>
+                                <p className="text-gray-600">{t('comparison.emptyDesc')}</p>
                             </div>
                         </CardContent>
                     </Card>

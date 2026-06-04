@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { Bell, Trash2, Loader2, CheckCircle, XCircle } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '../UI/Card';
+import { useTranslation } from 'react-i18next';
+import { Bell, Trash2, Loader2, CheckCircle } from 'lucide-react';
+import { Card, CardContent } from '../UI/Card';
 import { Button } from '../UI/Button';
 import { getUserAlerts, deletePriceAlert } from '../../API/priceAlertApi';
 import { useNavigate } from 'react-router-dom';
 
 export default function PriceAlertsPage() {
     const navigate = useNavigate();
+    const { t, i18n } = useTranslation();
     const [alerts, setAlerts] = useState([]);
     const [loading, setLoading] = useState(true);
     const [selectedCategory, setSelectedCategory] = useState('ALL');
@@ -37,9 +39,9 @@ export default function PriceAlertsPage() {
     };
 
     const categories = [
-        { id: 'ALL', label: 'Tümü' },
-        { id: 'ACTIVE', label: 'Aktif' },
-        { id: 'TRIGGERED', label: 'Tetiklendi' },
+        { id: 'ALL',       label: t('alert.all') },
+        { id: 'ACTIVE',    label: t('alert.active') },
+        { id: 'TRIGGERED', label: t('alert.triggered') },
     ];
 
     const filteredAlerts = alerts.filter(a => {
@@ -57,7 +59,8 @@ export default function PriceAlertsPage() {
 
     const formatDate = (dateStr) => {
         if (!dateStr) return '-';
-        return new Date(dateStr).toLocaleDateString('tr-TR', {
+        const locale = i18n.language === 'en' ? 'en-US' : 'tr-TR';
+        return new Date(dateStr).toLocaleDateString(locale, {
             day: '2-digit', month: 'long', year: 'numeric',
             hour: '2-digit', minute: '2-digit'
         });
@@ -69,9 +72,11 @@ export default function PriceAlertsPage() {
 
                 {/* Header */}
                 <div className="mb-6">
-                    <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">Fiyat Alarmları</h1>
+                    <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+                        {t('alert.title')}
+                    </h1>
                     <p className="text-gray-600 dark:text-gray-400">
-                        {alerts.filter(a => a.active && !a.triggered).length} aktif alarm
+                        {t('alert.activeCount', { count: alerts.filter(a => a.active && !a.triggered).length })}
                     </p>
                 </div>
 
@@ -102,14 +107,14 @@ export default function PriceAlertsPage() {
                         ) : filteredAlerts.length === 0 ? (
                             <div className="text-center py-12 text-gray-400">
                                 <Bell className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                                <p className="text-lg font-medium">Alarm yok</p>
-                                <p className="text-sm mt-1">Enstrüman detay sayfasından alarm ekleyebilirsiniz</p>
+                                <p className="text-lg font-medium">{t('alert.empty')}</p>
+                                <p className="text-sm mt-1">{t('alert.emptyHint')}</p>
                                 <Button
                                     variant="outline"
                                     className="mt-4"
                                     onClick={() => navigate('/instruments')}
                                 >
-                                    Enstrümanlara Git
+                                    {t('alert.goToInstruments')}
                                 </Button>
                             </div>
                         ) : (
@@ -139,19 +144,20 @@ export default function PriceAlertsPage() {
                                             <span className="text-xs text-gray-400 font-mono bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded">
                                                 {alert.instrumentSymbol}
                                             </span>
-                                            {/* Durum badge */}
                                             {alert.triggered ? (
                                                 <span className="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full">
-                                                    Tetiklendi
+                                                    {t('alert.triggered')}
                                                 </span>
                                             ) : (
                                                 <span className="text-xs bg-green-100 text-green-600 px-2 py-0.5 rounded-full">
-                                                    Aktif
+                                                    {t('alert.active')}
                                                 </span>
                                             )}
                                         </div>
                                         <p className="text-sm text-gray-600 dark:text-gray-400">
-                                            {alert.condition === 'ABOVE' ? '↑ Üzerine çıkınca' : '↓ Altına düşünce'}
+                                            {alert.condition === 'ABOVE'
+                                                ? t('alert.aboveCondition')
+                                                : t('alert.belowCondition')}
                                             {' — '}
                                             <span className="font-semibold text-gray-900 dark:text-white">
                                                 {formatPrice(alert.targetPrice)}
@@ -159,8 +165,8 @@ export default function PriceAlertsPage() {
                                         </p>
                                         <p className="text-xs text-gray-400 mt-1">
                                             {alert.triggered
-                                                ? `Tetiklenme: ${formatDate(alert.triggeredAt)}`
-                                                : `Oluşturulma: ${formatDate(alert.createdAt)}`
+                                                ? `${t('alert.triggeredAt')}: ${formatDate(alert.triggeredAt)}`
+                                                : `${t('alert.createdAt')}: ${formatDate(alert.createdAt)}`
                                             }
                                         </p>
                                     </div>

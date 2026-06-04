@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Mail, ArrowLeft, AlertCircle, CheckCircle } from 'lucide-react';
 import api from '../../API/instrumentsApi';
 
 const ForgotPasswordPage = () => {
     const navigate = useNavigate();
+    const { t } = useTranslation();
 
     const [email, setEmail] = useState('');
     const [loading, setLoading] = useState(false);
@@ -14,14 +16,13 @@ const ForgotPasswordPage = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
 
-        // Email validation
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (!email.trim()) {
-            setErrorMessage('Email adresi gerekli');
+            setErrorMessage(t('forgotPassword.emailRequired'));
             return;
         }
         if (!emailRegex.test(email)) {
-            setErrorMessage('Geçerli bir email adresi girin');
+            setErrorMessage(t('register.validation.emailInvalid'));
             return;
         }
 
@@ -31,14 +32,12 @@ const ForgotPasswordPage = () => {
 
         try {
             const response = await api.post('/auth/forgot-password', { email });
-
             if (response.data.success) {
                 setSuccessMessage(response.data.message);
                 setEmail('');
             }
-
         } catch (error) {
-            const errorMsg = error.response?.data?.message || 'Şifre sıfırlama isteği gönderilemedi';
+            const errorMsg = error.response?.data?.message || t('forgotPassword.sendError');
             setErrorMessage(errorMsg);
         } finally {
             setLoading(false);
@@ -55,7 +54,7 @@ const ForgotPasswordPage = () => {
                     className="flex items-center gap-2 text-gray-600 hover:text-gray-800 mb-6 transition"
                 >
                     <ArrowLeft className="w-4 h-4" />
-                    Geri Dön
+                    {t('verify2fa.backToLogin')}
                 </button>
 
                 {/* Header */}
@@ -63,10 +62,8 @@ const ForgotPasswordPage = () => {
                     <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-100 rounded-full mb-4">
                         <Mail className="w-8 h-8 text-blue-600" />
                     </div>
-                    <h1 className="text-3xl font-bold text-gray-800 mb-2">Şifremi Unuttum</h1>
-                    <p className="text-gray-600">
-                        Email adresinizi girin, size şifre sıfırlama bağlantısı gönderelim
-                    </p>
+                    <h1 className="text-3xl font-bold text-gray-800 mb-2">{t('forgotPassword.title')}</h1>
+                    <p className="text-gray-600">{t('forgotPassword.subtitle')}</p>
                 </div>
 
                 {/* Success Message */}
@@ -74,11 +71,9 @@ const ForgotPasswordPage = () => {
                     <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg flex items-start gap-3">
                         <CheckCircle className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
                         <div>
-                            <p className="text-green-800 font-medium">Başarılı!</p>
+                            <p className="text-green-800 font-medium">{t('common.success')}</p>
                             <p className="text-green-600 text-sm mt-1">{successMessage}</p>
-                            <p className="text-green-600 text-sm mt-2">
-                                Email kutunuzu kontrol edin. Spam klasörünü de kontrol etmeyi unutmayın.
-                            </p>
+                            <p className="text-green-600 text-sm mt-2">{t('forgotPassword.checkSpam')}</p>
                         </div>
                     </div>
                 )}
@@ -93,11 +88,9 @@ const ForgotPasswordPage = () => {
 
                 {/* Form */}
                 <form onSubmit={handleSubmit} className="space-y-5">
-
-                    {/* Email Input */}
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Email Adresi
+                            {t('auth.email')}
                         </label>
                         <div className="relative">
                             <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
@@ -109,13 +102,12 @@ const ForgotPasswordPage = () => {
                                     setErrorMessage('');
                                 }}
                                 className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
-                                placeholder="ornek@email.com"
+                                placeholder={t('forgotPassword.emailPlaceholder')}
                                 autoFocus
                             />
                         </div>
                     </div>
 
-                    {/* Submit Button */}
                     <button
                         type="submit"
                         disabled={loading}
@@ -124,10 +116,10 @@ const ForgotPasswordPage = () => {
                         {loading ? (
                             <>
                                 <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                                Gönderiliyor...
+                                {t('profile.sending')}
                             </>
                         ) : (
-                            'Şifre Sıfırlama Bağlantısı Gönder'
+                            t('forgotPassword.sendButton')
                         )}
                     </button>
                 </form>
@@ -135,20 +127,19 @@ const ForgotPasswordPage = () => {
                 {/* Help Text */}
                 <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
                     <p className="text-sm text-blue-800">
-                        <strong>Not:</strong> Email adresinize bir şifre sıfırlama bağlantısı gönderilecek.
-                        Bu bağlantı 12 saat geçerlidir.
+                        <strong>{t('common.note')}:</strong> {t('forgotPassword.helpText')}
                     </p>
                 </div>
 
                 {/* Login Link */}
                 <div className="mt-6 text-center">
                     <p className="text-gray-600">
-                        Şifrenizi hatırladınız mı?{' '}
+                        {t('forgotPassword.rememberPassword')}{' '}
                         <button
                             onClick={() => navigate('/login')}
                             className="text-blue-600 hover:text-blue-700 font-semibold"
                         >
-                            Giriş Yap
+                            {t('auth.login')}
                         </button>
                     </p>
                 </div>

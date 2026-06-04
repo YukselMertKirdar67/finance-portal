@@ -2,9 +2,11 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { registerUser } from '../../API/registerApi';
 import { Mail, User, Lock, UserCircle, AlertCircle, CheckCircle } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 const RegisterPage = () => {
     const navigate = useNavigate();
+    const { t } = useTranslation();
 
     const [formData, setFormData] = useState({
         username: '',
@@ -22,57 +24,44 @@ const RegisterPage = () => {
 
     const handleChange = (e) => {
         const { name, value } = e.target;
-        setFormData(prev => ({
-            ...prev,
-            [name]: value
-        }));
-        // Hata mesajını temizle
+        setFormData(prev => ({ ...prev, [name]: value }));
         if (errors[name]) {
-            setErrors(prev => ({
-                ...prev,
-                [name]: ''
-            }));
+            setErrors(prev => ({ ...prev, [name]: '' }));
         }
     };
 
     const validateForm = () => {
         const newErrors = {};
 
-        // Username validation
         if (!formData.username.trim()) {
-            newErrors.username = 'Kullanıcı adı gerekli';
+            newErrors.username = t('register.validation.usernameRequired');
         } else if (formData.username.length < 3) {
-            newErrors.username = 'Kullanıcı adı en az 3 karakter olmalı';
+            newErrors.username = t('register.validation.usernameMin');
         }
 
-        // Email validation
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (!formData.email.trim()) {
-            newErrors.email = 'Email gerekli';
+            newErrors.email = t('register.validation.emailRequired');
         } else if (!emailRegex.test(formData.email)) {
-            newErrors.email = 'Geçerli bir email adresi girin';
+            newErrors.email = t('register.validation.emailInvalid');
         }
 
-        // Password validation
         if (!formData.password) {
-            newErrors.password = 'Şifre gerekli';
+            newErrors.password = t('register.validation.passwordRequired');
         } else if (formData.password.length < 6) {
-            newErrors.password = 'Şifre en az 6 karakter olmalı';
+            newErrors.password = t('register.validation.passwordMin');
         }
 
-        // Confirm password validation
         if (formData.password !== formData.confirmPassword) {
-            newErrors.confirmPassword = 'Şifreler eşleşmiyor';
+            newErrors.confirmPassword = t('register.validation.passwordMismatch');
         }
 
-        // First name validation
         if (!formData.firstName.trim()) {
-            newErrors.firstName = 'Ad gerekli';
+            newErrors.firstName = t('register.validation.firstNameRequired');
         }
 
-        // Last name validation
         if (!formData.lastName.trim()) {
-            newErrors.lastName = 'Soyad gerekli';
+            newErrors.lastName = t('register.validation.lastNameRequired');
         }
 
         setErrors(newErrors);
@@ -82,9 +71,7 @@ const RegisterPage = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
 
-        if (!validateForm()) {
-            return;
-        }
+        if (!validateForm()) return;
 
         setLoading(true);
         setSuccessMessage('');
@@ -104,7 +91,6 @@ const RegisterPage = () => {
                 setSuccessMessage(response.message);
                 setCountdown(5);
 
-                // Countdown başlat
                 const timer = setInterval(() => {
                     setCountdown((prev) => {
                         if (prev <= 1) {
@@ -118,12 +104,11 @@ const RegisterPage = () => {
             }
 
         } catch (error) {
-            const errorMessage = error.response?.data?.message || 'Kayıt sırasında bir hata oluştu';
+            const errorMessage = error.response?.data?.message || t('register.submitError');
             setErrors({ submit: errorMessage });
         } finally {
             setLoading(false);
         }
-
     };
 
     return (
@@ -135,8 +120,8 @@ const RegisterPage = () => {
                     <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-600 rounded-full mb-4">
                         <UserCircle className="w-10 h-10 text-white" />
                     </div>
-                    <h1 className="text-3xl font-bold text-gray-800 mb-2">Hesap Oluştur</h1>
-                    <p className="text-gray-600">FinansApp'e hoş geldiniz</p>
+                    <h1 className="text-3xl font-bold text-gray-800 mb-2">{t('register.title')}</h1>
+                    <p className="text-gray-600">{t('register.subtitle')}</p>
                 </div>
 
                 {/* Success Message */}
@@ -145,30 +130,28 @@ const RegisterPage = () => {
                         <div className="flex items-start gap-3 mb-3">
                             <CheckCircle className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
                             <div>
-                                <p className="text-green-800 font-medium">Kayıt Başarılı! 🎉</p>
-                                <p className="text-green-700 text-sm mt-1">Hesabınız başarıyla oluşturuldu.</p>
+                                <p className="text-green-800 font-medium">{t('register.success.title')}</p>
+                                <p className="text-green-700 text-sm mt-1">{t('register.success.description')}</p>
                             </div>
                         </div>
 
-                        {/* Email Verification Notice */}
                         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-3">
                             <div className="flex items-start gap-3">
                                 <Mail className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
                                 <div>
-                                    <p className="text-blue-800 font-medium">📧 Email Doğrulama Gerekli</p>
+                                    <p className="text-blue-800 font-medium">{t('register.success.emailVerification')}</p>
                                     <p className="text-blue-700 text-sm mt-1">
-                                        Email adresinize bir doğrulama linki gönderdik.
-                                        Hesabınızı aktif etmek için lütfen email kutunuzu kontrol edin.
+                                        {t('register.success.emailSent')}
                                     </p>
                                     <p className="text-blue-600 text-xs mt-2">
-                                        💡 Spam klasörünü kontrol etmeyi unutmayın!
+                                        {t('register.success.spamNote')}
                                     </p>
                                 </div>
                             </div>
                         </div>
 
                         <p className="text-green-600 text-sm mt-3 text-center">
-                            {countdown} saniye sonra giriş sayfasına yönlendiriliyorsunuz...
+                            {t('register.success.redirect', { count: countdown })}
                         </p>
                     </div>
                 )}
@@ -187,7 +170,7 @@ const RegisterPage = () => {
                     {/* Username */}
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Kullanıcı Adı *
+                            {t('auth.username')} *
                         </label>
                         <div className="relative">
                             <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
@@ -197,22 +180,18 @@ const RegisterPage = () => {
                                 value={formData.username}
                                 onChange={handleChange}
                                 className={`w-full pl-11 pr-4 py-3 border rounded-lg focus:outline-none focus:ring-2 transition ${
-                                    errors.username
-                                        ? 'border-red-300 focus:ring-red-500'
-                                        : 'border-gray-300 focus:ring-blue-500'
+                                    errors.username ? 'border-red-300 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500'
                                 }`}
                                 placeholder="johndoe"
                             />
                         </div>
-                        {errors.username && (
-                            <p className="text-red-600 text-sm mt-1">{errors.username}</p>
-                        )}
+                        {errors.username && <p className="text-red-600 text-sm mt-1">{errors.username}</p>}
                     </div>
 
                     {/* Email */}
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Email *
+                            {t('auth.email')} *
                         </label>
                         <div className="relative">
                             <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
@@ -222,23 +201,19 @@ const RegisterPage = () => {
                                 value={formData.email}
                                 onChange={handleChange}
                                 className={`w-full pl-11 pr-4 py-3 border rounded-lg focus:outline-none focus:ring-2 transition ${
-                                    errors.email
-                                        ? 'border-red-300 focus:ring-red-500'
-                                        : 'border-gray-300 focus:ring-blue-500'
+                                    errors.email ? 'border-red-300 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500'
                                 }`}
                                 placeholder="john@example.com"
                             />
                         </div>
-                        {errors.email && (
-                            <p className="text-red-600 text-sm mt-1">{errors.email}</p>
-                        )}
+                        {errors.email && <p className="text-red-600 text-sm mt-1">{errors.email}</p>}
                     </div>
 
                     {/* First Name & Last Name */}
                     <div className="grid grid-cols-2 gap-4">
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Ad *
+                                {t('auth.firstName')} *
                             </label>
                             <input
                                 type="text"
@@ -246,20 +221,16 @@ const RegisterPage = () => {
                                 value={formData.firstName}
                                 onChange={handleChange}
                                 className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 transition ${
-                                    errors.firstName
-                                        ? 'border-red-300 focus:ring-red-500'
-                                        : 'border-gray-300 focus:ring-blue-500'
+                                    errors.firstName ? 'border-red-300 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500'
                                 }`}
                                 placeholder="John"
                             />
-                            {errors.firstName && (
-                                <p className="text-red-600 text-sm mt-1">{errors.firstName}</p>
-                            )}
+                            {errors.firstName && <p className="text-red-600 text-sm mt-1">{errors.firstName}</p>}
                         </div>
 
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Soyad *
+                                {t('auth.lastName')} *
                             </label>
                             <input
                                 type="text"
@@ -267,22 +238,18 @@ const RegisterPage = () => {
                                 value={formData.lastName}
                                 onChange={handleChange}
                                 className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 transition ${
-                                    errors.lastName
-                                        ? 'border-red-300 focus:ring-red-500'
-                                        : 'border-gray-300 focus:ring-blue-500'
+                                    errors.lastName ? 'border-red-300 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500'
                                 }`}
                                 placeholder="Doe"
                             />
-                            {errors.lastName && (
-                                <p className="text-red-600 text-sm mt-1">{errors.lastName}</p>
-                            )}
+                            {errors.lastName && <p className="text-red-600 text-sm mt-1">{errors.lastName}</p>}
                         </div>
                     </div>
 
                     {/* Password */}
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Şifre *
+                            {t('auth.password')} *
                         </label>
                         <div className="relative">
                             <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
@@ -292,22 +259,18 @@ const RegisterPage = () => {
                                 value={formData.password}
                                 onChange={handleChange}
                                 className={`w-full pl-11 pr-4 py-3 border rounded-lg focus:outline-none focus:ring-2 transition ${
-                                    errors.password
-                                        ? 'border-red-300 focus:ring-red-500'
-                                        : 'border-gray-300 focus:ring-blue-500'
+                                    errors.password ? 'border-red-300 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500'
                                 }`}
                                 placeholder="••••••••"
                             />
                         </div>
-                        {errors.password && (
-                            <p className="text-red-600 text-sm mt-1">{errors.password}</p>
-                        )}
+                        {errors.password && <p className="text-red-600 text-sm mt-1">{errors.password}</p>}
                     </div>
 
                     {/* Confirm Password */}
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Şifre Tekrar *
+                            {t('register.confirmPassword')} *
                         </label>
                         <div className="relative">
                             <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
@@ -317,16 +280,12 @@ const RegisterPage = () => {
                                 value={formData.confirmPassword}
                                 onChange={handleChange}
                                 className={`w-full pl-11 pr-4 py-3 border rounded-lg focus:outline-none focus:ring-2 transition ${
-                                    errors.confirmPassword
-                                        ? 'border-red-300 focus:ring-red-500'
-                                        : 'border-gray-300 focus:ring-blue-500'
+                                    errors.confirmPassword ? 'border-red-300 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500'
                                 }`}
                                 placeholder="••••••••"
                             />
                         </div>
-                        {errors.confirmPassword && (
-                            <p className="text-red-600 text-sm mt-1">{errors.confirmPassword}</p>
-                        )}
+                        {errors.confirmPassword && <p className="text-red-600 text-sm mt-1">{errors.confirmPassword}</p>}
                     </div>
 
                     {/* Submit Button */}
@@ -338,10 +297,10 @@ const RegisterPage = () => {
                         {loading ? (
                             <>
                                 <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                                Kayıt Yapılıyor...
+                                {t('register.registering')}
                             </>
                         ) : (
-                            'Kayıt Ol'
+                            t('auth.register')
                         )}
                     </button>
                 </form>
@@ -349,12 +308,12 @@ const RegisterPage = () => {
                 {/* Login Link */}
                 <div className="mt-6 text-center">
                     <p className="text-gray-600">
-                        Zaten hesabınız var mı?{' '}
+                        {t('auth.hasAccount')}{' '}
                         <button
                             onClick={() => navigate('/login')}
                             className="text-blue-600 hover:text-blue-700 font-semibold"
                         >
-                            Giriş Yap
+                            {t('auth.login')}
                         </button>
                     </p>
                 </div>

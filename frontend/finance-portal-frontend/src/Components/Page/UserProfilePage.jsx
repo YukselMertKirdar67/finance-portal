@@ -1,19 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
+import { useTranslation } from 'react-i18next';
 import {
-    User,
-    Mail,
-    Calendar,
-    Shield,
-    CheckCircle,
-    AlertCircle,
-    Send,
+    User, Mail, Calendar, Shield,
+    CheckCircle, AlertCircle, Send,
 } from 'lucide-react';
 import api from '../../API/instrumentsApi';
 import { getCurrentUser } from '../../API/userApi';
 
 const UserProfilePage = () => {
     const { user } = useAuth();
+    const { t, i18n } = useTranslation();
 
     const [profileData, setProfileData] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -32,7 +29,7 @@ const UserProfilePage = () => {
             const data = await getCurrentUser();
             setProfileData(data);
         } catch (err) {
-            setError('Profil bilgileri yüklenirken bir hata oluştu');
+            setError(t('profile.loadError'));
             console.error('Error fetching profile:', err);
         } finally {
             setLoading(false);
@@ -49,11 +46,21 @@ const UserProfilePage = () => {
             setEmailSent(true);
             setTimeout(() => setEmailSent(false), 5000);
         } catch (err) {
-            setError('Email gönderilemedi. Lütfen tekrar deneyin.');
+            setError(t('profile.emailSendError'));
             console.error('Error sending verification email:', err);
         } finally {
             setSendingEmail(false);
         }
+    };
+
+    const formatDate = (dateStr) => {
+        if (!dateStr) return t('profile.unknown');
+        const locale = i18n.language === 'en' ? 'en-US' : 'tr-TR';
+        return new Date(dateStr).toLocaleDateString(locale, {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+        });
     };
 
     if (loading) {
@@ -61,7 +68,7 @@ const UserProfilePage = () => {
             <div className="min-h-screen flex items-center justify-center">
                 <div className="text-center">
                     <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-                    <p className="text-gray-600">Profil yükleniyor...</p>
+                    <p className="text-gray-600">{t('profile.loading')}</p>
                 </div>
             </div>
         );
@@ -72,8 +79,8 @@ const UserProfilePage = () => {
 
             {/* Header */}
             <div className="mb-6">
-                <h1 className="text-3xl font-bold text-gray-800 mb-2">Profilim</h1>
-                <p className="text-gray-600">Hesap bilgilerinizi görüntüleyin</p>
+                <h1 className="text-3xl font-bold text-gray-800 mb-2">{t('profile.title')}</h1>
+                <p className="text-gray-600">{t('profile.subtitle')}</p>
             </div>
 
             {/* Error Message */}
@@ -89,8 +96,8 @@ const UserProfilePage = () => {
                 <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg flex items-start gap-3">
                     <CheckCircle className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
                     <div>
-                        <p className="text-green-800 font-medium">Doğrulama emaili gönderildi!</p>
-                        <p className="text-green-600 text-sm mt-1">Email kutunuzu kontrol edin.</p>
+                        <p className="text-green-800 font-medium">{t('profile.emailSentSuccess')}</p>
+                        <p className="text-green-600 text-sm mt-1">{t('profile.checkInbox')}</p>
                     </div>
                 </div>
             )}
@@ -112,7 +119,7 @@ const UserProfilePage = () => {
                             <p className="text-gray-500 text-sm">@{profileData?.username}</p>
                         </div>
                         <div className="space-y-2">
-                            <p className="text-sm font-medium text-gray-600 mb-2">Roller:</p>
+                            <p className="text-sm font-medium text-gray-600 mb-2">{t('profile.roles')}:</p>
                             <div className="flex flex-wrap gap-2">
                                 {profileData?.roles
                                     ?.filter(role => role === 'ADMIN' || role === 'USER')
@@ -125,7 +132,7 @@ const UserProfilePage = () => {
                                                     : 'bg-blue-100 text-blue-700'
                                             }`}
                                         >
-                                         {role}
+                                            {role}
                                         </span>
                                     ))}
                             </div>
@@ -136,37 +143,40 @@ const UserProfilePage = () => {
                 {/* Details Card */}
                 <div className="lg:col-span-2">
                     <div className="bg-white rounded-xl shadow-md p-6 border border-gray-100">
-                        <h3 className="text-xl font-bold text-gray-800 mb-6">Hesap Bilgileri</h3>
+                        <h3 className="text-xl font-bold text-gray-800 mb-6">{t('profile.accountInfo')}</h3>
 
                         <div className="space-y-6">
+
+                            {/* Username */}
                             <div className="flex items-start gap-4 pb-4 border-b border-gray-100">
                                 <div className="bg-blue-100 text-blue-600 p-3 rounded-lg">
                                     <User className="w-5 h-5" />
                                 </div>
                                 <div className="flex-1">
-                                    <p className="text-sm text-gray-500 mb-1">Kullanıcı Adı</p>
+                                    <p className="text-sm text-gray-500 mb-1">{t('auth.username')}</p>
                                     <p className="text-gray-900 font-semibold">{profileData?.username}</p>
                                 </div>
                             </div>
 
+                            {/* Email */}
                             <div className="flex items-start gap-4 pb-4 border-b border-gray-100">
                                 <div className="bg-green-100 text-green-600 p-3 rounded-lg">
                                     <Mail className="w-5 h-5" />
                                 </div>
                                 <div className="flex-1">
-                                    <p className="text-sm text-gray-500 mb-1">Email</p>
+                                    <p className="text-sm text-gray-500 mb-1">{t('auth.email')}</p>
                                     <p className="text-gray-900 font-semibold">{profileData?.email}</p>
                                     <div className="mt-2">
                                         {profileData?.emailVerified ? (
                                             <span className="inline-flex items-center gap-1 text-sm text-green-600">
                                                 <CheckCircle className="w-4 h-4" />
-                                                Email doğrulandı
+                                                {t('profile.emailVerified')}
                                             </span>
                                         ) : (
                                             <div className="space-y-2">
                                                 <span className="inline-flex items-center gap-1 text-sm text-orange-600">
                                                     <AlertCircle className="w-4 h-4" />
-                                                    Email doğrulanmadı
+                                                    {t('profile.emailNotVerified')}
                                                 </span>
                                                 <button
                                                     onClick={handleResendVerificationEmail}
@@ -176,12 +186,12 @@ const UserProfilePage = () => {
                                                     {sendingEmail ? (
                                                         <>
                                                             <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
-                                                            Gönderiliyor...
+                                                            {t('profile.sending')}
                                                         </>
                                                     ) : (
                                                         <>
                                                             <Send className="w-4 h-4" />
-                                                            Doğrulama emaili gönder
+                                                            {t('profile.sendVerificationEmail')}
                                                         </>
                                                     )}
                                                 </button>
@@ -191,31 +201,29 @@ const UserProfilePage = () => {
                                 </div>
                             </div>
 
+                            {/* Account Status */}
                             <div className="flex items-start gap-4 pb-4 border-b border-gray-100">
                                 <div className="bg-purple-100 text-purple-600 p-3 rounded-lg">
                                     <Shield className="w-5 h-5" />
                                 </div>
                                 <div className="flex-1">
-                                    <p className="text-sm text-gray-500 mb-1">Hesap Durumu</p>
+                                    <p className="text-sm text-gray-500 mb-1">{t('profile.accountStatus')}</p>
                                     <span className="inline-flex items-center gap-1 px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-medium">
                                         <CheckCircle className="w-4 h-4" />
-                                        Aktif
+                                        {t('profile.active')}
                                     </span>
                                 </div>
                             </div>
 
+                            {/* Register Date */}
                             <div className="flex items-start gap-4">
                                 <div className="bg-indigo-100 text-indigo-600 p-3 rounded-lg">
                                     <Calendar className="w-5 h-5" />
                                 </div>
                                 <div className="flex-1">
-                                    <p className="text-sm text-gray-500 mb-1">Kayıt Tarihi</p>
+                                    <p className="text-sm text-gray-500 mb-1">{t('profile.registerDate')}</p>
                                     <p className="text-gray-900 font-semibold">
-                                        {profileData?.createdAt ? new Date(profileData.createdAt).toLocaleDateString('tr-TR', {
-                                            year: 'numeric',
-                                            month: 'long',
-                                            day: 'numeric'
-                                        }) : 'Bilinmiyor'}
+                                        {formatDate(profileData?.createdAt)}
                                     </p>
                                 </div>
                             </div>
