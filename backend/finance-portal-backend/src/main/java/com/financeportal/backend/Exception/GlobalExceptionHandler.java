@@ -1,8 +1,7 @@
-
 package com.financeportal.backend.Exception;
 
-
-import jakarta.servlet.http.HttpServletRequest;
+import lombok.RequiredArgsConstructor;
+import org.springframework.context.MessageSource;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
@@ -11,10 +10,13 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
-import java.time.LocalDateTime;
+import java.util.Locale;
 
 @RestControllerAdvice
+@RequiredArgsConstructor
 public class GlobalExceptionHandler {
+
+  private final MessageSource messageSource;
 
   // 404 - Kayıt bulunamadı
   @ExceptionHandler(ResourceNotFoundException.class)
@@ -57,11 +59,11 @@ public class GlobalExceptionHandler {
   // 401 - Kimlik doğrulama hatası
   @ExceptionHandler(AuthenticationException.class)
   public ResponseEntity<ErrorResponse> handleAuthenticationException(
-          AuthenticationException ex) {
+          AuthenticationException ex, Locale locale) {
 
     ErrorResponse error = new ErrorResponse(
             HttpStatus.UNAUTHORIZED.value(),
-            "Kimlik doğrulama başarısız."
+            messageSource.getMessage("error.unauthorized", null, locale)
     );
 
     return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
@@ -70,16 +72,17 @@ public class GlobalExceptionHandler {
   // 403 - Yetkisiz erişim
   @ExceptionHandler(AccessDeniedException.class)
   public ResponseEntity<ErrorResponse> handleAccessDenied(
-          AccessDeniedException ex) {
+          AccessDeniedException ex, Locale locale) {
 
     ErrorResponse error = new ErrorResponse(
             HttpStatus.FORBIDDEN.value(),
-            "Bu kaynağa erişim yetkiniz yok."
+            messageSource.getMessage("error.forbidden", null, locale)
     );
 
     return ResponseEntity.status(HttpStatus.FORBIDDEN).body(error);
   }
 
+  // 400 - İş kuralı ihlali
   @ExceptionHandler(BusinessRuleException.class)
   public ResponseEntity<ErrorResponse> handleBusinessRuleException(
           BusinessRuleException ex) {
@@ -95,14 +98,13 @@ public class GlobalExceptionHandler {
   // 500 - Beklenmeyen hatalar
   @ExceptionHandler(Exception.class)
   public ResponseEntity<ErrorResponse> handleGeneralException(
-          Exception ex) {
+          Exception ex, Locale locale) {
 
     ErrorResponse error = new ErrorResponse(
             HttpStatus.INTERNAL_SERVER_ERROR.value(),
-            "Sunucu tarafında beklenmeyen bir hata oluştu."
+            messageSource.getMessage("error.internal", null, locale)
     );
 
     return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
   }
-
 }
