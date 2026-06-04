@@ -11,6 +11,8 @@ import dev.samstevens.totp.time.SystemTimeProvider;
 import dev.samstevens.totp.time.TimeProvider;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
+import org.springframework.context.MessageSource;
+import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,6 +25,7 @@ import java.util.Map;
 public class TotpService {
 
     private final TotpSecretRepository totpSecretRepository;
+    private final MessageSource messageSource;
 
     /**
      * Kullanıcı için yeni TOTP secret üretir ve QR kod döner.
@@ -70,7 +73,13 @@ public class TotpService {
             );
         } catch (QrGenerationException e) {
             log.error("❌ QR code generation failed: {}", e.getMessage());
-            throw new RuntimeException("QR kod oluşturulamadı");
+            throw new RuntimeException(
+                    messageSource.getMessage(
+                            "auth.2fa.qr.failed",
+                            null,
+                            LocaleContextHolder.getLocale()
+                    )
+            );
         }
     }
 

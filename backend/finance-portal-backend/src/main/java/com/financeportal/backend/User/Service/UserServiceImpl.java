@@ -16,6 +16,8 @@ import org.keycloak.admin.client.Keycloak;
 import org.keycloak.admin.client.resource.UserResource;
 import org.keycloak.representations.idm.UserRepresentation;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.MessageSource;
+import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -41,6 +43,7 @@ public class UserServiceImpl implements UserService {
     private final WatchlistRepository watchlistRepository;
     private final PortfolioTransactionRepository transactionRepository;
     private final PortfolioHoldingRepository holdingRepository;
+    private final MessageSource messageSource;
 
     @Value("${keycloak.realm}")
     private String realm;
@@ -80,7 +83,13 @@ public class UserServiceImpl implements UserService {
         return userRepository.findByKeycloakId(keycloakId)
                 .orElseThrow(() -> {
                     log.error("User not found with keycloakId: {}", keycloakId);
-                    return new RuntimeException("User not found with keycloakId: " + keycloakId);
+                    return new ResourceNotFoundException(
+                            messageSource.getMessage(
+                                    "user.not.found",
+                                    null,
+                                    LocaleContextHolder.getLocale()
+                            )
+                    );
                 });
     }
 
@@ -94,11 +103,18 @@ public class UserServiceImpl implements UserService {
         log.info("Updating username for user: {}", userId);
 
         User user = userRepository.findByKeycloakId(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        messageSource.getMessage(
+                                "user.not.found",
+                                null,
+                                LocaleContextHolder.getLocale()
+                        )
+                ));
 
         if (userRepository.existsByUsername(newUsername)) {
             log.warn("Username already exists: {}", newUsername);
-            throw new RuntimeException("Bu kullanıcı adı zaten kullanılıyor");
+            throw new RuntimeException(
+                    messageSource.getMessage("user.username.exists", null, LocaleContextHolder.getLocale()));
         }
 
         try {
@@ -109,7 +125,13 @@ public class UserServiceImpl implements UserService {
             log.info("Username updated in Keycloak: {}", newUsername);
         } catch (Exception e) {
             log.error("Failed to update username in Keycloak: {}", e.getMessage());
-            throw new RuntimeException("Keycloak güncellemesi başarısız: " + e.getMessage());
+            throw new RuntimeException(
+                    messageSource.getMessage(
+                            "error.internal",
+                            null,
+                            LocaleContextHolder.getLocale()
+                    )
+            );
         }
 
         user.setUsername(newUsername);
@@ -127,18 +149,26 @@ public class UserServiceImpl implements UserService {
         log.info("Updating email for user: {}", userId);
 
         User user = userRepository.findByKeycloakId(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        messageSource.getMessage(
+                                "user.not.found",
+                                null,
+                                LocaleContextHolder.getLocale()
+                        )
+                ));
 
         if (userRepository.existsByEmail(newEmail)) {
             log.warn("Email already exists: {}", newEmail);
-            throw new RuntimeException("Bu e-posta adresi zaten kullanılıyor");
+            throw new RuntimeException(
+                    messageSource.getMessage("user.email.exists", null, LocaleContextHolder.getLocale()));
         }
 
         try {
             validatePassword(user.getUsername(), password);
         } catch (Exception e) {
             log.warn("Password validation failed for user: {}", userId);
-            throw new RuntimeException("Şifre yanlış");
+            throw new RuntimeException(
+                    messageSource.getMessage("auth.password.change.wrong", null, LocaleContextHolder.getLocale()));
         }
 
         try {
@@ -151,7 +181,13 @@ public class UserServiceImpl implements UserService {
             log.info("Email updated in Keycloak, verification email sent: {}", newEmail);
         } catch (Exception e) {
             log.error("Failed to update email in Keycloak: {}", e.getMessage());
-            throw new RuntimeException("E-posta güncellemesi başarısız: " + e.getMessage());
+            throw new RuntimeException(
+                    messageSource.getMessage(
+                            "error.internal",
+                            null,
+                            LocaleContextHolder.getLocale()
+                    )
+            );
         }
 
         user.setEmail(newEmail);
@@ -179,7 +215,13 @@ public class UserServiceImpl implements UserService {
             restTemplate.postForEntity(tokenUrl, request, String.class);
         } catch (Exception e) {
             log.warn("Password validation failed for username: {}", username);
-            throw new RuntimeException("Invalid password");
+            throw new RuntimeException(
+                    messageSource.getMessage(
+                            "auth.password.change.wrong",
+                            null,
+                            LocaleContextHolder.getLocale()
+                    )
+            );
         }
     }
 
@@ -190,7 +232,13 @@ public class UserServiceImpl implements UserService {
     public LocalDateTime getPasswordLastChanged(String userId) {
         log.info("Fetching password last changed for user: {}", userId);
         User user = userRepository.findByKeycloakId(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        messageSource.getMessage(
+                                "user.not.found",
+                                null,
+                                LocaleContextHolder.getLocale()
+                        )
+                ));
         return user.getPasswordLastChanged();
     }
 
@@ -205,7 +253,13 @@ public class UserServiceImpl implements UserService {
         log.info("Updating preferences for user: {}", userId);
 
         User user = userRepository.findByKeycloakId(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        messageSource.getMessage(
+                                "user.not.found",
+                                null,
+                                LocaleContextHolder.getLocale()
+                        )
+                ));
 
         if (theme != null && !theme.isEmpty()) {
             user.setTheme(theme);
@@ -228,7 +282,13 @@ public class UserServiceImpl implements UserService {
         log.info("Exporting data for user: {}", userId);
 
         User user = userRepository.findByKeycloakId(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        messageSource.getMessage(
+                                "user.not.found",
+                                null,
+                                LocaleContextHolder.getLocale()
+                        )
+                ));
 
         List<Portfolio> portfolios = portfolioRepository.findByUserId(userId);
         log.info("Found {} portfolios for user: {}", portfolios.size(), userId);
@@ -279,7 +339,13 @@ public class UserServiceImpl implements UserService {
         log.info("Deleting account for user: {}", userId);
 
         User user = userRepository.findByKeycloakId(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        messageSource.getMessage(
+                                "user.not.found",
+                                null,
+                                LocaleContextHolder.getLocale()
+                        )
+                ));
 
         List<Portfolio> portfolios = portfolioRepository.findByUserId(userId);
         log.info("Deleting {} portfolios for user: {}", portfolios.size(), userId);
@@ -298,7 +364,13 @@ public class UserServiceImpl implements UserService {
             log.info("✅ User deleted from Keycloak: {}", userId);
         } catch (Exception e) {
             log.error("❌ Failed to delete user from Keycloak: {}", e.getMessage());
-            throw new RuntimeException("Keycloak'tan kullanıcı silinemedi: " + e.getMessage());
+            throw new RuntimeException(
+                    messageSource.getMessage(
+                            "error.internal",
+                            null,
+                            LocaleContextHolder.getLocale()
+                    )
+            );
         }
 
         userRepository.delete(user);

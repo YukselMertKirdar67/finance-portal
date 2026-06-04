@@ -13,6 +13,8 @@ import org.keycloak.admin.client.resource.RealmResource;
 import org.keycloak.admin.client.resource.UsersResource;
 import org.keycloak.representations.idm.UserRepresentation;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.MessageSource;
+import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -32,6 +34,7 @@ public class AdminServiceImpl implements AdminService {
     private final PortfolioRepository portfolioRepository;
     private final PortfolioTransactionRepository transactionRepository;
     private final WatchlistRepository watchlistRepository;
+    private final MessageSource messageSource;
 
     @Value("${keycloak.admin.realm}")
     private String realm;
@@ -53,7 +56,10 @@ public class AdminServiceImpl implements AdminService {
 
         } catch (Exception e) {
             log.error("Error fetching users from Keycloak: {}", e.getMessage(), e);
-            throw new RuntimeException("Failed to fetch users from Keycloak", e);
+            throw new RuntimeException(
+                    msg("admin.users.fetch.failed"),
+                    e
+            );
         }
     }
 
@@ -76,7 +82,10 @@ public class AdminServiceImpl implements AdminService {
 
         } catch (Exception e) {
             log.error("Error disabling user: {}", e.getMessage(), e);
-            throw new RuntimeException("Failed to disable user", e);
+            throw new RuntimeException(
+                    msg("admin.user.disable.failed"),
+                    e
+            );
         }
     }
 
@@ -99,7 +108,10 @@ public class AdminServiceImpl implements AdminService {
 
         } catch (Exception e) {
             log.error("Error enabling user: {}", e.getMessage(), e);
-            throw new RuntimeException("Failed to enable user", e);
+            throw new RuntimeException(
+                    msg("admin.user.enable.failed"),
+                    e
+            );
         }
     }
 
@@ -120,7 +132,10 @@ public class AdminServiceImpl implements AdminService {
 
         } catch (Exception e) {
             log.error("Error searching users: {}", e.getMessage(), e);
-            throw new RuntimeException("Failed to search users", e);
+            throw new RuntimeException(
+                    msg("admin.users.search.failed"),
+                    e
+            );
         }
     }
 
@@ -189,7 +204,9 @@ public class AdminServiceImpl implements AdminService {
 
         } catch (Exception e) {
             log.error("Error fetching user detail: {}", e.getMessage(), e);
-            throw new RuntimeException("Failed to fetch user detail");
+            throw new RuntimeException(
+                    msg("admin.user.detail.failed")
+            );
         }
     }
 
@@ -213,14 +230,14 @@ public class AdminServiceImpl implements AdminService {
 
             return AssignRoleResponseDTO.builder()
                     .success(true)
-                    .message("Role assigned successfully")
+                    .message(msg("admin.role.assigned"))
                     .build();
 
         } catch (Exception e) {
             log.error("❌ Error assigning role: {}", e.getMessage(), e);
             return AssignRoleResponseDTO.builder()
                     .success(false)
-                    .message("Failed to assign role: " + e.getMessage())
+                    .message(msg("admin.role.assign.failed"))
                     .build();
         }
     }
@@ -245,14 +262,14 @@ public class AdminServiceImpl implements AdminService {
 
             return RemoveRoleResponseDTO.builder()
                     .success(true)
-                    .message("Role removed successfully")
+                    .message(msg("admin.role.removed"))
                     .build();
 
         } catch (Exception e) {
             log.error("❌ Error removing role: {}", e.getMessage(), e);
             return RemoveRoleResponseDTO.builder()
                     .success(false)
-                    .message("Failed to remove role: " + e.getMessage())
+                    .message(msg("admin.role.remove.failed"))
                     .build();
         }
     }
@@ -342,5 +359,13 @@ public class AdminServiceImpl implements AdminService {
                         .toLocalDateTime()
                         : null)
                 .build();
+    }
+
+    private String msg(String key) {
+        return messageSource.getMessage(
+                key,
+                null,
+                LocaleContextHolder.getLocale()
+        );
     }
 }

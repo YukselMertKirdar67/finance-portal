@@ -4,6 +4,8 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
+import org.springframework.context.MessageSource;
+import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -20,6 +22,15 @@ import java.util.Map;
 public class TotpController {
 
     private final TotpService totpService;
+    private final MessageSource messageSource;
+
+    private String msg(String key) {
+        return messageSource.getMessage(
+                key,
+                null,
+                LocaleContextHolder.getLocale()
+        );
+    }
 
     /**
      * TOTP kurulumu başlatır, QR kod ve secret döner.
@@ -47,9 +58,19 @@ public class TotpController {
         log.info("TOTP setup verification for user: {}", keycloakId);
         boolean success = totpService.verifyAndActivateTotp(keycloakId, code);
         if (success) {
-            return ResponseEntity.ok(Map.of("success", true, "message", "2FA başarıyla aktif edildi"));
+            return ResponseEntity.ok(
+                    Map.of(
+                            "success", true,
+                            "message", msg("auth.2fa.activated")
+                    )
+            );
         } else {
-            return ResponseEntity.badRequest().body(Map.of("success", false, "message", "Geçersiz kod"));
+            return ResponseEntity.badRequest().body(
+                    Map.of(
+                            "success", false,
+                            "message", msg("auth.2fa.invalid")
+                    )
+            );
         }
     }
 
@@ -64,9 +85,19 @@ public class TotpController {
         log.info("TOTP login verification for user: {}", keycloakId);
         boolean success = totpService.verifyTotpCode(keycloakId, code);
         if (success) {
-            return ResponseEntity.ok(Map.of("success", true, "message", "Kod doğrulandı"));
+            return ResponseEntity.ok(
+                    Map.of(
+                            "success", true,
+                            "message", msg("auth.2fa.verified")
+                    )
+            );
         } else {
-            return ResponseEntity.badRequest().body(Map.of("success", false, "message", "Geçersiz kod"));
+            return ResponseEntity.badRequest().body(
+                    Map.of(
+                            "success", false,
+                            "message", msg("auth.2fa.invalid")
+                    )
+            );
         }
     }
 
@@ -90,6 +121,11 @@ public class TotpController {
         String keycloakId = jwt.getSubject();
         log.info("TOTP disable request for user: {}", keycloakId);
         totpService.disableTotp(keycloakId);
-        return ResponseEntity.ok(Map.of("success", true, "message", "2FA devre dışı bırakıldı"));
+        return ResponseEntity.ok(
+                Map.of(
+                        "success", true,
+                        "message", msg("auth.2fa.disabled")
+                )
+        );
     }
 }

@@ -12,6 +12,8 @@ import com.financeportal.backend.Util.SecurityUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.context.MessageSource;
+import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -35,6 +37,7 @@ public class WatchlistServiceImpl implements WatchlistService {
     private final InstrumentPriceRepository priceRepository;
     private final InstrumentMapper instrumentMapper;
     private final RedisTemplate<String, Object> redisTemplate;
+    private final MessageSource messageSource;
 
     @Qualifier("objectMapper")
     private final ObjectMapper cleanMapper;
@@ -56,14 +59,16 @@ public class WatchlistServiceImpl implements WatchlistService {
         BaseInstrument instrument = instrumentRepository.findById(instrumentId)
                 .orElseThrow(() -> {
                     log.error("Instrument not found: {}", instrumentId);
-                    return new ResourceNotFoundException("Instrument not found: " + instrumentId);
+                    return new ResourceNotFoundException(
+                            msg("instrument.not.found")
+                    );
                 });
 
         if (watchlistRepository.existsByUserIdAndInstrument(currentUserId, instrument)) {
             log.warn("Instrument {} already in watchlist for user: {}", instrument.getSymbol(), currentUserId);
             return WatchlistDTO.WatchlistResponse.builder()
                     .success(false)
-                    .message("Bu enstrüman zaten takip listenizde")
+                    .message(msg("watchlist.already.exists"))
                     .build();
         }
 
@@ -79,7 +84,7 @@ public class WatchlistServiceImpl implements WatchlistService {
 
         return WatchlistDTO.WatchlistResponse.builder()
                 .success(true)
-                .message("Takip listesine eklendi")
+                .message(msg("watchlist.added"))
                 .build();
     }
 
@@ -97,14 +102,16 @@ public class WatchlistServiceImpl implements WatchlistService {
         BaseInstrument instrument = instrumentRepository.findById(instrumentId)
                 .orElseThrow(() -> {
                     log.error("Instrument not found: {}", instrumentId);
-                    return new ResourceNotFoundException("Instrument not found: " + instrumentId);
+                    return new ResourceNotFoundException(
+                            msg("instrument.not.found")
+                    );
                 });
 
         if (!watchlistRepository.existsByUserIdAndInstrument(currentUserId, instrument)) {
             log.warn("Instrument {} not in watchlist for user: {}", instrument.getSymbol(), currentUserId);
             return WatchlistDTO.WatchlistResponse.builder()
                     .success(false)
-                    .message("Bu enstrüman takip listenizde değil")
+                    .message(msg("watchlist.not.exists"))
                     .build();
         }
 
@@ -115,7 +122,7 @@ public class WatchlistServiceImpl implements WatchlistService {
 
         return WatchlistDTO.WatchlistResponse.builder()
                 .success(true)
-                .message("Takip listesinden çıkarıldı")
+                .message(msg("watchlist.removed"))
                 .build();
     }
 
@@ -236,5 +243,13 @@ public class WatchlistServiceImpl implements WatchlistService {
         } catch (Exception e) {
             log.warn("⚠️ Cache clear error: {}", e.getMessage());
         }
+    }
+
+    private String msg(String key) {
+        return messageSource.getMessage(
+                key,
+                null,
+                LocaleContextHolder.getLocale()
+        );
     }
 }

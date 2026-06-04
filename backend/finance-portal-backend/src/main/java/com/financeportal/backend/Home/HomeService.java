@@ -10,6 +10,8 @@ import jakarta.persistence.criteria.CriteriaBuilder;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.context.MessageSource;
+import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,6 +29,7 @@ public class HomeService {
     private final InstrumentRepository instrumentRepository;
     private final InstrumentPriceRepository priceRepository;
     private final NewsService newsService;
+    private final MessageSource messageSource;
 
     /**
      * Anasayfa için piyasa özeti, kazananlar, kaybedenler,
@@ -34,7 +37,7 @@ public class HomeService {
      * Sonuçlar Redis cache'te tutulur.
      */
 
-    @Cacheable(value = "homePage", key = "'data'")
+    @Cacheable(value = "homePage", key = "'data:' + T(org.springframework.context.i18n.LocaleContextHolder).getLocale().getLanguage()")
     public HomePageDTO getHomePageData() {
         log.info("🏠 Generating home page data...");
 
@@ -130,7 +133,7 @@ public class HomeService {
      */
     private List<NewsResponseDTO> getRecentNews(int limit) {
         try {
-            return newsService.getAllNews(0, limit).getContent();
+            return newsService.getAllNews(0, limit, LocaleContextHolder.getLocale()).getContent();
         } catch (Exception e) {
             log.error("Error fetching recent news: {}", e.getMessage());
             return Collections.emptyList();
@@ -283,15 +286,8 @@ public class HomeService {
      */
 
     private String getDisplayName(InstrumentType type) {
-        return switch (type) {
-            case FOREX -> "Döviz";
-            case STOCK -> "Hisse Senedi";
-            case CRYPTO -> "Kripto";
-            case BOND -> "Tahvil";
-            case PRECIOUS -> "Kıymetli Maden";
-            case FUND -> "Yatırım Fonu";
-            case VIOP -> "VİOP Vadeli İşlemler";
-        };
+        String key = "instrument.type." + type.name().toLowerCase();
+        return messageSource.getMessage(key, null, LocaleContextHolder.getLocale());
     }
 
     /**

@@ -10,10 +10,12 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springframework.context.MessageSource;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
@@ -32,6 +34,7 @@ public class UserController {
     private final UserService userService;
     private final UserMapper userMapper;
     private final AuthService authService;
+    private final MessageSource messageSource;
 
     /**
      * Giriş yapmış kullanıcının temel profil bilgilerini getirir.
@@ -118,7 +121,7 @@ public class UserController {
 
             return ResponseEntity.ok(Map.of(
                     "success", true,
-                    "message", "Kullanıcı adınız başarıyla güncellendi"
+                    "message", msg("user.username.updated")
             ));
 
         } catch (RuntimeException e) {
@@ -146,7 +149,7 @@ public class UserController {
 
             return ResponseEntity.ok(Map.of(
                     "success", true,
-                    "message", "Doğrulama e-postası gönderildi. Lütfen e-postanızı kontrol edin."
+                    "message", msg("user.email.updated")
             ));
 
         } catch (RuntimeException e) {
@@ -196,7 +199,12 @@ public class UserController {
                     request.getNotifyNews()
             );
 
-            return ResponseEntity.ok(Map.of("success", true, "message", "Tercihleriniz başarıyla güncellendi"));
+            return ResponseEntity.ok(
+                    Map.of(
+                            "success", true,
+                            "message", msg("user.preferences.updated")
+                    )
+            );
 
         } catch (RuntimeException e) {
             log.error("Preferences update failed: {}", e.getMessage());
@@ -237,7 +245,7 @@ public class UserController {
 
             return ResponseEntity.ok(Map.of(
                     "success", true,
-                    "message", "Hesabınız başarıyla silindi"
+                    "message", msg("user.account.deleted")
             ));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(Map.of(
@@ -273,5 +281,13 @@ public class UserController {
         if (realmAccess == null) return Collections.emptyList();
         List<String> roles = (List<String>) realmAccess.get("roles");
         return roles != null ? roles : Collections.emptyList();
+    }
+
+    private String msg(String key) {
+        return messageSource.getMessage(
+                key,
+                null,
+                LocaleContextHolder.getLocale()
+        );
     }
 }

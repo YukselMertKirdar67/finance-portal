@@ -15,6 +15,8 @@ import org.keycloak.admin.client.resource.UsersResource;
 import org.keycloak.representations.idm.UserRepresentation;
 import org.keycloak.representations.idm.CredentialRepresentation;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.MessageSource;
+import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -43,6 +45,7 @@ public class AuthServiceImpl implements AuthService {
     private final UserRepository userRepository;
     private final EmailService emailService;
     private final TotpService totpService;
+    private final MessageSource messageSource;
 
     @Value("${keycloak.admin.realm}")
     private String realm;
@@ -90,7 +93,11 @@ public class AuthServiceImpl implements AuthService {
 
                 return RegisterResponseDTO.builder()
                         .success(true)
-                        .message("Registration successful! Please login.")
+                        .message(messageSource.getMessage(
+                                "auth.register.success",
+                                null,
+                                LocaleContextHolder.getLocale()
+                        ))
                         .userId(userId)
                         .build();
 
@@ -98,14 +105,22 @@ public class AuthServiceImpl implements AuthService {
                 log.warn("User already exists: {}", request.getUsername());
                 return RegisterResponseDTO.builder()
                         .success(false)
-                        .message("Username or email already exists")
+                        .message(messageSource.getMessage(
+                                "auth.register.exists",
+                                null,
+                                LocaleContextHolder.getLocale()
+                        ))
                         .build();
 
             } else {
                 log.error("Failed to register user: {} - Status: {}", request.getUsername(), response.getStatus());
                 return RegisterResponseDTO.builder()
                         .success(false)
-                        .message("Registration failed. Please try again.")
+                        .message(messageSource.getMessage(
+                                "auth.register.failed",
+                                null,
+                                LocaleContextHolder.getLocale()
+                        ))
                         .build();
             }
 
@@ -113,7 +128,11 @@ public class AuthServiceImpl implements AuthService {
             log.error("Error during user registration: {}", e.getMessage(), e);
             return RegisterResponseDTO.builder()
                     .success(false)
-                    .message("An error occurred during registration")
+                    .message(messageSource.getMessage(
+                            "error.internal",
+                            null,
+                            LocaleContextHolder.getLocale()
+                    ))
                     .build();
         }
     }
@@ -136,7 +155,11 @@ public class AuthServiceImpl implements AuthService {
                 log.warn("User not found with email: {}", request.getEmail());
                 return PasswordResetResponseDTO.builder()
                         .success(true)
-                        .message("If the email exists, a password reset link has been sent.")
+                        .message(messageSource.getMessage(
+                                "auth.password.reset.requested",
+                                null,
+                                LocaleContextHolder.getLocale()
+                        ))
                         .build();
             }
 
@@ -146,14 +169,22 @@ public class AuthServiceImpl implements AuthService {
 
             return PasswordResetResponseDTO.builder()
                     .success(true)
-                    .message("If the email exists, a password reset link has been sent.")
+                    .message(messageSource.getMessage(
+                            "auth.password.reset.requested",
+                            null,
+                            LocaleContextHolder.getLocale()
+                    ))
                     .build();
 
         } catch (Exception e) {
             log.error("Error sending password reset email: {}", e.getMessage(), e);
             return PasswordResetResponseDTO.builder()
                     .success(false)
-                    .message("Failed to send password reset email. Please try again.")
+                    .message(messageSource.getMessage(
+                            "error.internal",
+                            null,
+                            LocaleContextHolder.getLocale()
+                    ))
                     .build();
         }
     }
@@ -168,13 +199,21 @@ public class AuthServiceImpl implements AuthService {
         try {
             return PasswordResetResponseDTO.builder()
                     .success(true)
-                    .message("Password reset successful. Please login with your new password.")
+                    .message(messageSource.getMessage(
+                            "auth.password.reset.success",
+                            null,
+                            LocaleContextHolder.getLocale()
+                    ))
                     .build();
         } catch (Exception e) {
             log.error("Error resetting password: {}", e.getMessage(), e);
             return PasswordResetResponseDTO.builder()
                     .success(false)
-                    .message("Failed to reset password. Invalid or expired token.")
+                    .message(messageSource.getMessage(
+                            "auth.email.invalid.token",
+                            null,
+                            LocaleContextHolder.getLocale()
+                    ))
                     .build();
         }
     }
@@ -197,7 +236,11 @@ public class AuthServiceImpl implements AuthService {
                 log.warn("User not found with email: {}", request.getEmail());
                 return EmailVerificationResponseDTO.builder()
                         .success(false)
-                        .message("User not found with this email")
+                        .message(messageSource.getMessage(
+                                "user.not.found",
+                                null,
+                                LocaleContextHolder.getLocale()
+                        ))
                         .emailVerified(false)
                         .build();
             }
@@ -209,7 +252,11 @@ public class AuthServiceImpl implements AuthService {
                 log.info("Email already verified: {}", request.getEmail());
                 return EmailVerificationResponseDTO.builder()
                         .success(true)
-                        .message("Email is already verified")
+                        .message(messageSource.getMessage(
+                                "auth.email.already.verified",
+                                null,
+                                LocaleContextHolder.getLocale()
+                        ))
                         .emailVerified(true)
                         .build();
             }
@@ -219,7 +266,11 @@ public class AuthServiceImpl implements AuthService {
 
             return EmailVerificationResponseDTO.builder()
                     .success(true)
-                    .message("Verification email sent successfully. Please check your inbox.")
+                    .message(messageSource.getMessage(
+                            "auth.email.sent",
+                            null,
+                            LocaleContextHolder.getLocale()
+                    ))
                     .emailVerified(false)
                     .build();
 
@@ -227,7 +278,11 @@ public class AuthServiceImpl implements AuthService {
             log.error("Error sending verification email: {}", e.getMessage(), e);
             return EmailVerificationResponseDTO.builder()
                     .success(false)
-                    .message("Failed to send verification email. Please try again.")
+                    .message(messageSource.getMessage(
+                            "error.internal",
+                            null,
+                            LocaleContextHolder.getLocale()
+                    ))
                     .emailVerified(false)
                     .build();
         }
@@ -250,7 +305,11 @@ public class AuthServiceImpl implements AuthService {
                 log.warn("User not found with email: {}", email);
                 return EmailVerificationResponseDTO.builder()
                         .success(false)
-                        .message("User not found")
+                        .message(messageSource.getMessage(
+                                "user.not.found",
+                                null,
+                                LocaleContextHolder.getLocale()
+                        ))
                         .emailVerified(false)
                         .build();
             }
@@ -325,7 +384,11 @@ public class AuthServiceImpl implements AuthService {
                     log.info("⚠️ 2FA required for user: {}", username);
                     return LoginResponseDTO.builder()
                             .success(false)
-                            .message("2FA_REQUIRED")
+                            .message(messageSource.getMessage(
+                                    "auth.2fa.required",
+                                    null,
+                                    LocaleContextHolder.getLocale()
+                            ))
                             .keycloakId(keycloakId)
                             .build();
                 }
@@ -334,7 +397,11 @@ public class AuthServiceImpl implements AuthService {
 
                 return LoginResponseDTO.builder()
                         .success(true)
-                        .message("Login successful")
+                        .message(messageSource.getMessage(
+                                "auth.login.success",
+                                null,
+                                LocaleContextHolder.getLocale()
+                        ))
                         .accessToken(accessToken)
                         .refreshToken(refreshToken)
                         .username(username)
@@ -346,7 +413,11 @@ public class AuthServiceImpl implements AuthService {
                 log.warn("❌ Login failed for username: {} - Status: {}", request.getUsername(), e.getStatusCode());
                 return LoginResponseDTO.builder()
                         .success(false)
-                        .message("Invalid username or password")
+                        .message(messageSource.getMessage(
+                                "auth.login.failed",
+                                null,
+                                LocaleContextHolder.getLocale()
+                        ))
                         .build();
             }
 
@@ -354,7 +425,11 @@ public class AuthServiceImpl implements AuthService {
             log.error("❌ Error during login: {}", e.getMessage(), e);
             return LoginResponseDTO.builder()
                     .success(false)
-                    .message("Login failed. Please try again.")
+                    .message(messageSource.getMessage(
+                            "auth.login.failed",
+                            null,
+                            LocaleContextHolder.getLocale()
+                    ))
                     .build();
         }
     }
@@ -374,7 +449,7 @@ public class AuthServiceImpl implements AuthService {
                 log.warn("Password confirmation mismatch for user: {}", userId);
                 return ChangePasswordResponseDTO.builder()
                         .success(false)
-                        .message("Yeni şifre ve onay şifresi eşleşmiyor")
+                        .message(messageSource.getMessage("auth.password.change.mismatch", null, LocaleContextHolder.getLocale()))
                         .build();
             }
 
@@ -405,7 +480,7 @@ public class AuthServiceImpl implements AuthService {
                     log.warn("❌ Current password is incorrect for user: {}", userId);
                     return ChangePasswordResponseDTO.builder()
                             .success(false)
-                            .message("Mevcut şifre hatalı")
+                            .message(messageSource.getMessage("auth.password.change.wrong", null, LocaleContextHolder.getLocale()))
                             .build();
                 }
 
@@ -413,7 +488,7 @@ public class AuthServiceImpl implements AuthService {
                 log.error("Error validating current password: {}", e.getMessage());
                 return ChangePasswordResponseDTO.builder()
                         .success(false)
-                        .message("Şifre doğrulama başarısız")
+                        .message(messageSource.getMessage("auth.password.change.wrong", null, LocaleContextHolder.getLocale()))
                         .build();
             }
 
@@ -427,7 +502,13 @@ public class AuthServiceImpl implements AuthService {
 
             try {
                 User dbUser = userRepository.findByKeycloakId(userId)
-                        .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+                        .orElseThrow(() -> new ResourceNotFoundException(
+                                messageSource.getMessage(
+                                        "user.not.found",
+                                        null,
+                                        LocaleContextHolder.getLocale()
+                                )
+                        ));
                 dbUser.setPasswordLastChanged(LocalDateTime.now());
                 userRepository.save(dbUser);
                 log.info("✅ Password last changed date updated for user: {}", userId);
@@ -437,14 +518,14 @@ public class AuthServiceImpl implements AuthService {
 
             return ChangePasswordResponseDTO.builder()
                     .success(true)
-                    .message("Şifreniz başarıyla değiştirildi")
+                    .message(messageSource.getMessage("auth.password.change.success", null, LocaleContextHolder.getLocale()))
                     .build();
 
         } catch (Exception e) {
             log.error("❌ Error changing password: {}", e.getMessage(), e);
             return ChangePasswordResponseDTO.builder()
                     .success(false)
-                    .message("Şifre değiştirme işlemi başarısız. Lütfen tekrar deneyin.")
+                    .message(messageSource.getMessage("auth.password.change.mismatch", null, LocaleContextHolder.getLocale()))
                     .build();
         }
     }
@@ -544,7 +625,11 @@ public class AuthServiceImpl implements AuthService {
 
             return LoginResponseDTO.builder()
                     .success(true)
-                    .message("Login successful")
+                    .message(messageSource.getMessage(
+                            "auth.login.success",
+                            null,
+                            LocaleContextHolder.getLocale()
+                    ))
                     .accessToken(accessToken)
                     .refreshToken(refreshToken)
                     .username(username)
@@ -556,7 +641,11 @@ public class AuthServiceImpl implements AuthService {
             log.error("❌ Token exchange failed: {}", e.getMessage(), e);
             return LoginResponseDTO.builder()
                     .success(false)
-                    .message("Authentication failed")
+                    .message(messageSource.getMessage(
+                            "error.unauthorized",
+                            null,
+                            LocaleContextHolder.getLocale()
+                    ))
                     .build();
         }
     }
@@ -587,13 +676,21 @@ public class AuthServiceImpl implements AuthService {
                 log.info("✅ Keycloak session terminated successfully");
                 return LogoutResponseDTO.builder()
                         .success(true)
-                        .message("Logout successful")
+                        .message(messageSource.getMessage(
+                                "auth.logout.success",
+                                null,
+                                LocaleContextHolder.getLocale()
+                        ))
                         .build();
             } catch (HttpClientErrorException e) {
                 log.warn("⚠️ Logout request failed (token may be already invalid): {}", e.getMessage());
                 return LogoutResponseDTO.builder()
                         .success(true)
-                        .message("Logout successful")
+                        .message(messageSource.getMessage(
+                                "auth.logout.success",
+                                null,
+                                LocaleContextHolder.getLocale()
+                        ))
                         .build();
             }
 
@@ -601,7 +698,11 @@ public class AuthServiceImpl implements AuthService {
             log.error("❌ Error during logout: {}", e.getMessage(), e);
             return LogoutResponseDTO.builder()
                     .success(true)
-                    .message("Logout completed (session cleanup may have failed)")
+                    .message(messageSource.getMessage(
+                            "auth.logout.partial",
+                            null,
+                            LocaleContextHolder.getLocale()
+                    ))
                     .build();
         }
     }

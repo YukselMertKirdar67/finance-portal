@@ -6,6 +6,8 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
+import org.springframework.context.MessageSource;
+import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -21,6 +23,7 @@ import java.util.Map;
 public class PriceAlertController {
 
     private final PriceAlertService priceAlertService;
+    private final MessageSource messageSource;
 
     /**
      * Yeni fiyat alarmı oluşturur.
@@ -61,6 +64,19 @@ public class PriceAlertController {
     public ResponseEntity<?> deleteAlert(@PathVariable Long id) {
         log.info("Deleting price alert: {}", id);
         priceAlertService.deleteAlert(id);
-        return ResponseEntity.ok(Map.of("success", true, "message", "Alarm silindi"));
+        return ResponseEntity.ok(
+                Map.of(
+                        "success", true,
+                        "message", msg("alert.deleted")
+                )
+        );
+    }
+
+    private String msg(String key) {
+        return messageSource.getMessage(
+                key,
+                null,
+                LocaleContextHolder.getLocale()
+        );
     }
 }

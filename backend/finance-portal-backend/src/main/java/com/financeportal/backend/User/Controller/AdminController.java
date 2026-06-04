@@ -7,6 +7,8 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
+import org.springframework.context.MessageSource;
+import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -23,6 +25,7 @@ import java.util.List;
 public class AdminController {
 
     private final AdminService adminService;
+    private final MessageSource messageSource;
 
     /**
      * Admin servisinin çalışıp çalışmadığını kontrol eder.
@@ -31,7 +34,7 @@ public class AdminController {
     @GetMapping("/ping")
     public String ping() {
         log.info("Admin ping request received");
-        return "Admin authenticated";
+        return msg("admin.authenticated");
     }
 
     /**
@@ -141,5 +144,13 @@ public class AdminController {
     public AdminStatsDTO getAdminStats() {
         log.info("Admin: Fetching dashboard statistics");
         return adminService.getAdminStats();
+    }
+
+    private String msg(String key) {
+        return messageSource.getMessage(
+                key,
+                null,
+                LocaleContextHolder.getLocale()
+        );
     }
 }
