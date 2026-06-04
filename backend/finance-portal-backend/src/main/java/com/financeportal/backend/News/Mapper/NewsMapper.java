@@ -13,9 +13,13 @@ import java.time.LocalDateTime;
 public interface NewsMapper {
 
     @Mapping(target = "publishDate", expression = "java(news.getPublishDate() != null ? news.getPublishDate() : java.time.LocalDateTime.now())")
+    @Mapping(source = "titleEn", target = "titleEn")
+    @Mapping(source = "contentEn", target = "contentEn")
     NewsResponseDTO toResponseDto(News news);
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "publishDate", expression = "java(java.time.LocalDateTime.now())")
+    @Mapping(target = "titleEn", ignore = true)
+    @Mapping(target = "contentEn", ignore = true)
     News toEntity(NewsRequestDTO dto);
 }
