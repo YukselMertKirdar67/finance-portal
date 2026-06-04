@@ -9,6 +9,8 @@ import lombok.extern.log4j.Log4j2;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Locale;
+
 @RestController
 @RequestMapping("/api/v1/news")
 @Log4j2
@@ -28,9 +30,10 @@ public class NewsController {
     @Operation(summary = "Tüm haberleri sayfalı getir")
     public ResponseEntity<PageResponseDTO<NewsResponseDTO>> getAllNews(
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size) {
-        log.info("Fetching all news, page: {}, size: {}", page, size);
-        return ResponseEntity.ok(newsService.getAllNews(page, size));
+            @RequestParam(defaultValue = "20") int size,
+            Locale locale) {
+        log.info("Fetching all news, page: {}, size: {}, locale: {}", page, size, locale);
+        return ResponseEntity.ok(newsService.getAllNews(page, size, locale));
     }
 
     /**
@@ -41,14 +44,17 @@ public class NewsController {
     public ResponseEntity<PageResponseDTO<NewsResponseDTO>> getNewsByCategory(
             @PathVariable String category,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size) {
-        log.info("Fetching news by category: {}, page: {}, size: {}", category, page, size);
+            @RequestParam(defaultValue = "20") int size,
+            Locale locale) {
+        log.info("Fetching news by category: {}, locale: {}", category, locale);
         try {
             String decodedCategory =
                     java.net.URLDecoder.decode(category, java.nio.charset.StandardCharsets.UTF_8);
-            return ResponseEntity.ok(newsService.getNewsByCategory(decodedCategory, page, size));
+            return ResponseEntity.ok(
+                    newsService.getNewsByCategory(decodedCategory, page, size, locale));
         } catch (Exception e) {
-            return ResponseEntity.ok(newsService.getNewsByCategory(category, page, size));
+            return ResponseEntity.ok(
+                    newsService.getNewsByCategory(category, page, size, locale));
         }
     }
 
@@ -57,8 +63,10 @@ public class NewsController {
      */
     @GetMapping("/{id}")
     @Operation(summary = "ID'ye göre haber getir")
-    public ResponseEntity<NewsResponseDTO> getNewsById(@PathVariable Long id) {
-        log.info("Fetching news by ID: {}", id);
-        return ResponseEntity.ok(newsService.getNewsById(id));
+    public ResponseEntity<NewsResponseDTO> getNewsById(
+            @PathVariable Long id,
+            Locale locale) {
+        log.info("Fetching news by ID: {}, locale: {}", id, locale);
+        return ResponseEntity.ok(newsService.getNewsById(id, locale));
     }
 }
