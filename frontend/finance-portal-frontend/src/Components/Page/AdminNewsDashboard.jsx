@@ -22,6 +22,8 @@ const AdminNewsDashboard = () => {
     const [updating, setUpdating] = useState(false);
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
+    const [confirmModal, setConfirmModal] = useState({ isOpen: false, type: null, category: null });
+
 
     useEffect(() => {
         if (!isAdmin) { navigate('/dashboard'); return; }
@@ -65,37 +67,38 @@ const AdminNewsDashboard = () => {
         }
     };
 
-    const handleRefresh = async () => {
-        if (!window.confirm(t('admin.news.refreshConfirm'))) return;
-        setUpdating(true);
-        setError(''); setSuccess('');
-        try {
-            const result = await refreshAllNews();
-            if (result.success) {
-                showSuccess(t('admin.news.refreshSuccess', { deleted: result.deletedCount, saved: result.stats?.saved || 0 }));
-                fetchData();
-            } else {
-                showError(t('admin.news.refreshError'));
-            }
-        } catch {
-            showError(t('admin.news.refreshError'));
-        } finally {
-            setUpdating(false);
-        }
+    const handleRefresh = () => {
+        setConfirmModal({ isOpen: true, type: 'refresh', category: null });
     };
 
-    const handleDeleteAll = async () => {
-        if (!window.confirm(t('admin.news.deleteAllConfirm'))) return;
+    const handleDeleteAll = () => {
+        setConfirmModal({ isOpen: true, type: 'deleteAll', category: null });
+    };
+
+    const handleDeleteByCategory = (category) => {
+        setConfirmModal({ isOpen: true, type: 'deleteCategory', category });
+    };
+
+    const handleConfirm = async () => {
+        const { type, category } = confirmModal;
+        setConfirmModal({ isOpen: false, type: null, category: null });
         setUpdating(true);
         setError(''); setSuccess('');
         try {
-            const result = await deleteAllNews();
-            if (result.success) {
-                showSuccess(t('admin.news.deleteSuccess', { count: result.deletedCount }));
-                fetchData();
-            } else {
-                showError(t('admin.news.deleteError'));
+            if (type === 'refresh') {
+                const result = await refreshAllNews();
+                if (result.success) showSuccess(t('admin.news.refreshSuccess', { deleted: result.deletedCount, saved: result.stats?.saved || 0 }));
+                else showError(t('admin.news.refreshError'));
+            } else if (type === 'deleteAll') {
+                const result = await deleteAllNews();
+                if (result.success) showSuccess(t('admin.news.deleteSuccess', { count: result.deletedCount }));
+                else showError(t('admin.news.deleteError'));
+            } else if (type === 'deleteCategory') {
+                const result = await deleteNewsByCategory(category);
+                if (result.success) showSuccess(t('admin.news.deleteSuccess', { count: result.deletedCount }));
+                else showError(t('admin.news.deleteError'));
             }
+            fetchData();
         } catch {
             showError(t('admin.news.deleteError'));
         } finally {
@@ -103,23 +106,11 @@ const AdminNewsDashboard = () => {
         }
     };
 
-    const handleDeleteByCategory = async (category) => {
-        if (!window.confirm(t('admin.news.deleteCategoryConfirm', { category }))) return;
-        setUpdating(true);
-        setError(''); setSuccess('');
-        try {
-            const result = await deleteNewsByCategory(category);
-            if (result.success) {
-                showSuccess(t('admin.news.deleteSuccess', { count: result.deletedCount }));
-                fetchData();
-            } else {
-                showError(t('admin.news.deleteError'));
-            }
-        } catch {
-            showError(t('admin.news.deleteError'));
-        } finally {
-            setUpdating(false);
-        }
+    const getConfirmMessage = () => {
+        if (confirmModal.type === 'refresh') return t('admin.news.refreshConfirm');
+        if (confirmModal.type === 'deleteAll') return t('admin.news.deleteAllConfirm');
+        if (confirmModal.type === 'deleteCategory') return t('admin.news.deleteCategoryConfirm', { category: confirmModal.category });
+        return '';
     };
 
     const formatDate = (dateStr) => {
@@ -287,6 +278,31 @@ const AdminNewsDashboard = () => {
                     </div>
                 </div>
             </div>
+            {confirmModal.isOpen && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6">
+                        <div className="flex items-center gap-3 mb-4">
+                            <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0">
+                                <span className="text-red-600 text-xl">⚠️</span>
+                            </div>
+                            <h3 className="text-lg font-bold text-gray-900">{t('admin.news.title')}</h3>
+                        </div>
+                        <p className="text-gray-600 mb-6">{getConfirmMessage()}</p>
+                        <div className="flex gap-3">
+                            <button
+                                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 font-medium"
+                                onClick={() => setConfirmModal({ isOpen: false, type: null, category: null })}>
+                                {t('common.cancel')}
+                            </button>
+                            <button
+                                className="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium"
+                                onClick={handleConfirm}>
+                                {t('common.confirm')}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
