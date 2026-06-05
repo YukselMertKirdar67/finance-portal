@@ -16,6 +16,7 @@ export default function WatchlistPage() {
     const [searchResults, setSearchResults] = useState([]);
     const [selectedInstrument, setSelectedInstrument] = useState(null);
     const [searching, setSearching] = useState(false);
+    const [deleteModal, setDeleteModal] = useState({ isOpen: false, item: null });
 
     useEffect(() => {
         fetchWatchlist();
@@ -71,8 +72,13 @@ export default function WatchlistPage() {
         }
     };
 
-    const handleRemoveFromWatchlist = async (item) => {
-        if (!confirm(t('watchlist.removeConfirm', { symbol: item.instrument.symbol }))) return;
+    const handleRemoveFromWatchlist = (item) => {
+        setDeleteModal({ isOpen: true, item });
+    };
+
+    const handleConfirmRemove = async () => {
+        const { item } = deleteModal;
+        setDeleteModal({ isOpen: false, item: null });
         try {
             await removeFromWatchlist(item.instrument.id);
             fetchWatchlist();
@@ -387,6 +393,31 @@ export default function WatchlistPage() {
                     </div>
                 )}
             </div>
+            {deleteModal.isOpen && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6">
+                        <div className="flex items-center gap-3 mb-4">
+                            <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0">
+                                <span className="text-red-600 text-xl">⚠️</span>
+                            </div>
+                            <h3 className="text-lg font-bold text-gray-900">{t('watchlist.remove')}</h3>
+                        </div>
+                        <p className="text-gray-600 mb-6">
+                            {t('watchlist.removeConfirm', { symbol: deleteModal.item?.instrument?.symbol })}
+                        </p>
+                        <div className="flex gap-3">
+                            <Button variant="outline" className="flex-1"
+                                    onClick={() => setDeleteModal({ isOpen: false, item: null })}>
+                                {t('common.cancel')}
+                            </Button>
+                            <Button className="flex-1 bg-red-600 hover:bg-red-700 text-white"
+                                    onClick={handleConfirmRemove}>
+                                {t('watchlist.remove')}
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
