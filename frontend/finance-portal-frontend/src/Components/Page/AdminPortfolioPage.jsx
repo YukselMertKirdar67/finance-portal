@@ -14,6 +14,7 @@ export default function AdminPortfolioPage() {
     const [refreshing, setRefreshing] = useState(false);
     const [userIdFilter, setUserIdFilter] = useState('');
     const [error, setError] = useState(null);
+    const [deleteModal, setDeleteModal] = useState({ isOpen: false, id: null, name: null });
 
     useEffect(() => { loadData(); }, []);
 
@@ -53,13 +54,18 @@ export default function AdminPortfolioPage() {
         }
     };
 
-    const handleDelete = async (id, name) => {
-        if (!window.confirm(t('admin.portfolio.deleteConfirm', { name }))) return;
+    const handleDelete = (id, name) => {
+        setDeleteModal({ isOpen: true, id, name });
+    };
+
+    const handleConfirmDelete = async () => {
         try {
-            await forceDeletePortfolio(id);
-            setPortfolios(prev => prev.filter(p => p.id !== id));
+            await forceDeletePortfolio(deleteModal.id);
+            setPortfolios(prev => prev.filter(p => p.id !== deleteModal.id));
         } catch {
             alert(t('admin.portfolio.deleteError'));
+        } finally {
+            setDeleteModal({ isOpen: false, id: null, name: null });
         }
     };
 
@@ -263,6 +269,31 @@ export default function AdminPortfolioPage() {
                     </div>
                 </CardContent>
             </Card>
+            {deleteModal.isOpen && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6">
+                        <div className="flex items-center gap-3 mb-4">
+                            <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0">
+                                <span className="text-red-600 text-xl">⚠️</span>
+                            </div>
+                            <h3 className="text-lg font-bold text-gray-900">{t('admin.portfolio.title')}</h3>
+                        </div>
+                        <p className="text-gray-600 mb-6">
+                            {t('admin.portfolio.deleteConfirm', { name: deleteModal.name })}
+                        </p>
+                        <div className="flex gap-3">
+                            <Button variant="outline" className="flex-1"
+                                    onClick={() => setDeleteModal({ isOpen: false, id: null, name: null })}>
+                                {t('common.cancel')}
+                            </Button>
+                            <Button className="flex-1 bg-red-600 hover:bg-red-700 text-white"
+                                    onClick={handleConfirmDelete}>
+                                {t('common.delete')}
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
